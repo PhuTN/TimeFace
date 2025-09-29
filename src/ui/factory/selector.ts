@@ -11,6 +11,22 @@ import { DarkEnFactory } from "./darkEnFactory";
 const THEME_KEY = "ui.theme"; // "light" | "dark"
 const LANG_KEY  = "ui.lang";  // "vi" | "en"
 
+/* ------------------------- Tiny Event Bus ------------------------- */
+type Listener = () => void;
+const listeners = new Set<Listener>();
+
+export function subscribeUIChange(fn: Listener) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+function emitUIChange() {
+  listeners.forEach((fn) => {
+    try { fn(); } catch (_) {}
+  });
+}
+/* ----------------------------------------------------------------- */
+
 /** Chọn Concrete Factory theo state lưu trong AsyncStorage */
 export async function getUIFactory(): Promise<UIFactory> {
   const theme = (await AsyncStorage.getItem(THEME_KEY)) as ThemeKey | null;
@@ -25,8 +41,9 @@ export async function getUIFactory(): Promise<UIFactory> {
   return new DarkEnFactory();
 }
 
-/** Helper đổi state */
+/** Ghi AsyncStorage và phát sự kiện đổi UI để hook re-load */
 export async function setUIState(next: { theme?: ThemeKey; lang?: LangCode }) {
   if (next.theme) await AsyncStorage.setItem(THEME_KEY, next.theme);
   if (next.lang)  await AsyncStorage.setItem(LANG_KEY, next.lang);
+  emitUIChange();
 }
