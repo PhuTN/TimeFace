@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import AddButton from '../components/common/AddButton';
 import Footer from '../components/common/Footer';
 import Header from '../components/common/Header';
 import {setUIState} from '../ui/factory/selector';
@@ -50,6 +51,7 @@ export default function HomeScreen() {
         <View style={{height: theme.spacing(2)}} />
         <Button title="Tiếng Việt" onPress={() => setUIState({lang: 'vi'})} />
         <Button title="English" onPress={() => setUIState({lang: 'en'})} />
+        <AddButton onPress={() => console.log('Thêm nhân viên')} />
       </View>
 
       <Footer
