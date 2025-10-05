@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import Footer from '../components/common/Footer';
+import Header from '../components/common/Header';
 import {setUIState} from '../ui/factory/selector';
 import {useUIFactory} from '../ui/factory/useUIFactory';
 
@@ -24,6 +25,13 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
+      <Header
+        title="ĐƠN XIN OT"
+        showBack={true}
+        onBackPress={() => {
+          /* navigation.goBack() nếu muốn */
+        }}
+      />
       <View style={{flex: 1, padding: theme.spacing(2)}}>
         <Text style={{color: theme.colors.text, fontSize: 20}}>
           {lang.t('hello')}
