@@ -1,5 +1,12 @@
 import React from 'react';
-import {Image, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {
+  Image,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 type Props = {
@@ -7,111 +14,112 @@ type Props = {
   onPress: (index: number) => void;
 };
 
-// Xanh đậm hơn
-const ACTIVE = '#007AFF'; // iOS blue đậm. Có thể đổi "#0066FF" nếu thích
+const ACTIVE = '#007AFF';
 const INACTIVE = '#B8BDC7';
 const BG = '#FFFFFF';
 
+const BAR_HEIGHT = 74;
+
 const Footer: React.FC<Props> = ({activeIndex, onPress}) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.wrapper}>
-      <View style={styles.container}>
-        {/* Home */}
-        <TouchableOpacity
-          style={styles.tab}
-          activeOpacity={0.85}
-          onPress={() => onPress(0)}>
-          <Ionicons
-            name="home-outline"
-            size={28}
-            color={activeIndex === 0 ? ACTIVE : INACTIVE}
-          />
-        </TouchableOpacity>
+    <View
+      style={[styles.container, {paddingBottom: Math.max(8, insets.bottom)}]}>
+      <TouchableOpacity
+        style={styles.tab}
+        activeOpacity={0.9}
+        onPress={() => onPress(0)}>
+        <Ionicons
+          name="home-outline"
+          size={32}
+          color={activeIndex === 0 ? ACTIVE : INACTIVE}
+        />
+      </TouchableOpacity>
 
-        {/* Checklist */}
-        <TouchableOpacity
-          style={styles.tab}
-          activeOpacity={0.85}
-          onPress={() => onPress(1)}>
-          <Ionicons
-            name="checkbox-outline"
-            size={28}
-            color={activeIndex === 1 ? ACTIVE : INACTIVE}
-          />
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.tab}
+        activeOpacity={0.9}
+        onPress={() => onPress(1)}>
+        <Ionicons
+          name="checkbox-outline"
+          size={32}
+          color={activeIndex === 1 ? ACTIVE : INACTIVE}
+        />
+      </TouchableOpacity>
 
-        {/* Center FAB - luôn xanh */}
-        <View style={styles.centerSlot}>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => onPress(2)}
-            style={[styles.fab, {borderColor: ACTIVE}]} // luôn xanh
-          >
-            <Image
-              source={require('../../assets/Footer/FaceIcon.png')}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 17 /* , tintColor: ACTIVE  // bật nếu icon đơn sắc */,
-              }}
-            />
-          </TouchableOpacity>
-        </View>
+      <TouchableOpacity
+        style={styles.centerTab}
+        activeOpacity={0.9}
+        onPress={() => onPress(2)}>
+        <Image
+          source={require('../../assets/Footer/FaceIcon.png')}
+          style={styles.centerImage}
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
 
-        {/* Settings */}
-        <TouchableOpacity
-          style={styles.tab}
-          activeOpacity={0.85}
-          onPress={() => onPress(3)}>
-          <Ionicons
-            name="settings-outline"
-            size={28}
-            color={activeIndex === 3 ? ACTIVE : INACTIVE}
-          />
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.tab}
+        activeOpacity={0.9}
+        onPress={() => onPress(3)}>
+        <Ionicons
+          name="settings-outline"
+          size={32}
+          color={activeIndex === 3 ? ACTIVE : INACTIVE}
+        />
+      </TouchableOpacity>
 
-        {/* Bell */}
-        <TouchableOpacity
-          style={styles.tab}
-          activeOpacity={0.85}
-          onPress={() => onPress(4)}>
-          <Ionicons
-            name="notifications-outline"
-            size={28}
-            color={activeIndex === 4 ? ACTIVE : INACTIVE}
-          />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={styles.tab}
+        activeOpacity={0.9}
+        onPress={() => onPress(4)}>
+        <Ionicons
+          name="notifications-outline"
+          size={32}
+          color={activeIndex === 4 ? ACTIVE : INACTIVE}
+        />
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  wrapper: {paddingBottom: 18, paddingTop: 6, alignItems: 'center'},
+  // Không dùng absolute. Chỉ cần đặt Footer là phần tử cuối cùng trong màn hình.
   container: {
-    width: '90%',
-    height: 74,
+    width: '100%',
+    height: BAR_HEIGHT,
     backgroundColor: BG,
-    borderRadius: 18,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    elevation: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    shadowOffset: {width: 0, height: 8},
+    paddingHorizontal: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 16,
+        shadowOffset: {width: 0, height: -2},
+      },
+      android: {elevation: 10},
+    }),
   },
-  tab: {flex: 1, alignItems: 'center'},
-  centerSlot: {width: 92, alignItems: 'center'},
-  fab: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    backgroundColor: BG,
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  centerTab: {
+    width: 92,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    paddingVertical: 25,
+  },
+  centerImage: {
+    width: 65,
+    height: 65,
   },
 });
 

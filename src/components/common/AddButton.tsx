@@ -1,36 +1,61 @@
 import React from 'react';
 import {
   Image,
+  ImageSourcePropType,
+  ImageStyle,
   StyleSheet,
   Text,
+  TextStyle,
   TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
 
 type Props = {
-  title?: string;
+  title?: string; // text to show
+  icon?: ImageSourcePropType; // local require(...) or { uri: ... }
   onPress?: () => void;
-  style?: ViewStyle;
+  style?: ViewStyle; // container override
+  textStyle?: TextStyle; // text override
+  iconStyle?: ImageStyle; // icon override
+  iconLeft?: boolean; // put icon before text
+  gap?: number; // space between text and icon
+  disabled?: boolean;
 };
 
 const AddButton: React.FC<Props> = ({
   title = 'Thêm nhân viên',
+  icon = require('../../assets/AddIcon.png'),
   onPress,
   style,
+  textStyle,
+  iconStyle,
+  iconLeft = false,
+  gap = 8,
+  disabled = false,
 }) => {
   return (
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
-      style={[styles.button, style]}>
-      <View style={styles.row}>
-        <Text style={styles.text}>{title}</Text>
-        <Image
-          source={require('../../assets/AddIcon.png')}
-          style={styles.icon}
-          resizeMode="contain"
-        />
+      disabled={disabled}
+      style={[styles.button, style, disabled && {opacity: 0.6}]}>
+      <View style={[styles.row, {columnGap: gap}]}>
+        {iconLeft && icon && (
+          <Image
+            source={icon}
+            style={[styles.icon, iconStyle]}
+            resizeMode="contain"
+          />
+        )}
+        <Text style={[styles.text, textStyle]}>{title}</Text>
+        {!iconLeft && icon && (
+          <Image
+            source={icon}
+            style={[styles.icon, iconStyle]}
+            resizeMode="contain"
+          />
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -38,12 +63,11 @@ const AddButton: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#D8F6FF', // xanh nhạt như hình
-    borderRadius: 12, // bo 4 góc
+    backgroundColor: '#D8F6FF',
+    borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,
     alignSelf: 'center',
-    // bóng nhẹ
     elevation: 3,
     shadowColor: '#000',
     shadowOpacity: 0.12,
@@ -53,7 +77,6 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   text: {
     fontSize: 16,

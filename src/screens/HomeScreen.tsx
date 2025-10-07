@@ -51,7 +51,10 @@ export default function HomeScreen() {
         <View style={{height: theme.spacing(2)}} />
         <Button title="Tiếng Việt" onPress={() => setUIState({lang: 'vi'})} />
         <Button title="English" onPress={() => setUIState({lang: 'en'})} />
-        <AddButton onPress={() => console.log('Thêm nhân viên')} />
+        <AddButton
+          title="Thêm nhân viên"
+          icon={require('../assets/AddIcon.png')}
+        />
       </View>
 
       <Footer

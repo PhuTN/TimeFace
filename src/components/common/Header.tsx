@@ -3,6 +3,7 @@ import React from 'react';
 import {
   Image,
   ImageBackground,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -19,13 +20,17 @@ type Props = {
   pageBgColor?: string;
 };
 
+const HEADER_HEIGHT = 250;
+const SIDE_WIDTH = 100;
+const BACK_SIZE = 24;
+
 const Header: React.FC<Props> = ({
   title = 'ĐƠN XIN OT',
   showBack = true,
   onBackPress,
   onAvatarPress,
   avatarSrc = require('../../assets/Footer/FaceIcon.png'),
-  pageBgColor = '#FFFFFF',
+  pageBgColor = 'transparent',
 }) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
@@ -37,13 +42,29 @@ const Header: React.FC<Props> = ({
 
   return (
     <View style={{backgroundColor: pageBgColor}}>
-      <ImageBackground
-        source={require('../../assets/Header/Header.png')}
-        style={[styles.container, {paddingTop: Math.max(10, insets.top)}]}
-        imageStyle={styles.bgImage}
-        resizeMode="cover">
-        <View style={styles.row}>
-          {/* Trái: Back (ảnh PNG) */}
+      {/* If you use a translucent status bar elsewhere, keep this for consistency */}
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
+
+      <View style={styles.container}>
+        {/* Full background but clipped by rounded container */}
+        <ImageBackground
+          source={require('../../assets/Header/Header.png')}
+          style={StyleSheet.absoluteFill}
+          imageStyle={styles.imageClip}
+          resizeMode="cover"
+          pointerEvents="none"
+        />
+
+        {/* Single top row overlay */}
+        <View
+          style={[
+            styles.topBar,
+            {paddingTop: Math.max(12, insets.top + 6)}, // push below punch-hole
+          ]}>
           <View style={styles.sideSlot}>
             {showBack && (
               <TouchableOpacity
@@ -53,21 +74,20 @@ const Header: React.FC<Props> = ({
                 hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
                 <Image
                   source={require('../../assets/Header/BackIcon.png')}
-                  style={styles.backIcon} // KHÔNG tintColor
+                  style={styles.backIcon}
                   resizeMode="contain"
                 />
               </TouchableOpacity>
             )}
           </View>
 
-          {/* Giữa: Title */}
+          {/* Centered title stays truly centered because left and right sides have equal width */}
           <View style={styles.centerSlot}>
             <Text numberOfLines={1} style={styles.title}>
               {title}
             </Text>
           </View>
 
-          {/* Phải: Avatar */}
           <View style={styles.sideSlot}>
             <TouchableOpacity
               onPress={onAvatarPress}
@@ -77,27 +97,32 @@ const Header: React.FC<Props> = ({
             </TouchableOpacity>
           </View>
         </View>
-      </ImageBackground>
+      </View>
     </View>
   );
 };
 
-const SIDE_WIDTH = 72;
-const BACK_SIZE = 24; // kích thước gốc của icon Back (xuất file theo size này)
-
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: 130,
+    height: HEADER_HEIGHT,
     borderBottomLeftRadius: 22,
     borderBottomRightRadius: 22,
-    overflow: 'hidden',
+    overflow: 'hidden', // clips background to rounded corners
   },
-  bgImage: {
+  imageClip: {
     borderBottomLeftRadius: 22,
     borderBottomRightRadius: 22,
   },
-  row: {flex: 1, flexDirection: 'row', alignItems: 'center'},
+  topBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   sideSlot: {width: SIDE_WIDTH, alignItems: 'center', justifyContent: 'center'},
   centerSlot: {flex: 1, alignItems: 'center', justifyContent: 'center'},
   iconBtn: {
@@ -107,11 +132,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backIcon: {
-    width: BACK_SIZE,
-    height: BACK_SIZE,
-    // không tintColor để giữ pixel gốc của PNG
-  },
+  backIcon: {width: BACK_SIZE, height: BACK_SIZE},
   title: {
     fontSize: 20,
     fontWeight: '800',
