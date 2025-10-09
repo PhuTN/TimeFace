@@ -1,5 +1,3 @@
-
-
 export const ThemeModes = ["light", "dark"] as const;
 export type ThemeKey   = typeof ThemeModes[number];
 export type ThemeIndex = 0 | 1;
@@ -52,6 +50,8 @@ export const ThemePack = {
     secondary:  ["#E3F2FD", "#0D47A1"],
     border:     ["#EAEAEA", "#1F1F1F"],
     danger:     ["#E53935", "#EF5350"],
+    contrastBackground: ["#000000", "#FFFFFF"],
+    placeholder: ["#808080", "#808080"]
     // accent:     ["#FF8A00", "#FFB74D"], // ví dụ thêm 1 dòng
   },
   tokens: {
