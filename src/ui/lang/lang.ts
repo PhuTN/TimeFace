@@ -1,7 +1,5 @@
-
-
-export const LangCodes = ["vi", "en"] as const;
-export type LangCode  = typeof LangCodes[number];
+export const LangCodes = ['vi', 'en'] as const;
+export type LangCode = (typeof LangCodes)[number];
 export type LangIndex = 0 | 1;
 
 export function langToIndex(code: LangCode): LangIndex {
@@ -10,17 +8,17 @@ export function langToIndex(code: LangCode): LangIndex {
 
 // Các path hợp lệ: key top-level hoặc "theme.light"/"theme.dark"
 export type LangPath =
-  | keyof Omit<typeof Lang, "theme">
-  | `theme.${"light" | "dark"}`;
+  | keyof Omit<typeof Lang, 'theme'>
+  | `theme.${'light' | 'dark'}`;
 
 // t("hello", "vi") hoặc t("theme.light", 1)
 export function t(path: LangPath, lang: LangCode | LangIndex): string {
-  const idx: LangIndex = typeof lang === "number" ? lang : langToIndex(lang);
-  if (path.startsWith("theme.")) {
-    const key = path.split(".")[1] as "light" | "dark";
+  const idx: LangIndex = typeof lang === 'number' ? lang : langToIndex(lang);
+  if (path.startsWith('theme.')) {
+    const key = path.split('.')[1] as 'light' | 'dark';
     return Lang.theme[key][idx];
   }
-  const k = path as keyof Omit<typeof Lang, "theme">;
+  const k = path as keyof Omit<typeof Lang, 'theme'>;
 
   return Lang[k][idx];
 }
@@ -35,18 +33,43 @@ export function pickLanguage(code: LangCode) {
   };
 }
 
-
 // [0] = vi, [1] = en
 export const Lang = {
-  hello:   ["Xin chào", "Hello"],
-  logout:  ["Đăng xuất", "Logout"],
-  settings:["Cài đặt", "Settings"],
-  profile: ["Hồ sơ", "Profile"],   // <- thêm từ mới chỉ cần thêm 1 dòng ở đây
-  rank:    ["Xếp hạng", "Ranking"],
+  hello: ['Xin chào', 'Hello'],
+  logout: ['Đăng xuất', 'Logout'],
+  settings: ['Cài đặt', 'Settings'],
+  profile: ['Hồ sơ', 'Profile'], // <- thêm từ mới chỉ cần thêm 1 dòng ở đây
+  rank: ['Xếp hạng', 'Ranking'],
   theme: {
-    light: ["Chủ đề sáng", "Light theme"],
-    dark:  ["Chủ đề tối",  "Dark theme"],
+    light: ['Chủ đề sáng', 'Light theme'],
+    dark: ['Chủ đề tối', 'Dark theme'],
   },
+  requestCode: ['Mã đơn', 'Request code'],
+  createdAt: ['Ngày tạo đơn', 'Created at'],
+  time: ['Thời gian', 'Time'],
+  date: ['ngày', 'date'],
+  approved: ['Đã duyệt', 'Approved'],
+  rejected: ['Từ chối', 'Rejected'],
+  pending: ['Đang chờ', 'Pending'],
+  filterOptions: ['Tùy chọn lọc', 'Filter Options'],
+  employeeName: ['Tên nhân viên', 'Employee Name'],
+  position: ['Chức vụ', 'Position'],
+  department: ['Phòng ban', 'Department'],
+  status: ['Trạng thái', 'Status'],
+  createdDate: ['Ngày tạo phiếu', 'Created Date'],
+  otDate: ['Ngày OT', 'OT Date'],
+  sortBy: ['Sắp xếp bởi', 'Sort By'],
+  selectDepartment: ['Chọn phòng ban', 'Select Department'],
+  selectStatus: ['Chọn trạng thái', 'Select Status'],
+  selectDate: ['Chọn ngày', 'Select Date'],
+  selectSortBy: ['Chọn tiêu chí sắp xếp', 'Select Sort By'],
+  clearFilter: ['Xóa lọc', 'Clear Filter'],
+  applyFilter: ['Áp dụng lọc', 'Apply Filter'],
+  lateMinutes: ['Số phút đi trể', 'Late minutes'],
+  occupies: ['Chiếm', 'Occupies'],
+  shiftTime: ['thời gian ca làm việc', 'shift time'],
+  leaveReason: ['Xin nghỉ lý do', 'Leave reason'],
+} as const;
 
   //CommonScreen3
   employee_name_label:     ["Tên nhân viên", "Employee name"],
