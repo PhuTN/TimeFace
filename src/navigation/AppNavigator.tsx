@@ -11,6 +11,7 @@ import RankingMatchScreen from '../screens/RankingMatchScreen';
 import SettingScreen from '../screens/SettingScreen';
 import ThemeLanguageTester from '../components/test_ui/ThemeLanguageTester';
 import FaceDetectionScreen from '../screens/FaceDetectionScreen';
+import CommonScreen2 from '../screens/CommonScreen2';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -20,16 +21,18 @@ export type RootStackParamList = {
   Ranking: undefined;
   RankingMatch: undefined;
   Setting: undefined;
+  Facene: undefined;
+  CommonScreen2: undefined;
 };
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Home"
+        initialRouteName="CommonScreen2"
         screenOptions={{headerShown: false}}>
+        <Stack.Screen name="CommonScreen2" component={CommonScreen2} />
         <Stack.Screen name="Facene" component={FaceDetectionScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
       </Stack.Navigator>

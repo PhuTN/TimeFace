@@ -2,7 +2,7 @@ import React from 'react';
 import {View, Text, Image} from 'react-native';
 import type {Theme} from '../../ui/theme/theme';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
-import Chip from './Chip';
+import Chip from '../common/Chip';
 
 type RequestStatus = 'approved' | 'rejected' | 'pending';
 
@@ -46,7 +46,7 @@ const OTRequest: React.FC<OTRequestProps> = ({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 12,
+          paddingVertical: 8,
         }}>
         <Image
           source={avatarSource}
@@ -63,7 +63,6 @@ const OTRequest: React.FC<OTRequestProps> = ({
               fontSize: 18,
               fontWeight: 500,
               color: theme.colors.text,
-              marginBottom: 2,
             }}>
             {name}
           </Text>
@@ -90,8 +89,8 @@ const OTRequest: React.FC<OTRequestProps> = ({
       <View
         style={{
           marginVertical: 10,
-          paddingHorizontal: 6,
-          gap: 6,
+          paddingHorizontal: 4,
+          gap: 2,
         }}>
         <View>
           <Text style={{fontSize: 14, color: theme.colors.filterChipText}}>

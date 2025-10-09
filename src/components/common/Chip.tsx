@@ -36,7 +36,7 @@ const Chip: React.FC<ChipProps> = ({status, text}) => {
       style={{
         backgroundColor: bgColor,
         paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingVertical: 4,
         borderRadius: 5,
         marginRight: 8,
         shadowColor: '#000',
@@ -49,7 +49,7 @@ const Chip: React.FC<ChipProps> = ({status, text}) => {
       <Text
         style={{
           fontSize: 12,
-          fontWeight: 500,
+          fontWeight: 600,
           color: theme.colors.text,
         }}>
         {displayText}
