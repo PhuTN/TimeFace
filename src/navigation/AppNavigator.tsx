@@ -5,6 +5,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import HomeScreen from '../screens/HomeScreen';
 import ThemeLanguageTester from '../components/test_ui/ThemeLanguageTester';
 import FaceDetectionScreen from '../screens/FaceDetectionScreen';
+import CommonScreen2 from '../screens/CommonScreen2';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -14,8 +15,9 @@ export type RootStackParamList = {
   Ranking: undefined;
   RankingMatch: undefined;
   Setting: undefined;
+  Facene: undefined;
+  CommonScreen2: undefined;
 };
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
