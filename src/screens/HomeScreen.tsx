@@ -6,6 +6,8 @@ import {
   Text,
   View,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import AddButton from '../components/common/AddButton';
 import Footer from '../components/common/Footer';
 import Header from '../components/common/Header';
@@ -13,9 +15,13 @@ import {setUIState} from '../ui/factory/selector';
 import {useUIFactory} from '../ui/factory/useUIFactory';
 import BottomSheetModal from '../components/common/BottomSheetModal';
 import CommonScreen3 from './CommonScreen3';
+import type {RootStackParamList} from '../navigation/AppNavigator';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function HomeScreen() {
   const {loading, theme, lang} = useUIFactory();
+  const navigation = useNavigation<NavigationProp>();
   const [activeTab, setActiveTab] = useState<number>(2); // mặc định tab giữa
   const [showCommon3, setShowCommon3] = useState(false);
         
@@ -54,8 +60,9 @@ export default function HomeScreen() {
         <Button title="Tiếng Việt" onPress={() => setUIState({lang: 'vi'})} />
         <Button title="English" onPress={() => setUIState({lang: 'en'})} />
         <View style={{height: theme.spacing(2)}} />
-        {/* Mở CommonScreen3 dưới dạng modal */}
-      <Button title="CommonScreen3" onPress={() => setShowCommon3(true)} />
+        {/* Mở CommonScreen2 và CommonScreen3 dưới dạng modal */}
+      <Button title="CommonScreen2 (Filter Modals Demo)" onPress={() => navigation.navigate('CommonScreen2')} />
+      <Button title="CommonScreen3 (Leave Request Filter)" onPress={() => setShowCommon3(true)} />
 
       <BottomSheetModal visible={showCommon3} onClose={() => setShowCommon3(false)} maxHeightRatio={0.9}>
         <CommonScreen3 />

@@ -24,7 +24,8 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Home" screenOptions={{headerShown: false}}>
+        initialRouteName="CommonScreen2" screenOptions={{headerShown: false}}>
+          <Stack.Screen name="CommonScreen2" component={CommonScreen2} />
         <Stack.Screen name="Facene" component={FaceDetectionScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
       </Stack.Navigator>

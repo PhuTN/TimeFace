@@ -69,8 +69,6 @@ export const Lang = {
   occupies: ['Chiếm', 'Occupies'],
   shiftTime: ['thời gian ca làm việc', 'shift time'],
   leaveReason: ['Xin nghỉ lý do', 'Leave reason'],
-} as const;
-
   //CommonScreen3
   employee_name_label:     ["Tên nhân viên", "Employee name"],
   position_name_label:     ["Tên chức vụ", "Position name"],
