@@ -1,0 +1,31 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  pr:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc -v || true  # nếu bạn có tsconfig, đổi sang npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Build Android (assembleDebug)
+        working-directory: android
+        run: |
+          ./gradlew --no-daemon clean
+          ./gradlew --no-daemon assembleDebug
