@@ -1,0 +1,85 @@
+name: Deploy to Local Emulator on Merge
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    # Self-hosted runner cài ở mục 1, có label "android-emulator"
+    runs-on: self-hosted
+    labels: [ android-emulator ]  # đổi theo label của bạn
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install JS deps
+        run: npm ci
+
+      # Nếu dự án dùng Hermes/Release không cần Metro. Ở đây build Debug để cài nhanh.
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Ensure ANDROID_SDK_ROOT
+        run: |
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}"
+          adb version
+          sdkmanager --version || true
+
+      - name: Start Android emulator (headless)
+        env:
+          AVD_NAME: CI_emu
+        run: |
+          # kill mọi emulator cũ
+          adb kill-server || true
+          # boot avd
+          nohup emulator -avd "$AVD_NAME" -no-snapshot -no-boot-anim -gpu swiftshader_indirect -no-audio -no-window -no-accel >/dev/null 2>&1 &
+          # chờ thiết bị online
+          adb wait-for-device
+          # đợi boot hoàn tất
+          BOOT_COMPLETE=""
+          until [ "$BOOT_COMPLETE" = "1" ]; do
+            BOOT_COMPLETE=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+            sleep 2
+          done
+          # bật màn hình
+          adb shell input keyevent 82
+
+      - name: Build APK (Debug)
+        working-directory: android
+        run: |
+          ./gradlew --no-daemon clean
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Install APK to emulator
+        run: |
+          APK=$(ls android/app/build/outputs/apk/debug/app-debug.apk)
+          echo "Installing $APK"
+          adb install -r "$APK"
+
+      - name: Launch app
+        run: |
+          # thay bằng package/Activity thật của bạn
+          APP_ID=$(grep "applicationId" android/app/build.gradle | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "Detected appId: $APP_ID"
+          adb shell am start -n "$APP_ID/.MainActivity" || true
+
+      - name: Upload APK artifact (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Shutdown emulator
+        if: always()
+        run: |
+          adb emu kill || true
