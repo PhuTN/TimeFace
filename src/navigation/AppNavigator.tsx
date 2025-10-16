@@ -3,9 +3,9 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import HomeScreen from '../screens/HomeScreen';
-import ThemeLanguageTester from '../components/test_ui/ThemeLanguageTester';
+//import ThemeLanguageTester from '../components/test_ui/ThemeLanguageTester';
 import FaceDetectionScreen from '../screens/FaceDetectionScreen';
-import CommonScreen2 from '../screens/CommonScreen2';
+//import CommonScreen2 from '../screens/CommonScreen2';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -24,7 +24,8 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Home" screenOptions={{headerShown: false}}>
+        initialRouteName="Home"
+        screenOptions={{headerShown: false}}>
         <Stack.Screen name="Facene" component={FaceDetectionScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
       </Stack.Navigator>
