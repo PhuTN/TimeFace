@@ -37,8 +37,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { apiHandle } from '../api/apihandle';
-import { User } from '../api/endpoint/user';
+//import { apiHandle } from '../api/apihandle';
+//import { User } from '../api/endpoint/user';
 
 type FitState = 'ok' | 'tooSmall' | 'tooBig' | 'offCenter';
 
