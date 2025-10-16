@@ -35,23 +35,18 @@ jobs:
           adb version
           sdkmanager --version || true
 
-      - name: Start Android emulator (headless)
+      - name: Start Android emulator (with window)
+        shell: pwsh
         env:
           AVD_NAME: CI_emu
         run: |
-          # kill mọi emulator cũ
-          adb kill-server || true
-          # boot avd
-          nohup emulator -avd "$AVD_NAME" -no-snapshot -no-boot-anim -gpu swiftshader_indirect -no-audio -no-window -no-accel >/dev/null 2>&1 &
-          # chờ thiết bị online
+          adb kill-server 2>$null
+          & "$env:ANDROID_SDK_ROOT\emulator\emulator.exe" -avd "$env:AVD_NAME" -no-snapshot -no-boot-anim -gpu host -no-audio 2>$null &
           adb wait-for-device
-          # đợi boot hoàn tất
-          BOOT_COMPLETE=""
-          until [ "$BOOT_COMPLETE" = "1" ]; do
-            BOOT_COMPLETE=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
-            sleep 2
-          done
-          # bật màn hình
+          do {
+            $boot = (adb shell getprop sys.boot_completed | Out-String).Trim()
+            Start-Sleep -Seconds 2
+          } until ($boot -eq '1')
           adb shell input keyevent 82
 
       - name: Build APK (Debug)
