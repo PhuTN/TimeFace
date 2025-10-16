@@ -28,7 +28,7 @@ jobs:
           java-version: '17'
 
       - name: Ensure ANDROID_SDK_ROOT
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "ANDROID_SDK_ROOT=$env:ANDROID_SDK_ROOT"
           adb version
@@ -109,6 +109,6 @@ jobs:
 
       - name: Shutdown emulator
         if: always()
-        shell: pwsh
+        shell: powershell
         run: |
           try { adb emu kill } catch {}
