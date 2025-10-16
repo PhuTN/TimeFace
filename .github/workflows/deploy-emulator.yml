@@ -6,8 +6,7 @@ on:
 
 jobs:
   deploy:
-    # Self-hosted runner cài ở mục 1, có label "android-emulator"
-    runs-on: [self-hosted, android-emulator]
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v4
@@ -40,7 +39,13 @@ jobs:
           AVD_NAME: CI_emu
         run: |
           adb kill-server 2>$null
-          & "$env:ANDROID_SDK_ROOT\emulator\emulator.exe" -avd "$env:AVD_NAME" -no-snapshot -no-boot-anim -gpu host -no-audio 2>$null &
+          $emu = Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe'
+          Start-Process -FilePath $emu -ArgumentList @(
+            "-avd","$env:AVD_NAME",
+            "-no-snapshot","-no-boot-anim",
+            "-gpu","host", # nếu đen màn hình, thử angle_indirect hoặc swiftshader_indirect
+            "-no-audio"
+          )
           adb wait-for-device
           do {
             $boot = (adb shell getprop sys.boot_completed | Out-String).Trim()
