@@ -7,6 +7,9 @@ on:
 jobs:
   deploy:
     runs-on: self-hosted
+    defaults:
+      run:
+        shell: powershell    # ép mọi step dùng Windows PowerShell
     
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +36,6 @@ jobs:
           adb version
           sdkmanager --version
       - name: Start Android emulator (with window)
-        shell: pwsh
         env:
           AVD_NAME: CI_emu
         run: |
