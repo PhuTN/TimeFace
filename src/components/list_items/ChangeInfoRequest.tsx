@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, Image} from 'react-native';
-import type {Theme} from '../../ui/theme/theme';
+//import type {Theme} from '../../ui/theme/theme';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 import Chip from '../common/Chip';
 

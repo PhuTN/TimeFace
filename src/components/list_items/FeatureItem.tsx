@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text} from 'react-native';
 import {SvgXml} from 'react-native-svg';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 

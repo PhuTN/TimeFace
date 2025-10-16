@@ -1,5 +1,5 @@
-export const ThemeModes = ["light", "dark"] as const;
-export type ThemeKey   = typeof ThemeModes[number];
+export const ThemeModes = ['light', 'dark'] as const;
+export type ThemeKey = (typeof ThemeModes)[number];
 export type ThemeIndex = 0 | 1;
 
 export type Theme = {
@@ -61,14 +61,14 @@ export const ThemePack = {
     rejected: ['#FF4B4B', '#B22222'],
     pending: ['#D9FE54', '#FFD700'],
     mutedText: ['#666666', '#CCCCCC'],
-    background: ["#FFFFFF", "#000000"],
-    text:       ["#111111", "#FFFFFF"],
-    primary:    ["#1976d2", "#90CAF9"],
-    secondary:  ["#E3F2FD", "#0D47A1"],
-    border:     ["#EAEAEA", "#1F1F1F"],
-    danger:     ["#E53935", "#EF5350"],
-    contrastBackground: ["#000000", "#FFFFFF"],
-    placeholder: ["#808080", "#808080"]
+    background: ['#FFFFFF', '#000000'],
+    text: ['#111111', '#FFFFFF'],
+    primary: ['#1976d2', '#90CAF9'],
+    secondary: ['#E3F2FD', '#0D47A1'],
+    border: ['#EAEAEA', '#1F1F1F'],
+    danger: ['#E53935', '#EF5350'],
+    contrastBackground: ['#000000', '#FFFFFF'],
+    placeholder: ['#808080', '#808080'],
     // accent:     ["#FF8A00", "#FFB74D"], // ví dụ thêm 1 dòng
   },
   tokens: {

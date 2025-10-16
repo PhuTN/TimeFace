@@ -2,7 +2,7 @@ name: PR Checks
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   pr:
@@ -19,7 +19,7 @@ jobs:
         run: npm ci
 
       - name: Type check
-        run: npx tsc -v || true  # nếu bạn có tsconfig, đổi sang npx tsc --noEmit
+        run: npx tsc -v || true # nếu bạn có tsconfig, đổi sang npx tsc --noEmit
 
       - name: Lint
         run: npm run lint --if-present

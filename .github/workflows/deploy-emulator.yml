@@ -2,13 +2,13 @@ name: Deploy to Local Emulator on Merge
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   deploy:
     # Self-hosted runner cài ở mục 1, có label "android-emulator"
     runs-on: self-hosted
-    labels: [ android-emulator ]  # đổi theo label của bạn
+    labels: [android-emulator] # đổi theo label của bạn
 
     steps:
       - uses: actions/checkout@v4
