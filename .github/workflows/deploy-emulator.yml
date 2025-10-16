@@ -6,7 +6,10 @@ on:
 
 jobs:
   deploy:
-    runs-on: [self-hosted]   # + label nếu bạn có: [self-hosted, android-emulator]
+    runs-on: [self-hosted]  # hoặc [self-hosted, android-emulator] nếu bạn đã gán label
+    defaults:
+      run:
+        shell: powershell    # ép mọi step dùng Windows PowerShell
 
     steps:
       - uses: actions/checkout@v4
@@ -18,7 +21,6 @@ jobs:
           cache: 'npm'
 
       - name: Install JS deps
-        shell: pwsh
         run: npm ci
 
       - name: Setup Java
@@ -28,7 +30,6 @@ jobs:
           java-version: '17'
 
       - name: Ensure ANDROID_SDK_ROOT
-        shell: powershell
         run: |
           Write-Host "ANDROID_SDK_ROOT=$env:ANDROID_SDK_ROOT"
           adb version
@@ -40,7 +41,6 @@ jobs:
           }
 
       - name: Start Android emulator (with window)
-        shell: pwsh
         env:
           AVD_NAME: CI_emu
         run: |
@@ -48,7 +48,7 @@ jobs:
           $emu = Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe'
           if (-not (Test-Path $emu)) { throw "emulator.exe not found at $emu" }
 
-          # Mở emulator có cửa sổ; nếu đen màn hình, thử -gpu angle_indirect hoặc swiftshader_indirect
+          # Nếu đen màn hình khi dùng RDP, thử -gpu angle_indirect hoặc swiftshader_indirect
           Start-Process -FilePath $emu -ArgumentList @(
             "-avd","$env:AVD_NAME",
             "-no-snapshot","-no-boot-anim",
@@ -64,16 +64,14 @@ jobs:
           adb shell input keyevent 82
 
       - name: Build APK (Debug)
-        shell: pwsh
         run: |
           Push-Location android
           .\gradlew.bat --no-daemon clean
           .\gradlew.bat --no-daemon assembleDebug
           Pop-Location
 
-      # Nếu bạn KHÔNG bật bundleInDebug: true thì cần Metro + reverse 8081 (bỏ comment block sau)
+      # Nếu KHÔNG bật bundleInDebug: true thì cần bật Metro + reverse 8081
       # - name: Start Metro + reverse 8081
-      #   shell: pwsh
       #   run: |
       #     Start-Process -WindowStyle Hidden -FilePath "node" -ArgumentList "node_modules\react-native\cli.js","start","--port","8081"
       #     for ($i=0; $i -lt 60; $i++) {
@@ -86,20 +84,18 @@ jobs:
       #     adb reverse tcp:8081 tcp:8081
 
       - name: Install APK to emulator
-        shell: pwsh
         run: |
           $apk = Resolve-Path "android/app/build/outputs/apk/debug/app-debug.apk"
           Write-Host "Installing $apk"
           adb install -r "$apk"
 
       - name: Launch app
-        shell: pwsh
         run: |
           $gradle = Get-Content "android\app\build.gradle" -Raw
           $appId = [regex]::Match($gradle, 'applicationId\s+["'']([^"'']+)["'']').Groups[1].Value
           if (-not $appId) { throw "Cannot detect applicationId" }
           Write-Host "Detected appId: $appId"
-          adb shell am start -n "$appId/.MainActivity" || exit 0
+          adb shell am start -n "$appId/.MainActivity" | Out-String
 
       - name: Upload APK artifact (optional)
         uses: actions/upload-artifact@v4
@@ -109,6 +105,7 @@ jobs:
 
       - name: Shutdown emulator
         if: always()
-        shell: powershell
+        continue-on-error: true
         run: |
-          try { adb emu kill } catch {}
+          adb emu kill
+          if ($LASTEXITCODE -ne 0) { Write-Host "No emulator to kill; ignore"; exit 0 }
