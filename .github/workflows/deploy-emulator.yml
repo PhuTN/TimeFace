@@ -1,24 +1,14 @@
 name: Deploy to Local Emulator on Merge
-
 on:
   push:
     branches: [ main ]
 
 jobs:
   deploy:
-    runs-on: [self-hosted]           # bảo đảm runner chạy interactive (đang login), không phải dịch vụ headless
+    runs-on: [self-hosted] # hoặc [self-hosted, android-emulator] nếu bạn đã gán label
     defaults:
       run:
-        shell: powershell
-
-    env:
-      ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
-      ANDROID_AVD_HOME: C:\actions-runner\_work\avd-home   # thư mục AVD riêng, luôn có quyền ghi
-      AVD_NAME: CI_emu
-      AVD_DEVICE: pixel_5
-      AVD_SYSIMG: "system-images;android-34;google_apis;x86_64"
-      EMU_PORT: 5554
-
+        shell: powershell # ép mọi step dùng Windows PowerShell
     steps:
       - uses: actions/checkout@v4
 
@@ -31,62 +21,22 @@ jobs:
       - name: Install JS deps
         run: npm ci
 
-      - name: Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
 
-      - name: Android SDK sanity check
+      - name: Ensure ANDROID_SDK_ROOT
         run: |
-          Write-Host "SDK: $env:ANDROID_SDK_ROOT"
-          $pt = Join-Path $env:ANDROID_SDK_ROOT 'platform-tools'
-          $emu = Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe'
-          if (-not (Test-Path $pt)) { throw "platform-tools not found" }
-          if (-not (Test-Path $emu)) { throw "emulator.exe not found" }
-          $env:Path = "$pt;$env:Path"
+          Write-Host "ANDROID_SDK_ROOT=$env:ANDROID_SDK_ROOT"
           adb version
-          & (Join-Path $env:ANDROID_SDK_ROOT 'cmdline-tools\latest\bin\sdkmanager.bat') --version
-
-      - name: Install system image & create AVD (if missing)
-        run: |
           $sdkm = Join-Path $env:ANDROID_SDK_ROOT 'cmdline-tools\latest\bin\sdkmanager.bat'
-          $avdm = Join-Path $env:ANDROID_SDK_ROOT 'cmdline-tools\latest\bin\avdmanager.bat'
-          New-Item -ItemType Directory -Force -Path $env:ANDROID_AVD_HOME | Out-Null
-          & $sdkm --install "platform-tools" "platforms;android-34" $env:AVD_SYSIMG --sdk_root=$env:ANDROID_SDK_ROOT
-          $list = & $avdm list avd | Out-String
-          if ($list -notmatch [regex]::Escape($env:AVD_NAME)) {
-            & $avdm create avd --name $env:AVD_NAME --package $env:AVD_SYSIMG --device $env:AVD_DEVICE --force --sdcard 512M --abi x86_64
+          if (Test-Path $sdkm) {
+            & $sdkm --version
+          } else {
+            Write-Host "sdkmanager.bat not found (skipping)"
           }
-          & $avdm list avd
-
-      - name: Start emulator (headless, stable in CI)
-        run: |
-          adb kill-server
-          adb start-server
-          $env:Path = "$(Join-Path $env:ANDROID_SDK_ROOT 'platform-tools');$env:Path"
-          $emu = Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe'
-          # headless + swiftshader để tránh lỗi GPU/RDP
-          Start-Process -FilePath $emu -ArgumentList @(
-            "-avd",$env:AVD_NAME,
-            "-port",$env:EMU_PORT,
-            "-no-window","-no-boot-anim","-no-snapshot","-wipe-data",
-            "-gpu","swiftshader_indirect",
-            "-netdelay","none","-netspeed","full"
-          ) -PassThru | Out-Null
-
-          # Đợi emulator online & boot xong
-          adb wait-for-device
-          adb devices -l
-          # đợi property boot_completed và bootanimation tắt
-          $deadline = (Get-Date).AddMinutes(5)
-          do {
-            $boot = (adb -s emulator-$env:EMU_PORT shell getprop sys.boot_completed 2>$null | Out-String).Trim()
-            $anim = (adb -s emulator-$env:EMU_PORT shell getprop init.svc.bootanim 2>$null | Out-String).Trim()
-            Start-Sleep -Seconds 2
-            if ((Get-Date) -gt $deadline) { throw "Emulator boot timeout" }
-          } until ($boot -eq '1' -and $anim -eq 'stopped')
-          adb -s emulator-$env:EMU_PORT shell input keyevent 82
 
       - name: Build APK (Debug)
         run: |
@@ -95,21 +45,51 @@ jobs:
           .\gradlew.bat --no-daemon assembleDebug
           Pop-Location
 
-      - name: Install APK to emulator
+      # Gộp các bước khởi động máy ảo, cài đặt và chạy app vào MỘT step duy nhất
+      - name: Start Emulator, Install & Launch App
+        env:
+          AVD_NAME: CI_emu
         run: |
-          $env:Path = "$(Join-Path $env:ANDROID_SDK_ROOT 'platform-tools');$env:Path"
-          adb devices -l
+          # --- 1. Khởi động Emulator ---
+          Write-Host "##[group]Starting Android emulator"
+          adb kill-server 2>$null
+          $emu = Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe'
+          if (-not (Test-Path $emu)) { throw "emulator.exe not found at $emu" }
+          
+          Start-Process -FilePath $emu -ArgumentList @(
+            "-avd","$env:AVD_NAME",
+            "-no-snapshot","-no-boot-anim",
+            "-gpu","host",
+            "-no-audio"
+          )
+          
+          adb wait-for-device
+          do {
+            $boot = (adb shell getprop sys.boot_completed | Out-String).Trim()
+            Write-Host "Waiting for boot... (sys.boot_completed = $boot)"
+            Start-Sleep -Seconds 2
+          } until ($boot -eq '1')
+          
+          adb shell input keyevent 82
+          Write-Host "Emulator booted successfully. Connected devices:"
+          adb devices # Kiểm tra xem adb có thấy thiết bị không
+          Write-Host "##[endgroup]"
+
+          # --- 2. Cài đặt APK ---
+          Write-Host "##[group]Installing APK"
           $apk = Resolve-Path "android/app/build/outputs/apk/debug/app-debug.apk"
           Write-Host "Installing $apk"
-          adb -s emulator-$env:EMU_PORT install -r "$apk"
+          adb install -r "$apk"
+          Write-Host "##[endgroup]"
 
-      - name: Launch app
-        run: |
+          # --- 3. Khởi chạy App ---
+          Write-Host "##[group]Launching App"
           $gradle = Get-Content "android\app\build.gradle" -Raw
           $appId = [regex]::Match($gradle, 'applicationId\s+["'']([^"'']+)["'']').Groups[1].Value
           if (-not $appId) { throw "Cannot detect applicationId" }
           Write-Host "Detected appId: $appId"
-          adb -s emulator-$env:EMU_PORT shell am start -n "$appId/.MainActivity" | Out-String
+          adb shell am start -n "$appId/.MainActivity" | Out-String
+          Write-Host "##[endgroup]"
 
       - name: Upload APK artifact (optional)
         uses: actions/upload-artifact@v4
@@ -121,4 +101,5 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          adb -s emulator-$env:EMU_PORT emu kill
+          adb emu kill
+          if ($LASTEXITCODE -ne 0) { Write-Host "No emulator to kill; ignore"; exit 0 }
