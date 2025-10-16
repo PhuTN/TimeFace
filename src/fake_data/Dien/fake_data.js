@@ -24,3 +24,5 @@ export function makeSortingOptions(lang) {
     label: lang.t(`sort_${v}`), // ví dụ: sort_created_desc
   }));
 }
+
+//Test CI/CD
