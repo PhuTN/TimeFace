@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,9 +17,9 @@ import {
   useCameraDevice,
   useCameraPermission,
 } from 'react-native-vision-camera';
-import {useIsFocused} from '@react-navigation/native';
-import {useAppState} from '@react-native-community/hooks';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
+import { useAppState } from '@react-native-community/hooks';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   Camera,
   Face,
@@ -29,7 +29,7 @@ import {
 } from 'react-native-vision-camera-face-detector';
 
 // Canvas & Path để vẽ elip
-import {Canvas, Path, Skia, ClipOp, TileMode} from '@shopify/react-native-skia';
+import { Canvas, Path, Skia, ClipOp, TileMode } from '@shopify/react-native-skia';
 
 import Animated, {
   useAnimatedStyle,
@@ -37,8 +37,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/user';
+import { apiHandle } from '../api/apihandle';
+import { User } from '../api/endpoint/user';
 
 type FitState = 'ok' | 'tooSmall' | 'tooBig' | 'offCenter';
 
@@ -47,8 +47,8 @@ type Verdict = 'unknown' | 'likely_paper_or_screen' | 'likely_real';
 // ============================================
 
 function FaceDetection() {
-  const {width, height} = useWindowDimensions();
-  const {hasPermission, requestPermission} = useCameraPermission();
+  const { width, height } = useWindowDimensions();
+  const { hasPermission, requestPermission } = useCameraPermission();
 
   // --- State/refs cho gallery & chụp tự động ---
   const [photos, setPhotos] = useState<string[]>([]);
@@ -86,17 +86,17 @@ function FaceDetection() {
     position: 'absolute',
     borderWidth: 2,
     borderColor: 'rgba(0,255,0,0.35)',
-    width: withTiming(aFaceW.value, {duration: 80}),
-    height: withTiming(aFaceH.value, {duration: 80}),
-    left: withTiming(aFaceX.value, {duration: 80}),
-    top: withTiming(aFaceY.value, {duration: 80}),
-    transform: [{rotate: `${aRot.value}deg`}],
+    width: withTiming(aFaceW.value, { duration: 80 }),
+    height: withTiming(aFaceH.value, { duration: 80 }),
+    left: withTiming(aFaceX.value, { duration: 80 }),
+    top: withTiming(aFaceY.value, { duration: 80 }),
+    transform: [{ rotate: `${aRot.value}deg` }],
   }));
 
   useEffect(() => {
-    if (!hasPermission) {requestPermission();}
+    if (!hasPermission) { requestPermission(); }
     return () => {
-      if (captureTimeout.current) {clearTimeout(captureTimeout.current);}
+      if (captureTimeout.current) { clearTimeout(captureTimeout.current); }
     };
   }, [hasPermission, requestPermission]);
 
@@ -151,8 +151,8 @@ function FaceDetection() {
   function estimateYawApprox(face: Face): number {
     const left = face.contours?.LEFT_EYE?.points?.[0];
     const right = face.contours?.RIGHT_EYE?.points?.[3];
-    if (left && right) {return right.x - left.x;}
-    const {x, width: bw} = face.bounds;
+    if (left && right) { return right.x - left.x; }
+    const { x, width: bw } = face.bounds;
     return x + bw * 0.6 - (x + bw * 0.4);
   }
 
@@ -161,7 +161,7 @@ function FaceDetection() {
     meanCurvature: number;
   } {
     const pts = contours?.FACE?.points || [];
-    if (pts.length < 12) {return {straightRatio: 0, meanCurvature: 1.0};}
+    if (pts.length < 12) { return { straightRatio: 0, meanCurvature: 1.0 }; }
 
     let straightLen = 0,
       totalLen = 0,
@@ -176,7 +176,7 @@ function FaceDetection() {
       const dot = abx * cbx + aby * cby;
       const la = Math.hypot(abx, aby);
       const lc = Math.hypot(cbx, cby);
-      if (la * lc === 0) {return 0;}
+      if (la * lc === 0) { return 0; }
       let cos = dot / (la * lc);
       cos = Math.max(-1, Math.min(1, cos));
       return Math.acos(cos);
@@ -193,8 +193,7 @@ function FaceDetection() {
       const curvature = Math.abs(Math.PI - ang);
       curvSum += curvature;
       curvCnt++;
-      if (segLen > STRAIGHT_SEG_MIN && curvature < STRAIGHTNESS_THR)
-        {straightLen += segLen;}
+      if (segLen > STRAIGHT_SEG_MIN && curvature < STRAIGHTNESS_THR) { straightLen += segLen; }
     }
     return {
       straightRatio: totalLen > 0 ? straightLen / totalLen : 0,
@@ -204,14 +203,13 @@ function FaceDetection() {
 
   function pushVote(spoofLike: boolean) {
     voteBuf.current.push(spoofLike ? 1 : 0);
-    if (voteBuf.current.length > VOTE_WINDOW) {voteBuf.current.shift();}
+    if (voteBuf.current.length > VOTE_WINDOW) { voteBuf.current.shift(); }
     const sum = voteBuf.current.reduce((a, b) => a + b, 0);
     if (voteBuf.current.length >= Math.min(VOTE_WINDOW, 6)) {
-      if (sum >= SPOOF_VOTE_THR) {setVerdict('likely_paper_or_screen');}
-      else if (sum <= voteBuf.current.length - SPOOF_VOTE_THR)
-        {setVerdict('likely_real');}
-      else {setVerdict('unknown');}
-    } else {setVerdict('unknown');}
+      if (sum >= SPOOF_VOTE_THR) { setVerdict('likely_paper_or_screen'); }
+      else if (sum <= voteBuf.current.length - SPOOF_VOTE_THR) { setVerdict('likely_real'); }
+      else { setVerdict('unknown'); }
+    } else { setVerdict('unknown'); }
   }
   // ============================================================
 
@@ -224,18 +222,17 @@ function FaceDetection() {
     yaw: number;
     cx: number;
     cy: number;
-    pts: {x: number; y: number}[];
+    pts: { x: number; y: number }[];
   };
   const landBuf = useRef<LandTrack[]>([]);
   const planarVotesBuf = useRef<number[]>([]);
   function pushPlanarVote(isPlanar: boolean) {
     planarVotesBuf.current.push(isPlanar ? 1 : 0);
-    if (planarVotesBuf.current.length > VOTE_WINDOW)
-      {planarVotesBuf.current.shift();}
+    if (planarVotesBuf.current.length > VOTE_WINDOW) { planarVotesBuf.current.shift(); }
   }
   function collectFacePoints(contours?: Contours) {
-    const res: {x: number; y: number}[] = [];
-    if (!contours) {return res;}
+    const res: { x: number; y: number }[] = [];
+    if (!contours) { return res; }
     const keys: (keyof Contours)[] = [
       'FACE',
       'LEFT_EYE',
@@ -250,16 +247,16 @@ function FaceDetection() {
     ];
     keys.forEach(k => {
       const pts = contours[k]?.points || [];
-      for (let i = 0; i < pts.length; i++) {res.push({x: pts[i].x, y: pts[i].y});}
+      for (let i = 0; i < pts.length; i++) { res.push({ x: pts[i].x, y: pts[i].y }); }
     });
     return res;
   }
   function affineRmse(
-    pointsP: {x: number; y: number}[],
-    pointsQ: {x: number; y: number}[],
+    pointsP: { x: number; y: number }[],
+    pointsQ: { x: number; y: number }[],
   ) {
     const n = Math.min(pointsP.length, pointsQ.length);
-    if (n < 8) {return {rmse: 1e9};}
+    if (n < 8) { return { rmse: 1e9 }; }
     const X: number[][] = [],
       b: number[] = [];
     for (let i = 0; i < n; i++) {
@@ -270,12 +267,14 @@ function FaceDetection() {
       b.push(q.x, q.y);
     }
     const Xt = X[0].map((_, j) => X.map(r => r[j]));
-    const XtX = Xt.map(r => Array(Xt[0].length).fill(0));
-    for (let i = 0; i < Xt.length; i++)
-      {for (let k = 0; k < X.length; k++) {
+    //const XtX = Xt.map(r => Array(Xt[0].length).fill(0));
+    const XtX = Array.from({ length: Xt.length }, () => Array(Xt[0].length).fill(0));
+    for (let i = 0; i < Xt.length; i++) {
+      for (let k = 0; k < X.length; k++) {
         const aik = Xt[i][k];
-        for (let j = 0; j < Xt[0].length; j++) {XtX[i][j] += aik * X[k][j];}
-      }}
+        for (let j = 0; j < Xt[0].length; j++) { XtX[i][j] += aik * X[k][j]; }
+      }
+    }
     const Xtb = Xt.map(row => row.reduce((s, ai, i) => s + ai * b[i], 0));
     function solve6(A: number[][], y: number[]) {
       const n = 6,
@@ -283,29 +282,29 @@ function FaceDetection() {
         v = y.slice();
       for (let i = 0; i < n; i++) {
         let piv = i;
-        for (let r = i + 1; r < n; r++)
-          {if (Math.abs(M[r][i]) > Math.abs(M[piv][i])) {piv = r;}}
-        if (Math.abs(M[piv][i]) < 1e-8) {return null;}
+        for (let r = i + 1; r < n; r++) { if (Math.abs(M[r][i]) > Math.abs(M[piv][i])) { piv = r; } }
+        if (Math.abs(M[piv][i]) < 1e-8) { return null; }
         if (piv !== i) {
           [M[i], M[piv]] = [M[piv], M[i]];
           [v[i], v[piv]] = [v[piv], v[i]];
         }
         const d = M[i][i];
-        for (let j = i; j < n; j++) {M[i][j] /= d;}
+        for (let j = i; j < n; j++) { M[i][j] /= d; }
         v[i] /= d;
-        for (let r = 0; r < n; r++)
-          {if (r !== i) {
+        for (let r = 0; r < n; r++) {
+          if (r !== i) {
             const f = M[r][i];
             if (f !== 0) {
-              for (let j = i; j < n; j++) {M[r][j] -= f * M[i][j];}
+              for (let j = i; j < n; j++) { M[r][j] -= f * M[i][j]; }
               v[r] -= f * v[i];
             }
-          }}
+          }
+        }
       }
       return v;
     }
     const a = solve6(XtX, Xtb);
-    if (!a) {return {rmse: 1e9};}
+    if (!a) { return { rmse: 1e9 }; }
     let se = 0;
     for (let i = 0; i < n; i++) {
       const p = pointsP[i],
@@ -314,7 +313,7 @@ function FaceDetection() {
       const y2 = a[3] * p.x + a[4] * p.y + a[5];
       se += (x2 - q.x) * (x2 - q.x) + (y2 - q.y) * (y2 - q.y);
     }
-    return {rmse: Math.sqrt(se / n)};
+    return { rmse: Math.sqrt(se / n) };
   }
   // === end Added v2 ===
 
@@ -323,7 +322,7 @@ function FaceDetection() {
   const BLINK_MIN_DURATION = 1;
   const BLINK_WINDOW_MS = 6000;
   const blinkEvents = useRef<number[]>([]);
-  const lastEyeState = useRef<{l: boolean; r: boolean; count: number}>({
+  const lastEyeState = useRef<{ l: boolean; r: boolean; count: number }>({
     l: true,
     r: true,
     count: 0,
@@ -344,47 +343,47 @@ function FaceDetection() {
     width: number;
     height: number;
   }): FitState {
-    const {x, y, width: bw, height: bh} = bounds;
+    const { x, y, width: bw, height: bh } = bounds;
     const k = ELLIPSE_MARGIN;
     const rx2 = GUIDE_RX * k * (GUIDE_RX * k);
     const ry2 = GUIDE_RY * k * (GUIDE_RY * k);
 
     const points = [
-      {px: x, py: y},
-      {px: x + bw, py: y},
-      {px: x, py: y + bh},
-      {px: x + bw, py: y + bh},
-      {px: x + bw / 2, py: y},
-      {px: x + bw / 2, py: y + bh},
-      {px: x, py: y + bh / 2},
-      {px: x + bw, py: y + bh / 2},
+      { px: x, py: y },
+      { px: x + bw, py: y },
+      { px: x, py: y + bh },
+      { px: x + bw, py: y + bh },
+      { px: x + bw / 2, py: y },
+      { px: x + bw / 2, py: y + bh },
+      { px: x, py: y + bh / 2 },
+      { px: x + bw, py: y + bh / 2 },
     ];
 
-    const insideAll = points.every(({px, py}) => {
+    const insideAll = points.every(({ px, py }) => {
       const dx = px - GUIDE_CX;
       const dy = py - GUIDE_CY;
       return (dx * dx) / rx2 + (dy * dy) / ry2 <= 1.0;
     });
-    if (!insideAll) {return 'offCenter';}
+    if (!insideAll) { return 'offCenter'; }
 
     const tooSmall = bw < GUIDE_RX * MIN_FILL || bh < GUIDE_RY * MIN_FILL;
-    if (tooSmall) {return 'tooSmall';}
+    if (tooSmall) { return 'tooSmall'; }
     const tooBig = bw > GUIDE_RX * MAX_FILL || bh > GUIDE_RY * MAX_FILL;
-    if (tooBig) {return 'tooBig';}
+    if (tooBig) { return 'tooBig'; }
 
     const faceCX = x + bw / 2;
     const faceCY = y + bh / 2;
     const nx = (faceCX - GUIDE_CX) / GUIDE_RX;
     const ny = (faceCY - GUIDE_CY) / GUIDE_RY;
     const centerOk = nx * nx + ny * ny <= 0.8 * 0.8;
-    if (!centerOk) {return 'offCenter';}
+    if (!centerOk) { return 'offCenter'; }
 
     return 'ok';
   }
 
   async function tryAutoCapture() {
-    if (captureLock.current) {return;}
-    if (!camera.current) {return;}
+    if (captureLock.current) { return; }
+    if (!camera.current) { return; }
 
     try {
       captureLock.current = true;
@@ -392,11 +391,11 @@ function FaceDetection() {
         qualityPrioritization: 'balanced',
         skipMetadata: false,
       });
-      if (photo?.path) {setPhotos(prev => [photo.path, ...prev]);}
+      if (photo?.path) { setPhotos(prev => [photo.path, ...prev]); }
     } catch (e) {
       console.warn('takePhoto failed', e);
     } finally {
-      if (captureTimeout.current) {clearTimeout(captureTimeout.current);}
+      if (captureTimeout.current) { clearTimeout(captureTimeout.current); }
       captureTimeout.current = setTimeout(() => {
         captureLock.current = false;
       }, 1500);
@@ -404,6 +403,7 @@ function FaceDetection() {
   }
 
   function handleFacesDetected(faces: Face[], frame: Frame): void {
+    void frame;
     if (faces.length <= 0) {
       aFaceW.value = 0;
       aFaceH.value = 0;
@@ -422,8 +422,8 @@ function FaceDetection() {
     }
 
     const face = faces[0];
-    const {bounds, contours} = face;
-    const {width: bw, height: bh, x, y} = bounds;
+    const { bounds, contours } = face;
+    const { width: bw, height: bh, x, y } = bounds;
 
     // vẽ khung chữ nhật
     aFaceW.value = bw;
@@ -432,7 +432,7 @@ function FaceDetection() {
     aFaceY.value = y;
 
     // 1) Flat-edge
-    const {straightRatio, meanCurvature} = faceEdgeStraightness(contours);
+    const { straightRatio, meanCurvature } = faceEdgeStraightness(contours);
     const flatEdge =
       straightRatio >= STRAIGHT_SEG_RATIO &&
       meanCurvature < STRAIGHTNESS_THR * 2.5;
@@ -460,7 +460,7 @@ function FaceDetection() {
     if (prev) {
       const prevArea = prev.w * prev.h;
       const areaChange = Math.abs(area - prevArea) / Math.max(area, prevArea);
-      if (areaChange <= PARALLAX_AREA_STABLE) {parallaxLooks2D = true;}
+      if (areaChange <= PARALLAX_AREA_STABLE) { parallaxLooks2D = true; }
     }
 
     buf.push({
@@ -474,7 +474,7 @@ function FaceDetection() {
       roll,
       ratio,
     });
-    if (buf.length > 40) {buf.shift();}
+    if (buf.length > 40) { buf.shift(); }
 
     // 3) Planarity (affine fit)
     const currPts = collectFacePoints(contours);
@@ -495,8 +495,8 @@ function FaceDetection() {
           );
       if (prevL && prevL.pts.length >= 12) {
         const n = Math.min(prevL.pts.length, currPts.length);
-        const {rmse} = affineRmse(prevL.pts.slice(0, n), currPts.slice(0, n));
-        if (rmse <= PLANAR_RMSE_THR) {isPlanarNow = true;}
+        const { rmse } = affineRmse(prevL.pts.slice(0, n), currPts.slice(0, n));
+        if (rmse <= PLANAR_RMSE_THR) { isPlanarNow = true; }
         pushPlanarVote(isPlanarNow);
       }
       landBuf.current.push({
@@ -506,7 +506,7 @@ function FaceDetection() {
         cy,
         pts: currPts.slice(0, 160),
       });
-      if (landBuf.current.length > 24) {landBuf.current.shift();}
+      if (landBuf.current.length > 24) { landBuf.current.shift(); }
     }
 
     // Pose/Aspect rigidity
@@ -533,7 +533,7 @@ function FaceDetection() {
       rigidRatio2D = moved && ratioVar < RATIO_VAR_THR;
     }
     function variance(arr: number[]) {
-      if (!arr.length) {return 0;}
+      if (!arr.length) { return 0; }
       const m = arr.reduce((a, b) => a + b, 0) / arr.length;
       return arr.reduce((s, v) => s + (v - m) * (v - m), 0) / arr.length;
     }
@@ -558,7 +558,7 @@ function FaceDetection() {
     } else {
       if (lastEyeState.current.count >= BLINK_MIN_DURATION) {
         blinkEvents.current.push(now);
-        if (blinkEvents.current.length > 10) {blinkEvents.current.shift();}
+        if (blinkEvents.current.length > 10) { blinkEvents.current.shift(); }
       }
       lastEyeState.current.count = 0;
     }
@@ -578,12 +578,10 @@ function FaceDetection() {
     const planarVotes = planarVotesBuf.current.reduce((a, b) => a + b, 0);
     setDebugInfo(
       `straight=${straightRatio.toFixed(2)} curv=${meanCurvature.toFixed(3)} ` +
-        `yaw=${yaw.toFixed(1)} parallax2D=${
-          parallaxLooks2D ? 1 : 0
-        } planarVotes=${planarVotes} ` +
-        `rigidPose=${rigidPose2D ? 1 : 0} rigidRatio=${
-          rigidRatio2D ? 1 : 0
-        } blink=${hasRecentBlink ? 1 : 0}`,
+      `yaw=${yaw.toFixed(1)} parallax2D=${parallaxLooks2D ? 1 : 0
+      } planarVotes=${planarVotes} ` +
+      `rigidPose=${rigidPose2D ? 1 : 0} rigidRatio=${rigidRatio2D ? 1 : 0
+      } blink=${hasRecentBlink ? 1 : 0}`,
     );
 
     // đánh giá trạng thái khớp elip
@@ -620,9 +618,9 @@ function FaceDetection() {
   // Skia (tuỳ chọn – giữ phần blur/viền như ví dụ gốc)
   function handleSkiaActions(faces: Face[], frame: DrawableFrame): void {
     'worklet';
-    if (faces.length <= 0) {return;}
+    if (faces.length <= 0) { return; }
 
-    const {bounds, contours /*, landmarks*/} = faces[0];
+    const { bounds, contours /*, landmarks*/ } = faces[0];
 
     const blurRadius = 20;
     const blurFilter = Skia.ImageFilter.MakeBlur(
@@ -641,8 +639,8 @@ function FaceDetection() {
     ];
     necessaryContours.map(key => {
       contours?.[key]?.map((point, index) => {
-        if (index === 0) {contourPath.moveTo(point.x, point.y);}
-        else {contourPath.lineTo(point.x, point.y);}
+        if (index === 0) { contourPath.moveTo(point.x, point.y); }
+        else { contourPath.lineTo(point.x, point.y); }
       });
       contourPath.close();
     });
@@ -660,22 +658,22 @@ function FaceDetection() {
 
   const clearAllPhotos = () => setPhotos([]);
 
-  async function hello() {
-    await apiHandle
-      .callApi(User.GetAll, {page: 1, pageSize: 20})
-      .response((status, res) => {
-        if (!status.isError) {
-          console.log('Users:', res);
-        }
-      });
-  }
+  // async function hello() {
+  //   await apiHandle
+  //     .callApi(User.GetAll, {page: 1, pageSize: 20})
+  //     .response((status, res) => {
+  //       if (!status.isError) {
+  //         console.log('Users:', res);
+  //       }
+  //     });
+  // }
 
   return (
     <>
       <View
         style={[
           StyleSheet.absoluteFill,
-          {alignItems: 'center', justifyContent: 'center'},
+          { alignItems: 'center', justifyContent: 'center' },
         ]}>
         {hasPermission && cameraDevice ? (
           <>
@@ -703,7 +701,7 @@ function FaceDetection() {
                 {/* Overlay: khung elip hướng dẫn */}
                 <View
                   pointerEvents="none"
-                  style={[styles.guideContainer, {width, height}]}>
+                  style={[styles.guideContainer, { width, height }]}>
                   <Canvas style={StyleSheet.absoluteFill}>
                     {(() => {
                       const rect = Skia.XYWHRect(
@@ -718,10 +716,10 @@ function FaceDetection() {
                         fitState === 'ok'
                           ? 'rgba(0,255,0,0.95)'
                           : fitState === 'tooSmall'
-                          ? 'rgba(255,200,0,0.95)'
-                          : fitState === 'tooBig'
-                          ? 'rgba(255,100,0,0.95)'
-                          : 'rgba(255,255,255,0.95)';
+                            ? 'rgba(255,200,0,0.95)'
+                            : fitState === 'tooBig'
+                              ? 'rgba(255,100,0,0.95)'
+                              : 'rgba(255,255,255,0.95)';
                       return (
                         <Path
                           path={path}
@@ -758,14 +756,14 @@ function FaceDetection() {
                           fontWeight: '700',
                           color: '#fff',
                           textShadowColor: 'rgba(0,0,0,0.4)',
-                          textShadowOffset: {width: 0, height: 1},
+                          textShadowOffset: { width: 0, height: 1 },
                           textShadowRadius: 2,
                         },
                         verdict === 'likely_paper_or_screen'
-                          ? {backgroundColor: 'rgba(200,0,0,0.85)'}
+                          ? { backgroundColor: 'rgba(200,0,0,0.85)' }
                           : verdict === 'likely_real'
-                          ? {backgroundColor: 'rgba(0,150,0,0.85)'}
-                          : {backgroundColor: 'rgba(120,120,120,0.85)'},
+                            ? { backgroundColor: 'rgba(0,150,0,0.85)' }
+                            : { backgroundColor: 'rgba(120,120,120,0.85)' },
                       ]}>
                       {verdict === 'likely_paper_or_screen' &&
                         '⚠️ Nghi là ảnh/màn hình đặt trước camera'}
@@ -839,8 +837,8 @@ function FaceDetection() {
           keyExtractor={(uri, idx) => `${uri}-${idx}`}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{paddingHorizontal: 12}}
-          renderItem={({item}) => (
+          contentContainerStyle={{ paddingHorizontal: 12 }}
+          renderItem={({ item }) => (
             <TouchableOpacity activeOpacity={0.8} style={styles.thumbWrap}>
               <Image
                 source={{
@@ -898,7 +896,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: {width: 0, height: 1},
+    textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   bannerPaused: {
@@ -918,7 +916,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: 'white',
   },
-  galleryBar: {position: 'absolute', left: 0, right: 0, bottom: 110},
+  galleryBar: { position: 'absolute', left: 0, right: 0, bottom: 110 },
   galleryHeader: {
     paddingHorizontal: 12,
     marginBottom: 6,
@@ -930,7 +928,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: {width: 0, height: 1},
+    textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   thumbWrap: {
@@ -941,8 +939,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
     backgroundColor: '#00000055',
   },
-  thumb: {width: '100%', height: '100%'},
-  emptyText: {color: '#fff', opacity: 0.9},
+  thumb: { width: '100%', height: '100%' },
+  emptyText: { color: '#fff', opacity: 0.9 },
   controls: {
     position: 'absolute',
     bottom: 20,
