@@ -7,8 +7,7 @@ on:
 jobs:
   deploy:
     # Self-hosted runner cài ở mục 1, có label "android-emulator"
-    runs-on: self-hosted
-    labels: [ android-emulator ]  # đổi theo label của bạn
+    runs-on: [self-hosted, android-emulator]
 
     steps:
       - uses: actions/checkout@v4
