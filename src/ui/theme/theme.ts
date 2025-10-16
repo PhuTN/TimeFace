@@ -1,5 +1,5 @@
 export const ThemeModes = ["light", "dark"] as const;
-export type ThemeKey   = typeof ThemeModes[number];
+export type ThemeKey = typeof ThemeModes[number];
 export type ThemeIndex = 0 | 1;
 
 export type Theme = {
@@ -45,18 +45,21 @@ export function pickTheme(mode: ThemeKey): Theme {
 export const ThemePack = {
   colors: {
     background: ["#FFFFFF", "#000000"],
-    text:       ["#111111", "#FFFFFF"],
-    primary:    ["#1976d2", "#90CAF9"],
-    secondary:  ["#E3F2FD", "#0D47A1"],
-    border:     ["#EAEAEA", "#1F1F1F"],
-    danger:     ["#E53935", "#EF5350"],
+    text: ["#111111", "#FFFFFF"],
+    primary: ["#1976d2", "#90CAF9"],
+    secondary: ["#E3F2FD", "#0D47A1"],
+    border: ["#EAEAEA", "#1F1F1F"],
+    danger: ["#E53935", "#EF5350"],
     contrastBackground: ["#000000", "#FFFFFF"],
-    placeholder: ["#808080", "#808080"]
+    placeholder: ["#808080", "#808080"],
+    active: ["#54FE70", "#54FE70"],
+    inactive: ["#FE5454", "#FE5454"],
+    waiting: ["#FEE254", "#FEE254"]
     // accent:     ["#FF8A00", "#FFB74D"], // ví dụ thêm 1 dòng
   },
   tokens: {
     spacingBase: [8, 8],
-    radius:      [12, 12],
+    radius: [12, 12],
     // elevation:   [2, 6], // ví dụ thêm 1 dòng
   },
 } as const;

@@ -134,6 +134,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheet: {
+    backgroundColor: '#fff',
     paddingBottom: Platform.select({ ios: 24, android: 16 }),
   },
 //   grabberWrap: {
