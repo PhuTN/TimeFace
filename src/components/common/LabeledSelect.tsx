@@ -5,7 +5,7 @@ import {
 import type { Option } from "../../types/common";
 
 type Props = {
-    label: string;
+    label?: string;
     selected: Option;
     options: Option[];
     onSelect: (o: Option) => void;
@@ -18,7 +18,8 @@ const LabeledSelect: React.FC<Props> = ({ label, selected, options, onSelect, th
 
     return (
         <View style={S.field}>
-            <Text style={S.label}>{label}</Text>
+            {/* CHỈ render label khi có nội dung */}
+            {label ? <Text style={S.label}>{label}</Text> : null}
             <TouchableOpacity style={[S.inputBox, S.selectBox]} onPress={() => setOpen(true)} activeOpacity={0.7}>
                 <Text style={[S.input, { color: theme.colors.text }]} numberOfLines={1}>
                     {selected.label}

@@ -1,10 +1,13 @@
 import React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import HomeScreen from '../screens/HomeScreen';
 import ThemeLanguageTester from '../components/test_ui/ThemeLanguageTester';
 import FaceDetectionScreen from '../screens/FaceDetectionScreen';
+import DepartmentManagementScreen from '../screens/DepartmentManagementScreen';
+import EmployeeManagementScreen from '../screens/EmployeeManagementScreen';
+import DepartmentDetailScreen from '../screens/DepartmentDetailScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -14,6 +17,9 @@ export type RootStackParamList = {
   Ranking: undefined;
   RankingMatch: undefined;
   Setting: undefined;
+  DepartmentManagement: undefined;
+  DepartmentDetail: { departmentDetail: any } | undefined;
+  EmployeeManagement: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -22,9 +28,12 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Home" screenOptions={{headerShown: false}}>
+        initialRouteName="Facene" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Facene" component={FaceDetectionScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="DepartmentManagement" component={DepartmentManagementScreen} />
+        <Stack.Screen name="DepartmentDetail" component={DepartmentDetailScreen} />
+        <Stack.Screen name="EmployeeManagement" component={EmployeeManagementScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -37,7 +37,7 @@ const themedStyles = (theme: any) =>
       backgroundColor: theme.colors.background,
       borderRadius: 14,
       paddingHorizontal: 14,
-      paddingVertical: 14,
+      paddingVertical: 5,
       minHeight: 48,
       justifyContent: "center",
     },
