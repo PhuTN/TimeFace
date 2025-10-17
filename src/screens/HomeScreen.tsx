@@ -15,7 +15,6 @@ import { useUIFactory } from '../ui/factory/useUIFactory';
 export default function HomeScreen() {
   const { loading, theme, lang } = useUIFactory();
   const [activeTab, setActiveTab] = useState<number>(2); // mặc định tab giữa
-  const [showCommon3, setShowCommon3] = useState(false);
 
   if (loading || !theme || !lang) {
     return (
