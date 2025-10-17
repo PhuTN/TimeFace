@@ -30,4 +30,4 @@ export function makeSortingOptions(lang) {
   }));
 }
 
-//Test CI/
+//Test CI/CD
