@@ -5,10 +5,11 @@ on:
 
 jobs:
   deploy:
-    runs-on: [self-hosted] # hoặc [self-hosted, android-emulator] nếu bạn đã gán label
+    runs-on: [self-hosted]
     defaults:
       run:
-        shell: powershell # ép mọi step dùng Windows PowerShell
+        shell: powershell
+
     steps:
       - uses: actions/checkout@v4
 
@@ -27,69 +28,75 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Ensure ANDROID_SDK_ROOT
-        run: |
-          Write-Host "ANDROID_SDK_ROOT=$env:ANDROID_SDK_ROOT"
-          adb version
-          $sdkm = Join-Path $env:ANDROID_SDK_ROOT 'cmdline-tools\latest\bin\sdkmanager.bat'
-          if (Test-Path $sdkm) {
-            & $sdkm --version
-          } else {
-            Write-Host "sdkmanager.bat not found (skipping)"
-          }
+      # ✅ Gradle build action: khởi tạo daemon + cache đúng chuẩn
+      - name: Setup Gradle (with cache)
+        uses: gradle/gradle-build-action@v3
+        with:
+          cache-read-only: false
 
-      - name: Build APK (Debug)
-        run: |
-          Push-Location android
-          .\gradlew.bat --no-daemon clean
-          .\gradlew.bat --no-daemon assembleDebug
-          Pop-Location
+      # (Optional) Cache Maven Local nếu bạn có dùng mavenLocal()
+      - name: Cache Maven Local
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/gradle.properties') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
 
-      # Gộp các bước khởi động máy ảo, cài đặt và chạy app vào MỘT step duy nhất
-      - name: Start Emulator, Install & Launch App
+      # 🟡 KHỞI ĐỘNG EMULATOR TRƯỚC (background) để overlap thời gian boot với build
+      - name: Start Emulator (background)
         env:
           AVD_NAME: CI_emu
         run: |
-          # --- 1. Khởi động Emulator ---
-          Write-Host "##[group]Starting Android emulator"
           adb kill-server 2>$null
           $emu = Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe'
           if (-not (Test-Path $emu)) { throw "emulator.exe not found at $emu" }
-          
+
+          # Tip: bỏ -no-snapshot để dùng Quick Boot (nhanh hơn, nếu AVD có snapshot)
           Start-Process -FilePath $emu -ArgumentList @(
             "-avd","$env:AVD_NAME",
-            "-no-snapshot","-no-boot-anim",
+            "-no-boot-anim",
             "-gpu","host",
             "-no-audio"
           )
-          
+
+      # ⚡ BUILD: KHÔNG clean, build 1 ABI, bật cache/parallel/CC
+      - name: Build APK (Debug, x86_64 only)
+        working-directory: android
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.workers.max=6"
+        run: >
+          .\gradlew.bat assembleDebug
+          --build-cache
+          --parallel
+          --configuration-cache
+          -PreactNativeArchitectures=x86_64
+          -x lint -x test
+
+      # Chờ emulator boot xong rồi cài (dùng installDebug để Gradle tự cài, build sẽ up-to-date)
+      - name: Wait for boot & Install via Gradle
+        env:
+          AVD_NAME: CI_emu
+        working-directory: android
+        run: |
           adb wait-for-device
           do {
             $boot = (adb shell getprop sys.boot_completed | Out-String).Trim()
             Write-Host "Waiting for boot... (sys.boot_completed = $boot)"
             Start-Sleep -Seconds 2
           } until ($boot -eq '1')
-          
           adb shell input keyevent 82
-          Write-Host "Emulator booted successfully. Connected devices:"
-          adb devices # Kiểm tra xem adb có thấy thiết bị không
-          Write-Host "##[endgroup]"
 
-          # --- 2. Cài đặt APK ---
-          Write-Host "##[group]Installing APK"
-          $apk = Resolve-Path "android/app/build/outputs/apk/debug/app-debug.apk"
-          Write-Host "Installing $apk"
-          adb install -r "$apk"
-          Write-Host "##[endgroup]"
+          # Up-to-date build => chỉ còn bước install
+          .\gradlew.bat :app:installDebug --parallel --configuration-cache
 
-          # --- 3. Khởi chạy App ---
-          Write-Host "##[group]Launching App"
+      - name: Launch App
+        run: |
           $gradle = Get-Content "android\app\build.gradle" -Raw
           $appId = [regex]::Match($gradle, 'applicationId\s+["'']([^"'']+)["'']').Groups[1].Value
           if (-not $appId) { throw "Cannot detect applicationId" }
           Write-Host "Detected appId: $appId"
           adb shell am start -n "$appId/.MainActivity" | Out-String
-          Write-Host "##[endgroup]"
 
       - name: Upload APK artifact (optional)
         uses: actions/upload-artifact@v4
