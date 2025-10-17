@@ -56,7 +56,7 @@ const Header: React.FC<Props> = ({
           style={StyleSheet.absoluteFill}
           imageStyle={styles.imageClip}
           resizeMode="cover"
-          pointerEvents="none"
+          //pointerEvents="none"
         />
 
         {/* Single top row overlay */}
