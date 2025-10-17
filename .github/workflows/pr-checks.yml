@@ -27,6 +27,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps (Android needs node_modules)
+        run: npm ci
+
       - name: Setup Gradle (with cache)
         uses: gradle/gradle-build-action@v3
         with:
