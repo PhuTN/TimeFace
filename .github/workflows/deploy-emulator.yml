@@ -9,6 +9,9 @@ jobs:
     defaults:
       run:
         shell: powershell
+    # (không bắt buộc) đặt trước workers cho Gradle
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.workers.max=6"
 
     steps:
       - uses: actions/checkout@v4
@@ -28,13 +31,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # ✅ Gradle build action: khởi tạo daemon + cache đúng chuẩn
+      # Gradle cache/daemon chuẩn
       - name: Setup Gradle (with cache)
         uses: gradle/gradle-build-action@v3
         with:
           cache-read-only: false
 
-      # (Optional) Cache Maven Local nếu bạn có dùng mavenLocal()
+      # (Optional) Cache Maven Local nếu có dùng mavenLocal()
       - name: Cache Maven Local
         uses: actions/cache@v4
         with:
@@ -43,28 +46,51 @@ jobs:
           restore-keys: |
             maven-${{ runner.os }}-
 
-      # 🟡 KHỞI ĐỘNG EMULATOR TRƯỚC (background) để overlap thời gian boot với build
+      # Đảm bảo ADB server "healthy" + fallback đổi port nếu 5037 bị kẹt
+      - name: Ensure ADB server healthy
+        run: |
+          $ADB = Join-Path $env:ANDROID_SDK_ROOT 'platform-tools\adb.exe'
+          if (-not (Test-Path $ADB)) { throw "adb.exe not found at $ADB" }
+
+          Write-Host "Killing stray adb.exe if any..."
+          taskkill /F /IM adb.exe 2>$null | Out-Null
+
+          Write-Host "Check port 5037 usage..."
+          netstat -ano | findstr ":5037" | Out-String
+
+          Write-Host "Start adb server on default port 5037"
+          & $ADB start-server
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Failed to start ADB on 5037. Retrying with ADB_SERVER_PORT=5039"
+            $env:ADB_SERVER_PORT = "5039"
+            # persist to next steps
+            Add-Content $env:GITHUB_ENV "ADB_SERVER_PORT=5039"
+            & $ADB start-server
+            if ($LASTEXITCODE -ne 0) { throw "Cannot start adb server on 5037 or 5039" }
+          }
+
+          Write-Host "adb devices:"
+          & $ADB devices
+
+      # KHỞI ĐỘNG EMULATOR TRƯỚC (background) để overlap thời gian boot với build
       - name: Start Emulator (background)
         env:
           AVD_NAME: CI_emu
         run: |
-          adb kill-server 2>$null
-          $emu = Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe'
-          if (-not (Test-Path $emu)) { throw "emulator.exe not found at $emu" }
+          $EMU = Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe'
+          if (-not (Test-Path $EMU)) { throw "emulator.exe not found at $EMU" }
 
-          # Tip: bỏ -no-snapshot để dùng Quick Boot (nhanh hơn, nếu AVD có snapshot)
-          Start-Process -FilePath $emu -ArgumentList @(
+          # Tip: ĐỂ Quick Boot hoạt động nhanh, KHÔNG dùng -no-snapshot nếu AVD đã có snapshot
+          Start-Process -FilePath $EMU -ArgumentList @(
             "-avd","$env:AVD_NAME",
             "-no-boot-anim",
             "-gpu","host",
             "-no-audio"
           )
 
-      # ⚡ BUILD: KHÔNG clean, build 1 ABI, bật cache/parallel/CC
+      # BUILD: KHÔNG clean, build 1 ABI (x86_64), bật cache/parallel/config-cache
       - name: Build APK (Debug, x86_64 only)
         working-directory: android
-        env:
-          GRADLE_OPTS: "-Dorg.gradle.workers.max=6"
         run: >
           .\gradlew.bat assembleDebug
           --build-cache
@@ -73,30 +99,34 @@ jobs:
           -PreactNativeArchitectures=x86_64
           -x lint -x test
 
-      # Chờ emulator boot xong rồi cài (dùng installDebug để Gradle tự cài, build sẽ up-to-date)
+      # Đợi emulator boot xong rồi cài bằng Gradle (tận dụng trạng thái up-to-date)
       - name: Wait for boot & Install via Gradle
         env:
           AVD_NAME: CI_emu
         working-directory: android
         run: |
-          adb wait-for-device
+          $ADB = Join-Path $env:ANDROID_SDK_ROOT 'platform-tools\adb.exe'
+          & $ADB wait-for-device
+
           do {
-            $boot = (adb shell getprop sys.boot_completed | Out-String).Trim()
+            $boot = (& $ADB shell getprop sys.boot_completed | Out-String).Trim()
             Write-Host "Waiting for boot... (sys.boot_completed = $boot)"
             Start-Sleep -Seconds 2
           } until ($boot -eq '1')
-          adb shell input keyevent 82
 
-          # Up-to-date build => chỉ còn bước install
+          & $ADB shell input keyevent 82
+
+          # Up-to-date build => chỉ còn bước install (sẽ rất nhanh)
           .\gradlew.bat :app:installDebug --parallel --configuration-cache
 
       - name: Launch App
         run: |
+          $ADB = Join-Path $env:ANDROID_SDK_ROOT 'platform-tools\adb.exe'
           $gradle = Get-Content "android\app\build.gradle" -Raw
           $appId = [regex]::Match($gradle, 'applicationId\s+["'']([^"'']+)["'']').Groups[1].Value
           if (-not $appId) { throw "Cannot detect applicationId" }
           Write-Host "Detected appId: $appId"
-          adb shell am start -n "$appId/.MainActivity" | Out-String
+          & $ADB shell am start -n "$appId/.MainActivity" | Out-String
 
       - name: Upload APK artifact (optional)
         uses: actions/upload-artifact@v4
@@ -108,5 +138,6 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          adb emu kill
+          $ADB = Join-Path $env:ANDROID_SDK_ROOT 'platform-tools\adb.exe'
+          & $ADB emu kill
           if ($LASTEXITCODE -ne 0) { Write-Host "No emulator to kill; ignore"; exit 0 }
