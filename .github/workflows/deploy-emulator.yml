@@ -9,9 +9,8 @@ jobs:
     defaults:
       run:
         shell: powershell
-    # (không bắt buộc) đặt trước workers cho Gradle
     env:
-      GRADLE_OPTS: "-Dorg.gradle.workers.max=6"
+      GRADLE_OPTS: "-Dorg.gradle.workers.max=6" # chỉnh theo CPU runner
 
     steps:
       - uses: actions/checkout@v4
@@ -31,14 +30,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # Gradle cache/daemon chuẩn
       - name: Setup Gradle (with cache)
         uses: gradle/gradle-build-action@v3
         with:
           cache-read-only: false
 
-      # (Optional) Cache Maven Local nếu có dùng mavenLocal()
-      - name: Cache Maven Local
+      - name: Cache Maven Local (optional)
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
@@ -46,24 +43,28 @@ jobs:
           restore-keys: |
             maven-${{ runner.os }}-
 
-      # Đảm bảo ADB server "healthy" + fallback đổi port nếu 5037 bị kẹt
+      # BƯỚC QUAN TRỌNG: đảm bảo ADB server chạy OK; nếu port 5037 kẹt -> tự chuyển 5039
       - name: Ensure ADB server healthy
         run: |
           $ADB = Join-Path $env:ANDROID_SDK_ROOT 'platform-tools\adb.exe'
           if (-not (Test-Path $ADB)) { throw "adb.exe not found at $ADB" }
 
-          Write-Host "Killing stray adb.exe if any..."
-          taskkill /F /IM adb.exe 2>$null | Out-Null
+          Write-Host "Stopping any existing adb.exe..."
+          Stop-Process -Name adb -Force -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 1
+          Get-Process -Name adb -ErrorAction SilentlyContinue | ForEach-Object {
+            try { $_.Kill() } catch {}
+          }
 
-          Write-Host "Check port 5037 usage..."
-          netstat -ano | findstr ":5037" | Out-String
+          if (-not $env:ADB_SERVER_PORT) { $env:ADB_SERVER_PORT = "5037" }
+          Write-Host "Checking port $env:ADB_SERVER_PORT usage..."
+          netstat -ano | findstr ":$env:ADB_SERVER_PORT" | Out-String
 
-          Write-Host "Start adb server on default port 5037"
+          Write-Host "Starting adb server on port $env:ADB_SERVER_PORT..."
           & $ADB start-server
           if ($LASTEXITCODE -ne 0) {
-            Write-Host "Failed to start ADB on 5037. Retrying with ADB_SERVER_PORT=5039"
+            Write-Host "Failed on $env:ADB_SERVER_PORT. Retrying with ADB_SERVER_PORT=5039"
             $env:ADB_SERVER_PORT = "5039"
-            # persist to next steps
             Add-Content $env:GITHUB_ENV "ADB_SERVER_PORT=5039"
             & $ADB start-server
             if ($LASTEXITCODE -ne 0) { throw "Cannot start adb server on 5037 or 5039" }
@@ -72,7 +73,7 @@ jobs:
           Write-Host "adb devices:"
           & $ADB devices
 
-      # KHỞI ĐỘNG EMULATOR TRƯỚC (background) để overlap thời gian boot với build
+      # Khởi động emulator nền để overlap thời gian boot với build
       - name: Start Emulator (background)
         env:
           AVD_NAME: CI_emu
@@ -80,7 +81,7 @@ jobs:
           $EMU = Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe'
           if (-not (Test-Path $EMU)) { throw "emulator.exe not found at $EMU" }
 
-          # Tip: ĐỂ Quick Boot hoạt động nhanh, KHÔNG dùng -no-snapshot nếu AVD đã có snapshot
+          # Quick Boot: nếu AVD có snapshot, KHÔNG dùng -no-snapshot để boot nhanh hơn
           Start-Process -FilePath $EMU -ArgumentList @(
             "-avd","$env:AVD_NAME",
             "-no-boot-anim",
@@ -88,7 +89,7 @@ jobs:
             "-no-audio"
           )
 
-      # BUILD: KHÔNG clean, build 1 ABI (x86_64), bật cache/parallel/config-cache
+      # Build nhanh: không clean, 1 ABI (x86_64), bật cache/parallel/config-cache
       - name: Build APK (Debug, x86_64 only)
         working-directory: android
         run: >
@@ -99,7 +100,7 @@ jobs:
           -PreactNativeArchitectures=x86_64
           -x lint -x test
 
-      # Đợi emulator boot xong rồi cài bằng Gradle (tận dụng trạng thái up-to-date)
+      # Chờ emulator boot xong rồi cài bằng Gradle (tận dụng up-to-date)
       - name: Wait for boot & Install via Gradle
         env:
           AVD_NAME: CI_emu
@@ -115,8 +116,6 @@ jobs:
           } until ($boot -eq '1')
 
           & $ADB shell input keyevent 82
-
-          # Up-to-date build => chỉ còn bước install (sẽ rất nhanh)
           .\gradlew.bat :app:installDebug --parallel --configuration-cache
 
       - name: Launch App
