@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import React from 'react';
+import {View, Text, TextInput, StyleSheet} from 'react-native';
 
 type Props = {
   label: string;
@@ -9,7 +9,13 @@ type Props = {
   theme: any;
 };
 
-const LabeledTextInput: React.FC<Props> = ({ label, value, onChangeText, placeholder, theme }) => {
+const LabeledTextInput: React.FC<Props> = ({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  theme,
+}) => {
   const S = themedStyles(theme);
   return (
     <View style={S.field}>
@@ -29,19 +35,19 @@ const LabeledTextInput: React.FC<Props> = ({ label, value, onChangeText, placeho
 
 const themedStyles = (theme: any) =>
   StyleSheet.create({
-    field: { flexGrow: 1, flexBasis: "48%", minWidth: "48%" },
-    label: { fontSize: 13, color: theme.colors.text, marginBottom: 6 },
+    field: {flexGrow: 1, flexBasis: '48%', minWidth: '48%'},
+    label: {fontSize: 13, color: theme.colors.text, marginBottom: 6},
     inputBox: {
       borderWidth: 2,
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.background,
       borderRadius: 14,
       paddingHorizontal: 14,
-      paddingVertical: 14,
       minHeight: 48,
-      justifyContent: "center",
+      maxHeight: 48,
+      justifyContent: 'center',
     },
-    input: { fontSize: 16, color: theme.colors.text },
+    input: {fontSize: 16, color: theme.colors.text},
   });
 
 export default React.memo(LabeledTextInput);

@@ -1,13 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
-import { useUIFactory } from "../../ui/factory/useUIFactory";
-import { makeApprovalOptions, makeDepartmentOptions, makeSortingOptions } from "../../fake_data/Dien/fake_data";
-import LabeledDate from "../common/LabeledDate";
-import LabeledSelect from "../common/LabeledSelect";
-import LabeledTextInput from "../common/LabeledTextInput";
-import ButtonFilter from "../common/ButtonFilter";
-import BottomSheetModal from "../common/BottomSheetModal";
-import type { Option } from "../../types/common";
+import React, {useEffect, useState} from 'react';
+import {View, StyleSheet, ScrollView} from 'react-native';
+import {useUIFactory} from '../../../ui/factory/useUIFactory';
+import {
+  makeApprovalOptions,
+  makeDepartmentOptions,
+  makeSortingOptions,
+} from '../../../fake_data/Dien/fake_data';
+import LabeledDate from '../../common/LabeledDate';
+import LabeledSelect from '../../common/LabeledSelect';
+import LabeledTextInput from '../../common/LabeledTextInput';
+import ButtonFilter from '../../common/ButtonFilter';
+import BottomSheetModal from '../../common/BottomSheetModal';
+import type {Option} from '../../../types/common';
 
 type OTRequestFilterModalProps = {
   visible: boolean;
@@ -31,7 +35,7 @@ export default function OTRequestFilterModal({
   onClose,
   onApplyFilters,
 }: OTRequestFilterModalProps) {
-  const { loading, theme, lang } = useUIFactory();
+  const {loading, theme, lang} = useUIFactory();
 
   const [approvals, setApprovals] = useState<Option[]>([]);
   const [departments, setDepartments] = useState<Option[]>([]);
@@ -41,9 +45,9 @@ export default function OTRequestFilterModal({
   const [department, setDepartment] = useState<Option | null>(null);
   const [sortBy, setSortBy] = useState<Option | null>(null);
 
-  const [ticketCode, setTicketCode] = useState("");
-  const [employeeName, setEmployeeName] = useState("");
-  const [positionName, setPositionName] = useState("");
+  const [ticketCode, setTicketCode] = useState('');
+  const [employeeName, setEmployeeName] = useState('');
+  const [positionName, setPositionName] = useState('');
 
   const [createdDate, setCreatedDate] = useState<Date>(new Date());
   const [otDate, setOtDate] = useState<Date>(new Date());
@@ -74,9 +78,9 @@ export default function OTRequestFilterModal({
   const S = themedStyles(theme);
 
   const handleClearFilters = () => {
-    setTicketCode("");
-    setEmployeeName("");
-    setPositionName("");
+    setTicketCode('');
+    setEmployeeName('');
+    setPositionName('');
     setApprovalStatus(approvals[0]);
     setDepartment(departments[0]);
     setSortBy(sortings[0]);
@@ -97,7 +101,7 @@ export default function OTRequestFilterModal({
       sortBy,
     };
 
-    console.log("Applied filters:", filters);
+    console.log('Applied filters:', filters);
     onApplyFilters?.(filters);
     onClose();
   };
@@ -116,24 +120,22 @@ export default function OTRequestFilterModal({
             borderRightColor: theme.colors.contrastBackground,
             borderRightWidth: 1,
           },
-        ]}
-      >
+        ]}>
         <ScrollView
           contentContainerStyle={{
             padding: theme.spacing(2),
             paddingBottom: theme.spacing(3),
           }}
-          showsVerticalScrollIndicator={false}
-        >
+          showsVerticalScrollIndicator={false}>
           <View style={S.card}>
             {/* Row 1: Mã phiếu (half width) */}
             <Row>
               <View style={{flex: 1}}>
                 <LabeledTextInput
-                  label={lang.t("id_form_label")}
+                  label={lang.t('id_form_label')}
                   value={ticketCode}
                   onChangeText={setTicketCode}
-                  placeholder={lang.t("id_form_placeholder")}
+                  placeholder={lang.t('id_form_placeholder')}
                   theme={theme}
                 />
               </View>
@@ -143,17 +145,17 @@ export default function OTRequestFilterModal({
             {/* Row 2: Tên nhân viên, Tên chức vụ */}
             <Row>
               <LabeledTextInput
-                label={lang.t("employee_name_label")}
+                label={lang.t('employee_name_label')}
                 value={employeeName}
                 onChangeText={setEmployeeName}
-                placeholder={lang.t("employee_placeholder")}
+                placeholder={lang.t('employee_placeholder')}
                 theme={theme}
               />
               <LabeledTextInput
-                label={lang.t("position_name_label")}
+                label={lang.t('position_name_label')}
                 value={positionName}
                 onChangeText={setPositionName}
-                placeholder={lang.t("position_placeholder")}
+                placeholder={lang.t('position_placeholder')}
                 theme={theme}
               />
             </Row>
@@ -161,14 +163,14 @@ export default function OTRequestFilterModal({
             {/* Row 3: Phòng ban, Trạng thái duyệt */}
             <Row>
               <LabeledSelect
-                label={lang.t("department_label")}
+                label={lang.t('department_label')}
                 selected={department}
                 options={departments}
                 onSelect={setDepartment}
                 theme={theme}
               />
               <LabeledSelect
-                label={lang.t("approval_status_label")}
+                label={lang.t('approval_status_label')}
                 selected={approvalStatus}
                 options={approvals}
                 onSelect={setApprovalStatus}
@@ -179,13 +181,13 @@ export default function OTRequestFilterModal({
             {/* Row 4: Ngày tạo phiếu, Ngày OT */}
             <Row>
               <LabeledDate
-                label={lang.t("created_date_label")}
+                label={lang.t('created_date_label')}
                 date={createdDate}
                 onChange={setCreatedDate}
                 theme={theme}
               />
               <LabeledDate
-                label={lang.t("otDate")}
+                label={lang.t('otDate')}
                 date={otDate}
                 onChange={setOtDate}
                 theme={theme}
@@ -195,7 +197,7 @@ export default function OTRequestFilterModal({
             {/* Row 5: Sắp xếp bởi (full width) */}
             <Row>
               <LabeledSelect
-                label={lang.t("sort_by_label")}
+                label={lang.t('sort_by_label')}
                 selected={sortBy}
                 options={sortings}
                 onSelect={setSortBy}
@@ -206,13 +208,13 @@ export default function OTRequestFilterModal({
             {/* Actions */}
             <View style={S.actions}>
               <ButtonFilter
-                text={lang.t("clear_filters")}
+                text={lang.t('clear_filters')}
                 textColor="#000000"
                 backgroundColor="#E3F4FF"
                 onPress={handleClearFilters}
               />
               <ButtonFilter
-                text={lang.t("apply_filters")}
+                text={lang.t('apply_filters')}
                 textColor="#FFFFFF"
                 backgroundColor="#6A96EE"
                 onPress={handleApplyFilters}
@@ -225,16 +227,15 @@ export default function OTRequestFilterModal({
   );
 }
 
-function Row({ children }: { children: React.ReactNode }) {
+function Row({children}: {children: React.ReactNode}) {
   return (
     <View
       style={{
         gap: 12,
-        flexDirection: "row",
-        flexWrap: "wrap",
+        flexDirection: 'row',
+        flexWrap: 'wrap',
         marginBottom: 8,
-      }}
-    >
+      }}>
       {children}
     </View>
   );
@@ -245,15 +246,15 @@ const themedStyles = (theme: any) =>
     container: {
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
-      overflow: "hidden",
+      overflow: 'hidden',
     },
     card: {
       backgroundColor: theme.colors.background,
     },
     actions: {
       marginTop: 16,
-      flexDirection: "row",
-      justifyContent: "space-between",
+      flexDirection: 'row',
+      justifyContent: 'space-between',
       gap: 12,
     },
   });

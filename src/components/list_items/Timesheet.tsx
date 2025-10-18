@@ -2,13 +2,13 @@ import React from 'react';
 import {View, Text, Image} from 'react-native';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 
-interface DepartmentEmployeeProps {
+interface TimesheetProps {
   avatarSource: any;
   name: string;
   position: string;
 }
 
-const DepartmentEmployee: React.FC<DepartmentEmployeeProps> = ({
+const Timesheet: React.FC<TimesheetProps> = ({
   avatarSource,
   name,
   position,
@@ -61,4 +61,4 @@ const DepartmentEmployee: React.FC<DepartmentEmployeeProps> = ({
   );
 };
 
-export default DepartmentEmployee;
+export default Timesheet;
