@@ -21,8 +21,8 @@ const ChangeInfoRequest: React.FC<ChangeInfoRequestProps> = ({
   status,
   date,
 }) => {
-  const {loading, theme} = useUIFactory();
-  if (loading || !theme) {
+  const {loading, theme, lang} = useUIFactory();
+  if (loading || !theme || !lang) {
     return null;
   }
 
@@ -85,7 +85,7 @@ const ChangeInfoRequest: React.FC<ChangeInfoRequestProps> = ({
           paddingHorizontal: 4,
         }}>
         <Text style={{fontSize: 14, color: theme.colors.filterChipText}}>
-          Ngày thay đổi: {date}
+          {lang.t('changeDate')} {date}
         </Text>
       </View>
     </View>
