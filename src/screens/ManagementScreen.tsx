@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import {
   Image,
   ScrollView,
@@ -7,9 +8,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Footer from '../components/common/Footer';
 import Header from '../components/common/Header';
 
 export default function ManagementScreen() {
+  const [activeTab, setActiveTab] = useState<number>(2);
+
   const menuItems = [
     {
       icon: require('../assets/QuanLy/report.png'),
@@ -100,6 +104,13 @@ export default function ManagementScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
+      <Footer
+        activeIndex={activeTab}
+        onPress={i => {
+          setActiveTab(i);
+          // nếu cần điều hướng, gọi navigation ở đây
+        }}
+      />
     </View>
   );
 }
