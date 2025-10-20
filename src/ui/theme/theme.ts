@@ -1,9 +1,9 @@
-export const ThemeModes = ["light", "dark"] as const;
-export type ThemeKey = typeof ThemeModes[number];
+export const ThemeModes = ['light', 'dark'] as const;
+export type ThemeKey = (typeof ThemeModes)[number];
 export type ThemeIndex = 0 | 1;
 
 export type Theme = {
-  name: "light" | "dark";
+  name: 'light' | 'dark';
   colors: Record<string, string>; // map động từ ThemePack.colors
   tokens: Record<string, number>; // map động từ ThemePack.tokens
   spacing: (n: number) => number; // dùng tokens.spacingBase (fallback 8)
@@ -18,11 +18,17 @@ export function pickTheme(mode: ThemeKey): Theme {
   const i = themeToIndex(mode);
 
   const colors = Object.fromEntries(
-    Object.entries(ThemePack.colors).map(([k, tuple]) => [k, (tuple as readonly string[])[i]])
+    Object.entries(ThemePack.colors).map(([k, tuple]) => [
+      k,
+      (tuple as readonly string[])[i],
+    ]),
   );
 
   const tokens = Object.fromEntries(
-    Object.entries(ThemePack.tokens).map(([k, tuple]) => [k, (tuple as readonly number[])[i]])
+    Object.entries(ThemePack.tokens).map(([k, tuple]) => [
+      k,
+      (tuple as readonly number[])[i],
+    ]),
   );
 
   const spacingBase = (tokens.spacingBase ?? 8) as number;
@@ -34,11 +40,6 @@ export function pickTheme(mode: ThemeKey): Theme {
     spacing: (n: number) => n * spacingBase,
   };
 }
-
-
-
-
-
 
 // [0] = light, [1] = dark
 // ✅ Thêm màu/token mới = chỉ thêm 1 dòng dưới đây
@@ -54,7 +55,15 @@ export const ThemePack = {
     placeholder: ["#808080", "#808080"],
     active: ["#54FE70", "#54FE70"],
     inactive: ["#FE5454", "#FE5454"],
-    waiting: ["#FEE254", "#FEE254"]
+    waiting: ["#FEE254", "#FEE254"],
+    greyText: ['#333', '#AAAAAA'],
+    filterChipBackground: ['#C0F0F0', '#4A90E2'],
+    filterChipText: ['#999999', '#CCCCCC'],
+    borderLight: ['#D9D9D9', '#666666'],
+    approved: ['#54FE70', '#2E8B57'],
+    rejected: ['#FF4B4B', '#B22222'],
+    pending: ['#D9FE54', '#FFD700'],
+    mutedText: ['#666666', '#CCCCCC'],
     // accent:     ["#FF8A00", "#FFB74D"], // ví dụ thêm 1 dòng
   },
   tokens: {

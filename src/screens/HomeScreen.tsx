@@ -12,8 +12,6 @@ import Footer from '../components/common/Footer';
 import Header from '../components/common/Header';
 import { setUIState } from '../ui/factory/selector';
 import { useUIFactory } from '../ui/factory/useUIFactory';
-import BottomSheetModal from '../components/common/BottomSheetModal';
-import CommonScreen3 from './CommonScreen3';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -22,7 +20,6 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 const HomeScreen = ({ route, navigation }: Props) => {
   const { loading, theme, lang } = useUIFactory();
   const [activeTab, setActiveTab] = useState<number>(2); // mặc định tab giữa
-  const [showCommon3, setShowCommon3] = useState(false);
 
   if (loading || !theme || !lang) {
     return (
@@ -62,18 +59,6 @@ const HomeScreen = ({ route, navigation }: Props) => {
         <View style={{ height: theme.spacing(2) }} />
         <Button title="Tiếng Việt" onPress={() => setUIState({ lang: 'vi' })} />
         <Button title="English" onPress={() => setUIState({ lang: 'en' })} />
-        <View style={{ height: theme.spacing(2) }} />
-        {/* Mở CommonScreen3 dưới dạng modal */}
-        {/* <Button title="CommonScreen3" onPress={() => setShowCommon3(true)} /> */}
-
-        {/* <BottomSheetModal visible={showCommon3} onClose={() => setShowCommon3(false)} maxHeightRatio={0.9}>
-          <CommonScreen3 />
-        </BottomSheetModal> */}
-        {/* <AddButton
-          title="Thêm nhân viên"
-          icon={require('../assets/AddIcon.png')}
-        /> */}
-
         <View style={{ height: theme.spacing(2) }} />
         <Button title="Department Management" onPress={() => navigation.navigate('DepartmentManagement')} />
         <View style={{ height: theme.spacing(2) }} />
