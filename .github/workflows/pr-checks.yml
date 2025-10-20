@@ -1,0 +1,58 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  js:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint --if-present
+
+  android:
+    runs-on: self-hosted
+    needs: js
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps (Android needs node_modules)
+        run: npm ci
+
+      - name: Setup Gradle (with cache)
+        uses: gradle/gradle-build-action@v3
+        with:
+          cache-read-only: false
+
+      # (Tùy chọn) Cache mavenLocal nếu có dùng
+      - name: Cache Maven Local
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/gradle.properties') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
+
+      - name: Build Android (assembleDebug, x86_64 only)
+        working-directory: android
+        env:
+          # Tùy CPU máy self-hosted của bạn (ví dụ 8 core => 6-7 workers)
+          GRADLE_OPTS: "-Dorg.gradle.workers.max=6"
+        run: .\gradlew.bat assembleDebug --build-cache --parallel --configuration-cache -PreactNativeArchitectures=x86_64 -x lint -x test

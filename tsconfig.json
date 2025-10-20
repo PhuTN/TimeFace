@@ -1,7 +1,7 @@
 {
   "extends": "@react-native/typescript-config/tsconfig.json",
   "compilerOptions": {
-    "jsx": "react-jsx",                  // (RN 0.78 ok) – có thể dùng "react-native" cũng được
+    "jsx": "react-jsx", // (RN 0.78 ok) – có thể dùng "react-native" cũng được
     "types": ["react", "react-native", "jest"],
     "skipLibCheck": true
   },
