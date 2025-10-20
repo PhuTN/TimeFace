@@ -8,7 +8,7 @@ import HomeScreen from '../screens/HomeScreen';
 import DepartmentManagementScreen from '../screens/DepartmentManagementScreen';
 import EmployeeManagementScreen from '../screens/EmployeeManagementScreen';
 import DepartmentDetailScreen from '../screens/DepartmentDetailScreen';
-//import CommonScreen2 from '../screens/CommonScreen2';
+import CommonScreen2 from '../screens/CommonScreen2';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -33,6 +33,7 @@ const AppNavigator = () => {
         initialRouteName="Home" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Home" component={HomeScreen} />
         {/* <Stack.Screen name="Facene" component={FaceDetectionScreen} /> */}
+        <Stack.Screen name="CommonScreen2" component={CommonScreen2} />
         <Stack.Screen name="DepartmentManagement" component={DepartmentManagementScreen} />
         <Stack.Screen name="DepartmentDetail" component={DepartmentDetailScreen} />
         <Stack.Screen name="EmployeeManagement" component={EmployeeManagementScreen} />
