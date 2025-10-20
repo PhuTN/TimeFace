@@ -1,5 +1,11 @@
-import React from "react";
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from "react-native";
+import React from 'react';
+import {
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ViewStyle,
+  TextStyle,
+} from 'react-native';
 
 type Props = {
   text: string;
@@ -12,19 +18,20 @@ type Props = {
 
 const ButtonFilter: React.FC<Props> = ({
   text,
-  textColor = "#000",
-  backgroundColor = "#E3F4FF",
+  textColor = '#000',
+  backgroundColor = '#E3F4FF',
   onPress,
   style,
   textStyle,
 }) => {
   return (
     <TouchableOpacity
-      style={[styles.btn, { backgroundColor }, style]}
+      style={[styles.btn, {backgroundColor}, style]}
       activeOpacity={0.85}
-      onPress={onPress}
-    >
-      <Text style={[styles.btnText, { color: textColor }, textStyle]}>{text}</Text>
+      onPress={onPress}>
+      <Text style={[styles.btnText, {color: textColor}, textStyle]}>
+        {text}
+      </Text>
     </TouchableOpacity>
   );
 };
@@ -34,11 +41,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 16,
-    alignItems: "center",
+    alignItems: 'center',
   },
   btnText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
 });
 

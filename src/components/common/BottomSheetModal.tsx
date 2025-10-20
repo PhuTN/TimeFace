@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Animated,
   Dimensions,
@@ -8,7 +8,7 @@ import {
   View,
   StyleSheet,
   Platform,
-} from "react-native";
+} from 'react-native';
 
 type Props = {
   visible: boolean;
@@ -18,7 +18,7 @@ type Props = {
   backdropOpacity?: number; // 0..1
 };
 
-const SCREEN_H = Dimensions.get("window").height;
+const SCREEN_H = Dimensions.get('window').height;
 
 export default function BottomSheetModal({
   visible,
@@ -66,7 +66,7 @@ export default function BottomSheetModal({
         }),
       ]).start();
     }
-  }, [visible]);
+  }, [visible, backdrop, translateY]);
 
   const bgOpacity = backdrop.interpolate({
     inputRange: [0, 1],
@@ -79,11 +79,10 @@ export default function BottomSheetModal({
       transparent
       statusBarTranslucent
       animationType="none" // ta tự animate
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       {/* Backdrop */}
       <TouchableWithoutFeedback onPress={onClose}>
-        <Animated.View style={[styles.backdrop, { opacity: bgOpacity }]} />
+        <Animated.View style={[styles.backdrop, {opacity: bgOpacity}]} />
       </TouchableWithoutFeedback>
 
       {/* Sheet */}
@@ -91,11 +90,10 @@ export default function BottomSheetModal({
         style={[
           styles.sheetContainer,
           {
-            transform: [{ translateY }],
+            transform: [{translateY}],
           },
         ]}
-        pointerEvents="box-none"
-      >
+        pointerEvents="box-none">
         <View
           style={[
             styles.sheet,
@@ -107,12 +105,11 @@ export default function BottomSheetModal({
               borderTopRightRadius: 20,
             },
           ]}
-          onLayout={(e) => {
+          onLayout={e => {
             const h = e.nativeEvent.layout.height;
             // nếu nội dung nhỏ, đảm bảo vẫn chạy từ dưới lên đúng khoảng
-            if (contentHeight === null) setContentHeight(h);
-          }}
-        >
+            if (contentHeight === null) {setContentHeight(h);}
+          }}>
           {/* thanh kéo */}
           {/* <View style={styles.grabberWrap}>
             <View style={styles.grabber} />
@@ -127,25 +124,25 @@ export default function BottomSheetModal({
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#000",
+    backgroundColor: '#000',
   },
   sheetContainer: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: "flex-end",
+    justifyContent: 'flex-end',
   },
   sheet: {
     backgroundColor: '#fff',
     paddingBottom: Platform.select({ ios: 24, android: 16 }),
   },
-//   grabberWrap: {
-//     alignItems: "center",
-//     paddingTop: 8,
-//     paddingBottom: 4,
-//   },
-//   grabber: {
-//     width: 42,
-//     height: 5,
-//     borderRadius: 999,
-//     backgroundColor: "#d0d0d0",
-//   },
+  //   grabberWrap: {
+  //     alignItems: "center",
+  //     paddingTop: 8,
+  //     paddingBottom: 4,
+  //   },
+  //   grabber: {
+  //     width: 42,
+  //     height: 5,
+  //     borderRadius: 999,
+  //     backgroundColor: "#d0d0d0",
+  //   },
 });

@@ -1,5 +1,5 @@
 // src/appconfig/AppConfig.ts
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import axios, {AxiosInstance, AxiosRequestConfig, AxiosResponse} from 'axios';
 
 export type AppConfigOptions = {
   apiUrl: string;
@@ -8,28 +8,32 @@ export type AppConfigOptions = {
 
   // logging & debug
   debug?: boolean;
-  requestLogger?: (req: any) => void;        // override logger
-  responseLogger?: (resOrErr: any) => void;  // override logger
+  requestLogger?: (req: any) => void; // override logger
+  responseLogger?: (resOrErr: any) => void; // override logger
 
   // HTTP
   authToken?: string | null;
-  httpTimeout?: number;                       // mặc định 15000ms
-  defaultHeaders?: Record<string, string>;    // header mặc định cho mọi request
-  axiosConfig?: Partial<AxiosRequestConfig>;  // tuỳ biến thêm
+  httpTimeout?: number; // mặc định 15000ms
+  defaultHeaders?: Record<string, string>; // header mặc định cho mọi request
+  axiosConfig?: Partial<AxiosRequestConfig>; // tuỳ biến thêm
 
   // Interceptors hook (nâng cao)
   interceptors?: {
     request?: Array<(req: any) => any | Promise<any>>;
-    responseSuccess?: Array<(res: AxiosResponse) => AxiosResponse | Promise<AxiosResponse>>;
+    responseSuccess?: Array<
+      (res: AxiosResponse) => AxiosResponse | Promise<AxiosResponse>
+    >;
     responseError?: Array<(error: any) => any>;
   };
 
   // Chuẩn hoá lỗi trả ra
-  errorMapper?: (error: any) => Error & { status?: number; code?: string; data?: any };
+  errorMapper?: (
+    error: any,
+  ) => Error & {status?: number; code?: string; data?: any};
 };
 
 function normalizeBaseUrl(url: string) {
-  return url.replace(/\/+$/, "");
+  return url.replace(/\/+$/, '');
 }
 
 class AppConfig {
@@ -39,43 +43,50 @@ class AppConfig {
 
   private constructor() {
     this.cfg = {
-      apiUrl: "https://photel.io.vn/",
-      appName: "GOKUUNE",
-      version: "1.0.0",
+      apiUrl: 'https://photel.io.vn/',
+      appName: 'GOKUUNE',
+      version: '1.0.0',
       debug: true,
       authToken: null,
       httpTimeout: 15000,
-      defaultHeaders: { "Content-Type": "application/json" },
+      defaultHeaders: {'Content-Type': 'application/json'},
       axiosConfig: {},
       interceptors: {},
       errorMapper: (err: any) => {
         // mapping mặc định: giữ nguyên data/status/code để FE dùng
-        const e = new Error(err?.response?.data?.message || err?.message || "Request failed") as any;
+        const e = new Error(
+          err?.response?.data?.message || err?.message || 'Request failed',
+        ) as any;
         e.status = err?.response?.status;
         e.data = err?.response?.data;
         e.code = err?.code;
         return e;
       },
-      requestLogger: (req) => {
-        if (!this.cfg.debug) return;
-        console.log("[API] =>", req.method?.toUpperCase(), req.baseURL + (req.url || ""), req.data || req.params);
+      requestLogger: req => {
+        if (!this.cfg.debug) {return;}
+        console.log(
+          '[API] =>',
+          req.method?.toUpperCase(),
+          req.baseURL + (req.url || ''),
+          req.data || req.params,
+        );
       },
-      responseLogger: (resOrErr) => {
-        if (!this.cfg.debug) return;
+      responseLogger: resOrErr => {
+        if (!this.cfg.debug) {return;}
         // khi là error (axios ném) sẽ chạy ở responseError
         if (resOrErr?.config) {
           // là response success
-          console.log("[API] <=", resOrErr.status, resOrErr.config?.url);
+          console.log('[API] <=', resOrErr.status, resOrErr.config?.url);
         } else {
           // fallback
-          console.log("[API]", resOrErr);
+          console.log('[API]', resOrErr);
         }
       },
     };
   }
 
   static getInstance(): AppConfig {
-    if (!AppConfig.instance) AppConfig.instance = new AppConfig();
+    if (!AppConfig.instance) {AppConfig.instance = new AppConfig();}
     return AppConfig.instance;
   }
 
@@ -83,8 +94,11 @@ class AppConfig {
     return this.cfg;
   }
 
-  setConfig(newConfig: Partial<AppConfigOptions>, opts?: { rebuildAxios?: boolean }) {
-    this.cfg = { ...this.cfg, ...newConfig };
+  setConfig(
+    newConfig: Partial<AppConfigOptions>,
+    opts?: {rebuildAxios?: boolean},
+  ) {
+    this.cfg = {...this.cfg, ...newConfig};
     // mặc định: nếu đổi config quan trọng, rebuild axios để nhận cấu hình mới
     if (opts?.rebuildAxios ?? true) {
       this.rebuildAxios();
@@ -96,16 +110,17 @@ class AppConfig {
   }
 
   /** Endpoint factory – tạo tuple [method, fullPath] */
-  ep(method: "GET" | "POST" | "PUT" | "DELETE", base: string, suffix = "") {
-    const b = base.replace(/^\/+|\/+$/g, ""); // "users"
-    const s = suffix.replace(/^\/+/, "");     // "getAll"
+  ep(method: 'GET' | 'POST' | 'PUT' | 'DELETE', base: string, suffix = '') {
+    const b = base.replace(/^\/+|\/+$/g, ''); // "users"
+    const s = suffix.replace(/^\/+/, ''); // "getAll"
     const path = s ? `/${b}/${s}` : `/${b}`;
     return [method, path] as const;
   }
 
   /** Curry base: makeEp("users") → (method, suffix?) => [method, "/users[/suffix]"] */
   makeEp(base: string) {
-    return (method: "GET" | "POST" | "PUT" | "DELETE", suffix = "") => this.ep(method, base, suffix);
+    return (method: 'GET' | 'POST' | 'PUT' | 'DELETE', suffix = '') =>
+      this.ep(method, base, suffix);
   }
 
   /** Cấp sẵn AxiosInstance theo config hiện tại */
@@ -122,7 +137,7 @@ class AppConfig {
   }
 
   private buildAxios(): AxiosInstance {
-    const baseURL = normalizeBaseUrl(this.cfg.apiUrl || "");
+    const baseURL = normalizeBaseUrl(this.cfg.apiUrl || '');
     const inst = axios.create({
       baseURL,
       timeout: this.cfg.httpTimeout ?? 15000,
@@ -131,14 +146,14 @@ class AppConfig {
     });
 
     // Request interceptor (attach token + logger + custom hooks)
-    inst.interceptors.request.use(async (req) => {
+    inst.interceptors.request.use(async req => {
       const token = this.cfg.authToken;
       if (token) {
         req.headers = req.headers || {};
         (req.headers as any).Authorization = `Bearer ${token}`;
       }
       // logger mặc định
-      this.cfg.requestLogger?.({ ...req, baseURL });
+      this.cfg.requestLogger?.({...req, baseURL});
 
       // custom request interceptors
       for (const fn of this.cfg.interceptors?.request || []) {
@@ -149,7 +164,7 @@ class AppConfig {
 
     // Response interceptors (success + error)
     inst.interceptors.response.use(
-      async (res) => {
+      async res => {
         this.cfg.responseLogger?.(res);
         // custom success interceptors
         for (const fn of this.cfg.interceptors?.responseSuccess || []) {
@@ -157,14 +172,18 @@ class AppConfig {
         }
         return res;
       },
-      async (err) => {
+      async err => {
         // custom error interceptors
         for (const fn of this.cfg.interceptors?.responseError || []) {
-          try { await fn(err); } catch (_) { /* ignore */ }
+          try {
+            await fn(err);
+          } catch (_) {
+            /* ignore */
+          }
         }
         const mapped = this.cfg.errorMapper ? this.cfg.errorMapper(err) : err;
         return Promise.reject(mapped);
-      }
+      },
     );
 
     return inst;

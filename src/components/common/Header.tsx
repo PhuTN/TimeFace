@@ -36,8 +36,8 @@ const Header: React.FC<Props> = ({
   const navigation = useNavigation<any>();
 
   const handleBack = () => {
-    if (onBackPress) return onBackPress();
-    if (navigation?.canGoBack?.()) navigation.goBack();
+    if (onBackPress) {return onBackPress();}
+    if (navigation?.canGoBack?.()) {navigation.goBack();}
   };
 
   return (
@@ -56,7 +56,7 @@ const Header: React.FC<Props> = ({
           style={StyleSheet.absoluteFill}
           imageStyle={styles.imageClip}
           resizeMode="cover"
-          pointerEvents="none"
+          //pointerEvents="none"
         />
 
         {/* Single top row overlay */}

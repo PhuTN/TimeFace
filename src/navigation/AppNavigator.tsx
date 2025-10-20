@@ -3,11 +3,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import HomeScreen from '../screens/HomeScreen';
-import ThemeLanguageTester from '../components/test_ui/ThemeLanguageTester';
-import FaceDetectionScreen from '../screens/FaceDetectionScreen';
+//import ThemeLanguageTester from '../components/test_ui/ThemeLanguageTester';
+//import FaceDetectionScreen from '../screens/FaceDetectionScreen';
 import DepartmentManagementScreen from '../screens/DepartmentManagementScreen';
 import EmployeeManagementScreen from '../screens/EmployeeManagementScreen';
 import DepartmentDetailScreen from '../screens/DepartmentDetailScreen';
+//import CommonScreen2 from '../screens/CommonScreen2';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -21,8 +22,8 @@ export type RootStackParamList = {
   DepartmentDetail: { departmentDetail: any } | undefined;
   EmployeeManagement: undefined;
   Facene: undefined;
+  CommonScreen2: undefined;
 };
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
@@ -30,8 +31,8 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator
         initialRouteName="Home" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Facene" component={FaceDetectionScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
+        {/* <Stack.Screen name="Facene" component={FaceDetectionScreen} /> */}
         <Stack.Screen name="DepartmentManagement" component={DepartmentManagementScreen} />
         <Stack.Screen name="DepartmentDetail" component={DepartmentDetailScreen} />
         <Stack.Screen name="EmployeeManagement" component={EmployeeManagementScreen} />

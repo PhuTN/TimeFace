@@ -1,9 +1,9 @@
-import { makeDefaultApi, ep } from "../core/ApiEndpoint";
+import {makeDefaultApi, ep} from '../core/ApiEndpoint';
 
 // 6 method mặc định
 export const User = {
-  ...makeDefaultApi("users"),
+  ...makeDefaultApi('users'),
 
   // thêm endpoint đặc biệt nếu cần
-  CheckInGetAll: ep("GET", "users", "checkin/getall"),
+  CheckInGetAll: ep('GET', 'users', 'checkin/getall'),
 };
