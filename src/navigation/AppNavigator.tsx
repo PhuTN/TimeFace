@@ -20,6 +20,7 @@ export type RootStackParamList = {
   DepartmentManagement: undefined;
   DepartmentDetail: { departmentDetail: any } | undefined;
   EmployeeManagement: undefined;
+  Facene: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -28,7 +29,7 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Facene" screenOptions={{ headerShown: false }}>
+        initialRouteName="Home" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Facene" component={FaceDetectionScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="DepartmentManagement" component={DepartmentManagementScreen} />
