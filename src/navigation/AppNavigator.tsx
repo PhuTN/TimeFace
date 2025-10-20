@@ -1,7 +1,7 @@
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
-import FaceDetectionScreen from '../screens/FaceDetectionScreen';
+// import FaceDetectionScreen from '../screens/FaceDetectionScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ManagementScreen from '../screens/ManagementScreen';
 import ReportScreen from '../screens/ReportScreen';
@@ -27,7 +27,7 @@ const AppNavigator = () => {
       <Stack.Navigator
         initialRouteName="Report"
         screenOptions={{headerShown: false}}>
-        <Stack.Screen name="Facene" component={FaceDetectionScreen} />
+        {/* <Stack.Screen name="Facene" component={FaceDetectionScreen} /> */}
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Management" component={ManagementScreen} />
         <Stack.Screen name="Report" component={ReportScreen} />

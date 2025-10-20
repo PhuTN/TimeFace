@@ -1,7 +1,7 @@
 // src/api/apihandle.ts
-import { http } from "./http";
-import { ApiCommand } from "./core/ApiCommand";
-import type { Endpoint } from "./core/ApiEndpoint";
+import {http} from './http';
+import {ApiCommand} from './core/ApiCommand';
+import type {Endpoint} from './core/ApiEndpoint';
 
 type CallStatus = {
   isError: boolean;
@@ -19,7 +19,7 @@ class ApiHandle {
       response: async (cb: (status: CallStatus, res?: any) => void) => {
         try {
           const res = await ApiCommand.run(http, method, path, payload);
-          cb({ isError: false }, res);
+          cb({isError: false}, res);
         } catch (e: any) {
           cb(
             {
@@ -28,15 +28,15 @@ class ApiHandle {
               errorCode: e?.code,
               httpStatus: e?.status,
             },
-            e?.data
+            e?.data,
           );
         }
       },
 
-      asPromise: async (): Promise<{ status: CallStatus; res?: any }> => {
+      asPromise: async (): Promise<{status: CallStatus; res?: any}> => {
         try {
           const res = await ApiCommand.run(http, method, path, payload);
-        return { status: { isError: false }, res };
+          return {status: {isError: false}, res};
         } catch (e: any) {
           return {
             status: {

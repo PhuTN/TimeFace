@@ -1,7 +1,7 @@
 import React from 'react';
 import {View, Text, Image, TouchableOpacity} from 'react-native';
 import {SvgXml} from 'react-native-svg';
-import type {Theme} from '../../ui/theme/theme';
+//import type {Theme} from '../../ui/theme/theme';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 
 interface AttendanceProps {

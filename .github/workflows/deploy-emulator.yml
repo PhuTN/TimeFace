@@ -1,0 +1,142 @@
+name: Deploy to Local Emulator on Merge
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted]
+    defaults:
+      run:
+        shell: powershell
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.workers.max=6" # chỉnh theo CPU runner
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install JS deps
+        run: npm ci
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle (with cache)
+        uses: gradle/gradle-build-action@v3
+        with:
+          cache-read-only: false
+
+      - name: Cache Maven Local (optional)
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/gradle.properties') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
+
+      # BƯỚC QUAN TRỌNG: đảm bảo ADB server chạy OK; nếu port 5037 kẹt -> tự chuyển 5039
+      - name: Ensure ADB server healthy
+        run: |
+          $ADB = Join-Path $env:ANDROID_SDK_ROOT 'platform-tools\adb.exe'
+          if (-not (Test-Path $ADB)) { throw "adb.exe not found at $ADB" }
+
+          Write-Host "Stopping any existing adb.exe..."
+          Stop-Process -Name adb -Force -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 1
+          Get-Process -Name adb -ErrorAction SilentlyContinue | ForEach-Object {
+            try { $_.Kill() } catch {}
+          }
+
+          if (-not $env:ADB_SERVER_PORT) { $env:ADB_SERVER_PORT = "5037" }
+          Write-Host "Checking port $env:ADB_SERVER_PORT usage..."
+          netstat -ano | findstr ":$env:ADB_SERVER_PORT" | Out-String
+
+          Write-Host "Starting adb server on port $env:ADB_SERVER_PORT..."
+          & $ADB start-server
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Failed on $env:ADB_SERVER_PORT. Retrying with ADB_SERVER_PORT=5039"
+            $env:ADB_SERVER_PORT = "5039"
+            Add-Content $env:GITHUB_ENV "ADB_SERVER_PORT=5039"
+            & $ADB start-server
+            if ($LASTEXITCODE -ne 0) { throw "Cannot start adb server on 5037 or 5039" }
+          }
+
+          Write-Host "adb devices:"
+          & $ADB devices
+
+      # Khởi động emulator nền để overlap thời gian boot với build
+      - name: Start Emulator (background)
+        env:
+          AVD_NAME: CI_emu
+        run: |
+          $EMU = Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe'
+          if (-not (Test-Path $EMU)) { throw "emulator.exe not found at $EMU" }
+
+          # Quick Boot: nếu AVD có snapshot, KHÔNG dùng -no-snapshot để boot nhanh hơn
+          Start-Process -FilePath $EMU -ArgumentList @(
+            "-avd","$env:AVD_NAME",
+            "-no-boot-anim",
+            "-gpu","host",
+            "-no-audio"
+          )
+
+      # Build nhanh: không clean, 1 ABI (x86_64), bật cache/parallel/config-cache
+      - name: Build APK (Debug, x86_64 only)
+        working-directory: android
+        run: >
+          .\gradlew.bat assembleDebug
+          --build-cache
+          --parallel
+          --configuration-cache
+          -PreactNativeArchitectures=x86_64
+          -x lint -x test
+
+      # Chờ emulator boot xong rồi cài bằng Gradle (tận dụng up-to-date)
+      - name: Wait for boot & Install via Gradle
+        env:
+          AVD_NAME: CI_emu
+        working-directory: android
+        run: |
+          $ADB = Join-Path $env:ANDROID_SDK_ROOT 'platform-tools\adb.exe'
+          & $ADB wait-for-device
+
+          do {
+            $boot = (& $ADB shell getprop sys.boot_completed | Out-String).Trim()
+            Write-Host "Waiting for boot... (sys.boot_completed = $boot)"
+            Start-Sleep -Seconds 2
+          } until ($boot -eq '1')
+
+          & $ADB shell input keyevent 82
+          .\gradlew.bat :app:installDebug --parallel --configuration-cache
+
+      - name: Launch App
+        run: |
+          $ADB = Join-Path $env:ANDROID_SDK_ROOT 'platform-tools\adb.exe'
+          $gradle = Get-Content "android\app\build.gradle" -Raw
+          $appId = [regex]::Match($gradle, 'applicationId\s+["'']([^"'']+)["'']').Groups[1].Value
+          if (-not $appId) { throw "Cannot detect applicationId" }
+          Write-Host "Detected appId: $appId"
+          & $ADB shell am start -n "$appId/.MainActivity" | Out-String
+
+      - name: Upload APK artifact (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Shutdown emulator
+        if: always()
+        continue-on-error: true
+        run: |
+          $ADB = Join-Path $env:ANDROID_SDK_ROOT 'platform-tools\adb.exe'
+          & $ADB emu kill
+          if ($LASTEXITCODE -ne 0) { Write-Host "No emulator to kill; ignore"; exit 0 }
