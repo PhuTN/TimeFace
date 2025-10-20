@@ -17,9 +17,10 @@ import Footer from "../components/common/Footer";
 import FilterIcon from "../assets/icons/filter_icon.svg";
 import AddButton from "../components/common/AddButton";
 import EmployeeFilter, { EmployeeFilterValues, EmpSortValue } from "../components/common/EmployeeFilter";
-import { Employee, EMPLOYEES } from "../fake_data/Dien/fake_data";
-import { PasswordChangeStatus } from "../fake_data/Dien/fake_data";
+import { Employee, EMPLOYEES } from "../fake_data/Dien/fake_data.tsx";
+import { PasswordChangeStatus } from "../fake_data/Dien/fake_data.tsx";
 import AddEmployeeModal from "../components/common/AddEmployeeModal";
+import Chip from "../components/common/Chip.tsx";
 
 type Props = any; // hoặc: NativeStackScreenProps<RootStackParamList, 'EmployeeManagement'>
 
@@ -38,11 +39,11 @@ function formatENDate(iso: string) {
     return `${mm}/${dd}/${yyyy}`;
 }
 
-export type PwdKey = "changed" | "waiting_for_changed" | "do_not_change";
+export type PwdKey = "password_changed" | "waiting_for_password_change" | "do_not_change";
 
 export const PWD_STATUS_TO_KEY: Record<PasswordChangeStatus, PwdKey> = {
-    [PasswordChangeStatus.changed]: "changed",
-    [PasswordChangeStatus.waiting_for_changed]: "waiting_for_changed",
+    [PasswordChangeStatus.password_changed]: "password_changed",
+    [PasswordChangeStatus.waiting_for_password_change]: "waiting_for_password_change",
     [PasswordChangeStatus.do_not_change]: "do_not_change",
 };
 
@@ -51,7 +52,7 @@ export function toPwdKey(s: PasswordChangeStatus | string | undefined): PwdKey |
     // nếu là enum value -> map
     if (s in PWD_STATUS_TO_KEY) return PWD_STATUS_TO_KEY[s as PasswordChangeStatus];
     // nếu đã là key ngắn từ filter -> giữ nguyên
-    if (s === "changed" || s === "waiting_for_changed" || s === "do_not_change") return s;
+    if (s === "password_changed" || s === "waiting_for_password_change" || s === "do_not_change") return s;
     return "";
 }
 
@@ -90,49 +91,34 @@ export default function EmployeeManagementScreen({ navigation }: Props) {
     const S = makeStyles(theme);
     const t = lang.t;
 
-    // ---------- BADGES
-    const AccountBadge = memo(({ active }: { active: boolean }) => {
-        return (
-            <View style={[S.badge, active ? S.badgeGreen : S.badgeRed]}>
-                <Text style={S.badgeText}>
-                    {active ? t("active") : t("inactive")}
-                </Text>
-            </View>
-        );
-    });
-
-    const PasswordBadge = memo(({ status }: { status: PasswordChangeStatus | string }) => {
-        const k = toPwdKey(status); // "changed" | "waiting_for_changed" | "do_not_change" | ""
-        let style = S.badgeGreen;
-        let text = lang.t("password_changed"); // Đã đổi mật khẩu
-
-        if (k === "waiting_for_changed") {
-            style = S.badgeYellow;
-            text = lang.t("waiting_for_password_change"); // Chờ đổi mật khẩu
-        } else if (k === "do_not_change") {
-            style = S.badgeRed;
-            text = lang.t("do_not_change_password");     // Không đổi mật khẩu
-        }
-
-        return (
-            <View style={[S.badge, style]}>
-                <Text style={S.badgeText}>{text}</Text>
-            </View>
-        );
-    });
-
     // ---------- ITEM
     const EmployeeCard = memo(
         ({ item, onPress }: { item: Employee; onPress?: () => void }) => {
-            // tương thích tên field: active | accountActive
-            const isActive = typeof (item as any).active === "boolean"
-                ? (item as any).active
-                : Boolean((item as any).accountActive);
+            // tương thích tên field: accountActive
+            const isActive = Boolean((item as any).accountActive);
 
-            // tương thích tên field: passwordChangeStatus | passwordChangeRequired
-            const pwdStatus =
-                (item as any).passwordChangeStatus ??
-                "";
+            // tương thích tên field: passwordChangeStatus
+            type PasswordStatusForChip =
+                | 'password_changed'
+                | 'waiting_for_password_change'
+                | 'do_not_change_password';
+
+            /** 
+             * Map giá trị gốc (backend) sang 3 status hợp lệ cho Chip 
+             */
+            function toPwdStatus(raw: any): PasswordStatusForChip {
+                if (!raw) return 'do_not_change_password';
+                const val = String(raw).toLowerCase().trim();
+
+                if (['password_changed'].includes(val)) {
+                    return 'password_changed';
+                }
+                if (['waiting_for_password_change'].includes(val)) {
+                    return 'waiting_for_password_change';
+                }
+                return 'do_not_change_password';
+            }
+            const pwdStatus = toPwdStatus((item as any).passwordChangeStatus);
 
             return (
                 <Pressable onPress={onPress} style={({ pressed }) => [S.card, pressed && { opacity: 0.92 }]}>
@@ -146,17 +132,12 @@ export default function EmployeeManagementScreen({ navigation }: Props) {
                         <View style={{ flex: 1, paddingRight: 8 }}>
                             <Text style={S.name} numberOfLines={1}>{item.name}</Text>
                             <Text style={S.role} numberOfLines={1}>{item.position}</Text>
-
-                            <View style={{ height: 6 }} />
-                            <Text style={S.meta}>
-                                {`${t("date_created")}: ${formatDate(item.createdAt)}`}
-                            </Text>
                         </View>
 
                         {/* badges ở cột phải */}
-                        <View style={{ gap: 6 }}>
-                            <AccountBadge active={isActive} />
-                            <PasswordBadge status={item.passwordChangeStatus} />
+                        <View style={{ gap: 5, alignItems: "flex-end"}}>
+                            <Chip status={isActive ? 'active' : 'inactive'} />
+                            <Chip status={pwdStatus} />
                         </View>
                     </View>
                 </Pressable>
@@ -253,7 +234,7 @@ export default function EmployeeManagementScreen({ navigation }: Props) {
                             id: String(Date.now()),
                             name: p.name,
                             avatar: require("../assets/images/meow.jpg"),
-                            passwordChangeStatus: PasswordChangeStatus.waiting_for_changed,
+                            passwordChangeStatus: PasswordChangeStatus.waiting_for_password_change,
                             accountActive: true,
                             departmentId: p.departmentId,
                             position: p.position,

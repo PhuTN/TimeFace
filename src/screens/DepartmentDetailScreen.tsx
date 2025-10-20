@@ -8,7 +8,7 @@ import Header from "../components/common/Header";
 import LabeledTextInput from "../components/common/LabeledTextInput";
 import LabeledSelect from "../components/common/LabeledSelect";
 import type { Option } from "../types/common";
-import { Department, Employee, EMPLOYEES as EMP_FAKE, DEPARTMENTS } from "../fake_data/Dien/fake_data";
+import { Department, Employee, EMPLOYEES as EMP_FAKE, DEPARTMENTS } from "../fake_data/Dien/fake_data.tsx";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import FilterIcon from "../assets/icons/filter_icon.svg";

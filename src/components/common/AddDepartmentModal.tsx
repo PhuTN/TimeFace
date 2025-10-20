@@ -7,7 +7,7 @@ import { useUIFactory } from "../../ui/factory/useUIFactory";
 import type { Option } from "../../types/common";
 import AddEmployeeIntoDepartmentFilter, { EmployeeFilterInDeptValues } from "./AddEmployeeIntoDepartmentFilter";
 import FilterIcon from "../../assets/icons/filter_icon.svg"
-import { Department, Employee, EMPLOYEES as EMP_FAKE, DEPARTMENTS } from "../../fake_data/Dien/fake_data";
+import { Department, Employee, EMPLOYEES as EMP_FAKE, DEPARTMENTS } from "../../fake_data/Dien/fake_data.tsx";
 
 export type AddDepartmentModal = {
     name: string;

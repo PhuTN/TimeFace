@@ -7,11 +7,12 @@ import Header from "../components/common/Header";
 import Footer from "../components/common/Footer";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { Department, DEPARTMENTS } from "../fake_data/Dien/fake_data";
+import { Department, DEPARTMENTS } from "../fake_data/Dien/fake_data.tsx";
 import DepartmentFilter from "../components/common/DepartmentFilter";
 import { DepartmentFilterValues } from "../components/common/DepartmentFilter";
 import AddButton from "../components/common/AddButton";
 import AddDepartmentModal from "../components/common/AddDepartmentModal";
+import Chip from "../components/common/Chip.tsx";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DepartmentManagement'>;
 
@@ -52,16 +53,6 @@ const DepartmentManagementScreen = ({ route, navigation }: Props) => {
     [lang?.code]
   );
 
-  const StatusBadge = memo(({ active }: { active: boolean }) => {
-    return (
-      <View style={[styles.badge, active ? styles.badgeActive : styles.badgeInactive]}>
-        <Text style={[styles.badgeText]}>
-          {active ? lang?.t("active") : lang?.t("inactive")}
-        </Text>
-      </View>
-    );
-  });
-
   const DepartmentCard = memo(
     ({ item, onPress }: { item: Department; onPress?: () => void }) => {
       return (
@@ -73,7 +64,7 @@ const DepartmentManagementScreen = ({ route, navigation }: Props) => {
             <Text style={styles.title} numberOfLines={1}>
               {item.name}
             </Text>
-            <StatusBadge active={item.active} />
+            <Chip status={item.active ? 'active' : 'inactive'} />
           </View>
 
           <Text style={styles.subtitle} numberOfLines={2}>

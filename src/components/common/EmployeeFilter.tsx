@@ -5,7 +5,7 @@ import LabeledTextInput from "../common/LabeledTextInput";
 import LabeledSelect from "../common/LabeledSelect";
 import { useUIFactory } from "../../ui/factory/useUIFactory";
 import type { Option } from "../../types/common";
-import { DEPARTMENTS } from "../../fake_data/Dien/fake_data";
+import { DEPARTMENTS } from "../../fake_data/Dien/fake_data.tsx";
 
 export type EmpSortValue = "created_desc" | "created_asc" | "name_asc" | "name_desc";
 

@@ -5,7 +5,7 @@ import LabeledTextInput from "./LabeledTextInput";
 import LabeledSelect from "./LabeledSelect";
 import { useUIFactory } from "../../ui/factory/useUIFactory";
 import type { Option } from "../../types/common";
-import { DEPARTMENTS } from "../../fake_data/Dien/fake_data";
+import { DEPARTMENTS } from "../../fake_data/Dien/fake_data.tsx";
 
 export type AddEmployeePayload = {
   name: string;
