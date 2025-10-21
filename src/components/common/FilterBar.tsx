@@ -2,11 +2,21 @@ import React from 'react';
 import {View, Text, TouchableOpacity, ScrollView} from 'react-native';
 import {SvgXml} from 'react-native-svg';
 import type {Theme} from '../../ui/theme/theme';
+import FilterChip from './FilterChip';
+
+export type FilterChipData = {
+  id: string;
+  label: string;
+  subLabel?: string;
+  value: string;
+};
 
 interface FilterBarProps {
   title: string;
   onFilterPress: () => void;
   theme: Theme;
+  activeFilters?: FilterChipData[];
+  onRemoveFilter?: (filterId: string) => void;
   children?: React.ReactNode;
 }
 
@@ -14,9 +24,10 @@ const FilterBar: React.FC<FilterBarProps> = ({
   title,
   onFilterPress,
   theme,
+  activeFilters = [],
+  onRemoveFilter,
   children,
 }) => {
-  // Read the SVG content and replace the stroke color with theme color
   const filterIconXml = `<svg width="23" height="23" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M12.65 3.76367H3.24072" stroke="${theme.colors.text}" stroke-width="1.41139" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M10.7681 17.8774H3.24072" stroke="${theme.colors.text}" stroke-width="1.41139" stroke-linecap="round" stroke-linejoin="round"/>
@@ -53,8 +64,6 @@ const FilterBar: React.FC<FilterBarProps> = ({
             height: 40,
             borderRadius: 20,
             backgroundColor: theme.colors.background,
-            borderWidth: 1,
-            borderColor: theme.colors.borderLight,
             justifyContent: 'center',
             alignItems: 'center',
           }}
@@ -63,7 +72,28 @@ const FilterBar: React.FC<FilterBarProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* Second Row: Filter Chips Container */}
+      {/* Second Row: Active Filter Chips */}
+      {activeFilters.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            gap: 8,
+            paddingVertical: 4,
+          }}>
+          {activeFilters.map(filter => (
+            <FilterChip
+              key={filter.id}
+              mainText={filter.label}
+              subText={filter.subLabel || ''}
+              onRemove={() => onRemoveFilter?.(filter.id)}
+              theme={theme}
+            />
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Third Row: Custom Children (Optional) */}
       {children && (
         <ScrollView
           horizontal

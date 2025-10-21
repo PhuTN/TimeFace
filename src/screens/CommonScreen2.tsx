@@ -7,13 +7,13 @@ import {setUIState} from '../ui/factory/selector';
 import FeatureItem from '../components/list_items/FeatureItem';
 import EmployeeListItem from '../components/list_items/EmployeeItem';
 import Timesheet from '../components/list_items/Timesheet';
-import ChangeInfoRequest from '../components/list_items/ChangeInfoRequest';
+import ICRequest from '../components/list_items/ICRequest';
 import OTRequestFilterModal, {
   OTRequestFilters,
 } from '../components/modals/filter-modals/OTRequestFilterModal';
 import EmployeeFilterModal, {
   EmployeeFilters,
-} from '../components/modals/filter-modals/EmployeeFilterModal';
+} from '../components/modals/filter-modals/TimesheetFilterModal';
 import ICRequestFilterModal, {
   ICRequestFilters,
 } from '../components/modals/filter-modals/ICRequestFilterModal';
@@ -172,7 +172,7 @@ const CommonScreen2: React.FC = () => {
             onMail={() => console.log('Mail Jane')}
           />
 
-          <ChangeInfoRequest
+          <ICRequest
             avatarSource={require('../assets/images/delete.png')}
             name="John Doe"
             position="Developer"
