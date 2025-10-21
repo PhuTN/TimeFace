@@ -6,7 +6,7 @@ import Chip from '../common/Chip';
 
 type RequestStatus = 'approved' | 'rejected' | 'pending';
 
-interface ChangeInfoRequestProps {
+interface ICRequestProps {
   avatarSource: any;
   name: string;
   position: string;
@@ -14,7 +14,7 @@ interface ChangeInfoRequestProps {
   date: string;
 }
 
-const ChangeInfoRequest: React.FC<ChangeInfoRequestProps> = ({
+const ChangeInfoRequest: React.FC<ICRequestProps> = ({
   avatarSource,
   name,
   position,

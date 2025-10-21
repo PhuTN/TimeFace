@@ -22,34 +22,37 @@ const FilterChip: React.FC<FilterChipProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         backgroundColor: theme.colors.filterChipBackground,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingLeft: 16,
+        paddingRight: 8,
+        paddingVertical: 8,
         borderRadius: 100,
-        width: 180,
+        minWidth: 100,
       }}>
-      <View style={{flex: 1, gap: 2}}>
+      <View style={{flex: 1, gap: 2, alignItems: 'flex-start', flexDirection: "column"}}>
         <Text
           style={{
-            fontSize: 16,
-            fontWeight: 500,
+            fontSize: 14,
+            fontWeight: '500',
             color: theme.colors.text,
+            textAlign: 'center',
           }}>
           {mainText}
         </Text>
         <Text
           style={{
-            fontSize: 14,
+            fontSize: 12,
             color: theme.colors.filterChipText,
+            textAlign: 'center',
           }}>
           {subText}
         </Text>
       </View>
-      <TouchableOpacity onPress={onRemove} style={{marginLeft: 8}}>
+      <TouchableOpacity onPress={onRemove} style={{marginLeft: 12}}>
         <Image
           source={require('../../assets/images/delete.png')}
           style={{
-            width: 24,
-            height: 24,
+            width: 20,
+            height: 20,
           }}
         />
       </TouchableOpacity>
