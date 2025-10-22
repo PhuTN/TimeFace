@@ -1,16 +1,18 @@
-import React from 'react';
 import {View, ScrollView, SafeAreaView, Text, Switch} from 'react-native';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
-import {setUIState} from '../../ui/factory/selector';
 import {useFilterSystem} from '../../hooks/useFilterSystem';
+import {useState} from 'react';
 import FilterBar from '../../components/common/FilterBar';
 import LeaveRequestFilterModal, {
   LeaveRequestFilters,
 } from '../../components/modals/filter-modals/LeaveRequestFilterModal';
 import ICRequest from '../../components/list_items/ICRequest';
 import Header2 from '../../components/common/Header2';
+import LeaveRequestDetailModal, {
+  LeaveRequestDetail,
+} from '../../components/modals/detail-modals/LeaveRequestDetailModal';
 
-export default function LeaveRequestsScreen() {
+export default function LeaveRequestScreen() {
   const {loading, theme, lang} = useUIFactory();
   const {
     activeFilters,
@@ -21,39 +23,82 @@ export default function LeaveRequestsScreen() {
     removeFilter,
   } = useFilterSystem<LeaveRequestFilters>();
 
-  console.log('LeaveRequestsScreen - isModalVisible:', isModalVisible);
+  const [selectedRequest, setSelectedRequest] =
+    useState<LeaveRequestDetail | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  console.log('LeaveRequestScreen - isModalVisible:', isModalVisible);
 
   if (loading || !theme || !lang) {
     return null;
   }
 
-  // Mock data - replace with actual data
-  const mockRequests = [
+  // Enhanced mock data with full details
+  const mockRequests: LeaveRequestDetail[] = [
     {
-      id: '1',
       avatarSource: require('../../assets/images/examples/avatar1.png'),
       name: 'Nguyễn Văn A',
       position: 'Developer',
-      status: 'approved' as const,
-      date: '12/10/2024',
+      department: 'Phòng IT',
+      status: 'approved',
+      requestCode: 'LR-2025-001',
+      startDate: '12/10/2024',
+      endDate: '14/10/2024',
+      numberOfDays: 3,
+      reason: 'Xin nghỉ phép để tham gia đám cưới người thân tại tỉnh.',
+      createdAt: '10/10/2024',
+      approver: {
+        name: 'Lê Văn D',
+        date: '11/10/2024',
+      },
     },
     {
-      id: '2',
       avatarSource: require('../../assets/images/examples/avatar2.png'),
       name: 'Trần Thị B',
       position: 'Designer',
-      status: 'pending' as const,
-      date: '15/10/2024',
+      department: 'Phòng Thiết Kế',
+      status: 'pending',
+      requestCode: 'LR-2025-002',
+      startDate: '15/10/2024',
+      endDate: '17/10/2024',
+      numberOfDays: 3,
+      reason: 'Xin nghỉ phép để đi du lịch cùng gia đình.',
+      createdAt: '12/10/2024',
     },
     {
-      id: '3',
       avatarSource: require('../../assets/images/examples/avatar3.png'),
       name: 'Lê Văn C',
       position: 'Manager',
-      status: 'rejected' as const,
-      date: '18/10/2024',
+      department: 'Phòng Quản Lý',
+      status: 'rejected',
+      requestCode: 'LR-2025-003',
+      startDate: '18/10/2024',
+      endDate: '20/10/2024',
+      numberOfDays: 3,
+      reason: 'Xin nghỉ phép vì lý do cá nhân.',
+      createdAt: '15/10/2024',
     },
   ];
+
+  const handleRequestPress = (request: LeaveRequestDetail) => {
+    setSelectedRequest(request);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedRequest(null);
+  };
+
+  const handleApprove = () => {
+    console.log('Approving leave request:', selectedRequest?.requestCode);
+    // TODO: Add API call to approve request
+  };
+
+  const handleReject = () => {
+    console.log('Rejecting leave request:', selectedRequest?.requestCode);
+    // TODO: Add API call to reject request
+  };
 
   const handleApplyFilters = (filters: LeaveRequestFilters) => {
     // Format filters into FilterChipData
@@ -149,63 +194,10 @@ export default function LeaveRequestsScreen() {
   const isDark = theme.name === 'dark';
   const isEnglish = lang.code === 'en';
 
-  const handleToggleTheme = () => {
-    setUIState({theme: isDark ? 'light' : 'dark'});
-  };
-
-  const handleToggleLanguage = () => {
-    setUIState({lang: isEnglish ? 'vi' : 'en'});
-  };
-
   return (
     <SafeAreaView
       style={{flex: 1, backgroundColor: theme.colors.background}}>
       <Header2 title={lang.t('leaveRequestTitle')} theme={theme} />
-
-      {/* Theme and Language Toggle Buttons */}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          backgroundColor: theme.colors.background,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.colors.borderLight,
-        }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-          <Text style={{color: theme.colors.text, fontSize: 14}}>
-            {isDark ? `🌙 ${lang.t('darkMode')}` : `☀️ ${lang.t('lightMode')}`}
-          </Text>
-          <Switch
-            value={isDark}
-            onValueChange={handleToggleTheme}
-            trackColor={{false: '#767577', true: theme.colors.primary}}
-            thumbColor={isDark ? theme.colors.primary : '#f4f3f4'}
-          />
-        </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-          <Text style={{color: theme.colors.text, fontSize: 14}}>
-            {isEnglish ? '🇺🇸 EN' : '🇻🇳 VI'}
-          </Text>
-          <Switch
-            value={isEnglish}
-            onValueChange={handleToggleLanguage}
-            trackColor={{false: '#767577', true: theme.colors.primary}}
-            thumbColor={isEnglish ? theme.colors.primary : '#f4f3f4'}
-          />
-        </View>
-      </View>
 
       <ScrollView
         contentContainerStyle={{
@@ -223,14 +215,15 @@ export default function LeaveRequestsScreen() {
 
         {/* Request List */}
         <View style={{gap: 12, marginTop: 8}}>
-          {mockRequests.map(request => (
+          {mockRequests.map((request, index) => (
             <ICRequest
-              key={request.id}
+              key={index}
               avatarSource={request.avatarSource}
               name={request.name}
               position={request.position}
               status={request.status}
-              date={request.date}
+              date={request.createdAt}
+              onPress={() => handleRequestPress(request)}
             />
           ))}
         </View>
@@ -240,6 +233,17 @@ export default function LeaveRequestsScreen() {
         visible={isModalVisible}
         onClose={closeModal}
         onApplyFilters={handleApplyFilters}
+      />
+
+      <LeaveRequestDetailModal
+        visible={showDetailModal}
+        onClose={handleCloseDetailModal}
+        request={selectedRequest}
+        theme={theme}
+        lang={lang}
+        isAdmin={true}
+        onApprove={handleApprove}
+        onReject={handleReject}
       />
     </SafeAreaView>
   );

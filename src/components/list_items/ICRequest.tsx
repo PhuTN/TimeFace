@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, Image} from 'react-native';
+import {View, Text, Image, TouchableOpacity} from 'react-native';
 import type {Theme} from '../../ui/theme/theme';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 import Chip from '../common/Chip';
@@ -12,6 +12,7 @@ interface ICRequestProps {
   position: string;
   status: RequestStatus;
   date: string;
+  onPress?: () => void;
 }
 
 const ChangeInfoRequest: React.FC<ICRequestProps> = ({
@@ -20,6 +21,7 @@ const ChangeInfoRequest: React.FC<ICRequestProps> = ({
   position,
   status,
   date,
+  onPress,
 }) => {
   const {loading, theme, lang} = useUIFactory();
   if (loading || !theme || !lang) {
@@ -27,7 +29,9 @@ const ChangeInfoRequest: React.FC<ICRequestProps> = ({
   }
 
   return (
-    <View
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
       style={{
         borderColor: theme.colors.borderLight,
         borderWidth: 1,
@@ -88,7 +92,7 @@ const ChangeInfoRequest: React.FC<ICRequestProps> = ({
           {lang.t('changeDate')} {date}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

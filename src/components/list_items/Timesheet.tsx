@@ -1,17 +1,19 @@
 import React from 'react';
-import {View, Text, Image} from 'react-native';
+import {View, Text, Image, TouchableOpacity} from 'react-native';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 
 interface TimesheetProps {
   avatarSource: any;
   name: string;
   position: string;
+  onPress?: () => void;
 }
 
 const Timesheet: React.FC<TimesheetProps> = ({
   avatarSource,
   name,
   position,
+  onPress,
 }) => {
   const {loading, theme} = useUIFactory();
   if (loading || !theme) {
@@ -19,15 +21,16 @@ const Timesheet: React.FC<TimesheetProps> = ({
   }
 
   return (
-    <View
-      style={{
-        borderColor: theme.colors.borderLight,
-        borderWidth: 1,
-        borderRadius: 12,
-        backgroundColor: theme.colors.background,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-      }}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <View
+        style={{
+          borderColor: theme.colors.borderLight,
+          borderWidth: 1,
+          borderRadius: 12,
+          backgroundColor: theme.colors.background,
+          paddingHorizontal: 12,
+          paddingVertical: 12,
+        }}>
       {/* First row */}
       <View
         style={{
@@ -58,6 +61,7 @@ const Timesheet: React.FC<TimesheetProps> = ({
         </View>
       </View>
     </View>
+    </TouchableOpacity>
   );
 };
 

@@ -111,8 +111,7 @@ export default function OTRequestFilterModal({
       <View
         style={[
           S.container,
-          {
-            backgroundColor: theme.colors.background,
+          {backgroundColor: theme.colors.background,
             borderTopColor: theme.colors.contrastBackground,
             borderTopWidth: 1,
             borderLeftColor: theme.colors.contrastBackground,

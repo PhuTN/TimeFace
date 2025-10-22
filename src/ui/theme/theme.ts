@@ -62,7 +62,10 @@ export const ThemePack = {
     pending: ['#D9FE54', '#FFD700'],
     mutedText: ['#666666', '#CCCCCC'],
     contrastBackground: ["#000000", "#FFFFFF"],
-    placeholder: ["#808080", "#808080"]
+    placeholder: ["#808080", "#808080"],
+    lightGrayBackground: ["#F9FAFB", "#2C2C2C"],
+    addButton: ["#5B89C5", "#90CAF9"],
+    modalBackground: ["#FFFFFF", "#1A1A1A"],
     // accent:     ["#FF8A00", "#FFB74D"], // ví dụ thêm 1 dòng
   },
   tokens: {

@@ -1,7 +1,6 @@
-import React from 'react';
 import {View, ScrollView, SafeAreaView, Text, Switch} from 'react-native';
+import {useState} from 'react';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
-import {setUIState} from '../../ui/factory/selector';
 import {useFilterSystem} from '../../hooks/useFilterSystem';
 import FilterBar from '../../components/common/FilterBar';
 import ICRequestFilterModal, {
@@ -9,8 +8,11 @@ import ICRequestFilterModal, {
 } from '../../components/modals/filter-modals/ICRequestFilterModal';
 import ChangeInfoRequest from '../../components/list_items/ICRequest';
 import Header2 from '../../components/common/Header2';
+import ICRequestDetailModal, {
+  ICRequestDetail,
+} from '../../components/modals/detail-modals/ICRequestDetailModal';
 
-export default function ICRequestsScreen() {
+export default function ICRequestScreen() {
   const {loading, theme, lang} = useUIFactory();
   const {
     activeFilters,
@@ -21,6 +23,9 @@ export default function ICRequestsScreen() {
     removeFilter,
   } = useFilterSystem<ICRequestFilters>();
 
+  const [selectedRequest, setSelectedRequest] = useState<ICRequestDetail | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
   console.log('ICRequestsScreen - isModalVisible:', isModalVisible);
 
   if (loading || !theme || !lang) {
@@ -28,7 +33,7 @@ export default function ICRequestsScreen() {
   }
 
   // Mock data - replace with actual data
-  const mockRequests = [
+  const mockRequests: ICRequestDetail[] = [
     {
       id: '1',
       avatarSource: require('../../assets/images/examples/avatar1.png'),
@@ -36,6 +41,24 @@ export default function ICRequestsScreen() {
       position: 'Developer',
       status: 'approved' as const,
       date: '12/10/2024',
+      department: 'IT Department',
+      requestCode: 'IC-001',
+      changedFields: [
+        {
+          label: 'Số điện thoại',
+          oldValue: '0123456789',
+          newValue: '0987654321',
+        },
+        {
+          label: 'Email',
+          oldValue: 'old@email.com',
+          newValue: 'new@email.com',
+        },
+      ],
+      approver: {
+        name: 'Trần Văn B',
+        date: '13/10/2024',
+      },
     },
     {
       id: '2',
@@ -44,6 +67,15 @@ export default function ICRequestsScreen() {
       position: 'Designer',
       status: 'pending' as const,
       date: '15/10/2024',
+      department: 'Design Department',
+      requestCode: 'IC-002',
+      changedFields: [
+        {
+          label: 'Địa chỉ',
+          oldValue: '123 Đường ABC',
+          newValue: '456 Đường XYZ',
+        },
+      ],
     },
     {
       id: '3',
@@ -52,6 +84,15 @@ export default function ICRequestsScreen() {
       position: 'Manager',
       status: 'rejected' as const,
       date: '18/10/2024',
+      department: 'Management',
+      requestCode: 'IC-003',
+      changedFields: [
+        {
+          label: 'Chức vụ',
+          oldValue: 'Team Leader',
+          newValue: 'Manager',
+        },
+      ],
     },
   ];
 
@@ -117,66 +158,30 @@ export default function ICRequestsScreen() {
     applyFilters(filters, formattedFilters);
   };
 
-  const isDark = theme.name === 'dark';
-  const isEnglish = lang.code === 'en';
-
-  const handleToggleTheme = () => {
-    setUIState({theme: isDark ? 'light' : 'dark'});
+  const handleRequestPress = (request: ICRequestDetail) => {
+    setSelectedRequest(request);
+    setShowDetailModal(true);
   };
 
-  const handleToggleLanguage = () => {
-    setUIState({lang: isEnglish ? 'vi' : 'en'});
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedRequest(null);
+  };
+
+  const handleApprove = (requestId: string) => {
+    // TODO: Implement approve logic
+    console.log('Approve request:', requestId);
+  };
+
+  const handleReject = (requestId: string) => {
+    // TODO: Implement reject logic
+    console.log('Reject request:', requestId);
   };
 
   return (
     <SafeAreaView
       style={{flex: 1, backgroundColor: theme.colors.background}}>
       <Header2 title={lang.t('icRequestTitle')} theme={theme} />
-
-      {/* Theme and Language Toggle Buttons */}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          backgroundColor: theme.colors.background,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.colors.borderLight,
-        }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-          <Text style={{color: theme.colors.text, fontSize: 14}}>
-            {isDark ? `🌙 ${lang.t('darkMode')}` : `☀️ ${lang.t('lightMode')}`}
-          </Text>
-          <Switch
-            value={isDark}
-            onValueChange={handleToggleTheme}
-            trackColor={{false: '#767577', true: theme.colors.primary}}
-            thumbColor={isDark ? theme.colors.primary : '#f4f3f4'}
-          />
-        </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-          <Text style={{color: theme.colors.text, fontSize: 14}}>
-            {isEnglish ? '🇺🇸 EN' : '🇻🇳 VI'}
-          </Text>
-          <Switch
-            value={isEnglish}
-            onValueChange={handleToggleLanguage}
-            trackColor={{false: '#767577', true: theme.colors.primary}}
-            thumbColor={isEnglish ? theme.colors.primary : '#f4f3f4'}
-          />
-        </View>
-      </View>
 
       <ScrollView
         contentContainerStyle={{
@@ -202,6 +207,7 @@ export default function ICRequestsScreen() {
               position={request.position}
               status={request.status}
               date={request.date}
+              onPress={() => handleRequestPress(request)}
             />
           ))}
         </View>
@@ -211,6 +217,17 @@ export default function ICRequestsScreen() {
         visible={isModalVisible}
         onClose={closeModal}
         onApplyFilters={handleApplyFilters}
+      />
+
+      <ICRequestDetailModal
+        visible={showDetailModal}
+        onClose={handleCloseDetailModal}
+        request={selectedRequest}
+        theme={theme}
+        lang={lang}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        isAdmin={true}
       />
     </SafeAreaView>
   );

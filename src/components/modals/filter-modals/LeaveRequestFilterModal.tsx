@@ -125,6 +125,7 @@ export default function LeaveRequestFilterModal({
             borderRightWidth: 1,
           },
         ]}>
+        {' '}
         <ScrollView
           contentContainerStyle={{
             padding: theme.spacing(2),

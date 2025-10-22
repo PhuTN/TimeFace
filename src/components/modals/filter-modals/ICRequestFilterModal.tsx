@@ -111,6 +111,7 @@ export default function ICRequestFilterModal({
             borderRightWidth: 1,
           },
         ]}>
+        {' '}
         <ScrollView
           contentContainerStyle={{
             padding: theme.spacing(2),
