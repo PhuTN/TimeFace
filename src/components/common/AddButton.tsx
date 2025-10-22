@@ -64,7 +64,7 @@ const AddButton: React.FC<Props> = ({
 const styles = StyleSheet.create({
   button: {
     backgroundColor: '#D8F6FF',
-    borderRadius: 12,
+    borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
     alignSelf: 'center',

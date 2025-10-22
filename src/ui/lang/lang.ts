@@ -94,6 +94,7 @@ export const Lang = {
 
   //DepartmentManagementScreen
   department_management: ["Quản lý phòng ban", "Department Management"],
+  department_detail: ["Chi tiết phòng ban", "Department Detail"],
   list_department: ["Danh sách phòng ban", "List of departments"],
   department_name_title: ["Tên phòng ban", "Department name"],
   head_of_dept: ["Trưởng phòng", "Head of Department"],
@@ -120,6 +121,8 @@ export const Lang = {
   list_of_dp_employees: ["DANH SÁCH NHÂN VIÊN CỦA PHÒNG", "List of department employees"],
   all_employees: ["Tất cả nhân viên", "All employees"],
   employees_in_this_dept: ["Nhân viên trong phòng ban", "Employees in the department"],
-  type_of_employee: ["Loại nhân viên", "Type of employees"]
+  type_of_employee: ["Loại nhân viên", "Type of employees"],
+  employee_management: ["Quản lý nhân viên", "Employee Management"],
+
 } as const;
 

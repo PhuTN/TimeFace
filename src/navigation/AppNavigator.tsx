@@ -48,7 +48,6 @@ const AppNavigator = () => {
         <Stack.Screen name="DepartmentManagement" component={DepartmentManagementScreen} />
         <Stack.Screen name="DepartmentDetail" component={DepartmentDetailScreen} />
         <Stack.Screen name="EmployeeManagement" component={EmployeeManagementScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Management" component={ManagementScreen} />
         <Stack.Screen name="Report" component={ReportScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />

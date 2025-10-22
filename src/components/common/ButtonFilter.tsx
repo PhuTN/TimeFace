@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   btn: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: 10,
     alignItems: 'center',
   },
   btnText: {
