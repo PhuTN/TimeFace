@@ -41,7 +41,7 @@ const themedStyles = (theme: any) =>
       borderWidth: 2,
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.background,
-      borderRadius: 14,
+      borderRadius: 10,
       paddingHorizontal: 14,
       paddingVertical: 5,
       minHeight: 48,

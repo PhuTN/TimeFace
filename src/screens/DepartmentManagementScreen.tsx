@@ -1,9 +1,7 @@
 import React, { memo, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ListRenderItem, Pressable, FlatList } from "react-native";
 import { useUIFactory } from "../ui/factory/useUIFactory";
-import BottomSheetModal from "../components/common/BottomSheetModal";
 import FilterIcon from "../assets/icons/filter_icon.svg"
-import Header from "../components/common/Header";
 import Footer from "../components/common/Footer";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -13,6 +11,7 @@ import { DepartmentFilterValues } from "../components/common/DepartmentFilter";
 import AddButton from "../components/common/AddButton";
 import AddDepartmentModal from "../components/common/AddDepartmentModal";
 import Chip from "../components/common/Chip.tsx";
+import HeaderBar from "../components/common/HeaderBar.tsx";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DepartmentManagement'>;
 
@@ -97,12 +96,9 @@ const DepartmentManagementScreen = ({ route, navigation }: Props) => {
   const styles = makeStyles(theme);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <Header
-        title={lang.t('department_management')}
-        showBack={true}
-        onBackPress={() => {
-          navigation.goBack()
-        }}
+      <HeaderBar
+        title={lang.t("department_management")}
+        onBack={() => navigation?.goBack?.()}
       />
 
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -263,11 +259,15 @@ const makeStyles = (theme: any) =>
     },
     card: {
       backgroundColor: theme.colors.background,
-      borderRadius: 16,
-      borderColor: theme.colors.contrastBackground,
-      borderWidth: 1,
-      padding: 16,
-
+      borderRadius: 10,
+      borderColor: theme.colors.cardBoder,
+      borderWidth: 1.5,
+      padding: 13,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+      elevation: 2,
     },
     cardHeader: {
       flexDirection: "row",

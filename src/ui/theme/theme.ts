@@ -64,6 +64,7 @@ export const ThemePack = {
     rejected: ['#FF4B4B', '#B22222'],
     pending: ['#D9FE54', '#FFD700'],
     mutedText: ['#666666', '#CCCCCC'],
+    cardBoder: ['#D9D8D8', "#D9D8D8"]
     // accent:     ["#FF8A00", "#FFB74D"], // ví dụ thêm 1 dòng
   },
   tokens: {

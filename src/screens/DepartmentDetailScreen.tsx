@@ -14,6 +14,7 @@ import { RootStackParamList } from "../navigation/AppNavigator";
 import FilterIcon from "../assets/icons/filter_icon.svg";
 import EmployeeFilterInDepartment, { EmployeeFilterInDeptValues } from
     "../components/common/EmployeeFilterInDepartment";
+import HeaderBar from "../components/common/HeaderBar.tsx";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DepartmentDetail'>;
 
@@ -190,7 +191,10 @@ export default function DepartmentDetailScreen({ route, navigation }: Props) {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
             {/* Header CỐ ĐỊNH */}
-            <Header title={dept.name} showBack onBackPress={() => navigation.goBack()} />
+            <HeaderBar
+                title={lang.t("department_detail")}
+                onBack={() => navigation?.goBack?.()}
+            />
             <View style={{ height: theme.spacing(2) }} />
 
             <View style={S.footerBar}>
@@ -313,19 +317,24 @@ const makeStyles = (theme: any) =>
         // employee card
         card: {
             backgroundColor: theme.colors.background,
-            borderRadius: 14,
-            borderWidth: 1,
-            borderColor: theme.colors.contrastBackground,
-            padding: 12,
+            borderRadius: 10,
+            borderWidth: 1.5,
+            borderColor: theme.colors.cardBoder,
+            padding: 13,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
+            elevation: 2,
         },
-        row: { flexDirection: "row", alignItems: "center", gap: 12 },
+        row: { flexDirection: "row", alignItems: "center", gap: 12, },
         avatar: { width: 44, height: 44, borderRadius: 999 },
         name: { fontSize: 16, fontWeight: "700", color: theme.colors.text },
         role: { fontSize: 13, color: "#666", marginTop: 2 },
 
         // big check
         checkWrap: {
-            width: 36, height: 36, borderRadius: 10,
+            width: 36, height: 36, borderRadius: 7,
             alignItems: "center", justifyContent: "center", borderWidth: 2,
         },
         checkWrapOn: { backgroundColor: "#5F8CFF", borderColor: "#5F8CFF" },
@@ -343,7 +352,7 @@ const makeStyles = (theme: any) =>
             backgroundColor: "#6E8BFF",
             paddingHorizontal: 24,
             paddingVertical: 12,
-            borderRadius: 12,
+            borderRadius: 10,
             minWidth: 180,
             alignItems: "center",
         },

@@ -132,8 +132,8 @@ const makeStyles = (theme: any) =>
             paddingBottom: Platform.select({ ios: 28, android: 20 }),
             paddingHorizontal: 16,
             backgroundColor: theme.colors.card ?? "#fff",
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
+            borderTopLeftRadius: 15,
+            borderTopRightRadius: 15,
         },
         sectionLabel: {
             fontSize: 14,
@@ -150,7 +150,7 @@ const makeStyles = (theme: any) =>
             height: 48,
             alignItems: "center",
             justifyContent: "center",
-            borderRadius: 12,
+            borderRadius: 10,
             backgroundColor: "#E8F1FF",
         },
         btnClearText: {
@@ -163,7 +163,7 @@ const makeStyles = (theme: any) =>
             height: 48,
             alignItems: "center",
             justifyContent: "center",
-            borderRadius: 12,
+            borderRadius: 10,
             backgroundColor: "#6E8BFF",
         },
         btnApplyText: {

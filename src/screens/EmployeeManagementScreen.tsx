@@ -12,7 +12,7 @@ import {
     Image,
 } from "react-native";
 import { useUIFactory } from "../ui/factory/useUIFactory";
-import Header from "../components/common/Header";
+import HeaderBar from "../components/common/HeaderBar.tsx";
 import Footer from "../components/common/Footer";
 import FilterIcon from "../assets/icons/filter_icon.svg";
 import AddButton from "../components/common/AddButton";
@@ -135,7 +135,7 @@ export default function EmployeeManagementScreen({ navigation }: Props) {
                         </View>
 
                         {/* badges ở cột phải */}
-                        <View style={{ gap: 5, alignItems: "flex-end"}}>
+                        <View style={{ gap: 5, alignItems: "flex-end" }}>
                             <Chip status={isActive ? 'active' : 'inactive'} />
                             <Chip status={pwdStatus} />
                         </View>
@@ -209,10 +209,9 @@ export default function EmployeeManagementScreen({ navigation }: Props) {
     // ---------- UI
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-            <Header
-                title={t("department_management")}
-                showBack
-                onBackPress={() => navigation?.goBack?.()}
+            <HeaderBar
+                title={t("employee_management")}
+                onBack={() => navigation?.goBack?.()}
             />
 
             <View style={[S.screen, { backgroundColor: theme.colors.background }]}>
@@ -319,10 +318,15 @@ const makeStyles = (theme: any) =>
         // Card
         card: {
             backgroundColor: theme.colors.background,
-            borderRadius: 16,
-            borderColor: theme.colors.contrastBackground,
-            borderWidth: 1,
-            padding: 12,
+            borderRadius: 10,
+            borderColor: theme.colors.cardBoder,
+            borderWidth: 1.5,
+            padding: 13,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
+            elevation: 2,
         },
         row: {
             flexDirection: "row",
