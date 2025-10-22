@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, Image} from 'react-native';
+import {View, Text, Image, TouchableOpacity} from 'react-native';
 import type {Theme} from '../../ui/theme/theme';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 import Chip from '../common/Chip';
@@ -15,6 +15,7 @@ interface OTRequestProps {
   date: string;
   time: string;
   createdAt: string;
+  onPress?: () => void;
 }
 
 const OTRequest: React.FC<OTRequestProps> = ({
@@ -26,6 +27,7 @@ const OTRequest: React.FC<OTRequestProps> = ({
   date,
   time,
   createdAt,
+  onPress,
 }) => {
   const {loading, theme, lang} = useUIFactory();
   if (loading || !theme || !lang) {
@@ -33,14 +35,15 @@ const OTRequest: React.FC<OTRequestProps> = ({
   }
 
   return (
-    <View
-      style={{
-        borderColor: theme.colors.borderLight,
-        borderWidth: 1,
-        borderRadius: 12,
-        backgroundColor: theme.colors.background,
-        paddingHorizontal: 12,
-      }}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <View
+        style={{
+          borderColor: theme.colors.borderLight,
+          borderWidth: 1,
+          borderRadius: 12,
+          backgroundColor: theme.colors.background,
+          paddingHorizontal: 12,
+        }}>
       {/* First row */}
       <View
         style={{
@@ -106,6 +109,7 @@ const OTRequest: React.FC<OTRequestProps> = ({
         </View>
       </View>
     </View>
+    </TouchableOpacity>
   );
 };
 

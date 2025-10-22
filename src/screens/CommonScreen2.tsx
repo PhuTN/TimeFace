@@ -1,46 +1,23 @@
-import React, {useState} from 'react';
-import {View, Text, Button, StyleSheet, ScrollView} from 'react-native';
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  Switch,
+  TouchableOpacity,
+} from 'react-native';
 import {useUIFactory} from '../ui/factory/useUIFactory';
-import OTRequest from '../components/list_items/OTRequest';
-import Attendance from '../components/list_items/Attendance';
 import {setUIState} from '../ui/factory/selector';
-import FeatureItem from '../components/list_items/FeatureItem';
-import EmployeeListItem from '../components/list_items/EmployeeItem';
-import Timesheet from '../components/list_items/Timesheet';
-import ICRequest from '../components/list_items/ICRequest';
-import OTRequestFilterModal, {
-  OTRequestFilters,
-} from '../components/modals/filter-modals/OTRequestFilterModal';
-import EmployeeFilterModal, {
-  EmployeeFilters,
-} from '../components/modals/filter-modals/TimesheetFilterModal';
-import ICRequestFilterModal, {
-  ICRequestFilters,
-} from '../components/modals/filter-modals/ICRequestFilterModal';
-import LeaveRequestFilterModal, {
-  LeaveRequestFilters,
-} from '../components/modals/filter-modals/LeaveRequestFilterModal';
-import BottomSheetModal from '../components/common/BottomSheetModal';
-import CommonScreen3 from './CommonScreen3';
-import FilterBar from '../components/common/FilterBar';
-import FilterChip from '../components/common/FilterChip';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../navigation/AppNavigator';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const CommonScreen2: React.FC = () => {
   const {loading, lang, theme} = useUIFactory();
-  const [showOTFilterModal, setShowOTFilterModal] = useState(false);
-  const [showEmployeeFilterModal, setShowEmployeeFilterModal] = useState(false);
-  const [showICRequestFilterModal, setShowICRequestFilterModal] =
-    useState(false);
-  const [showLeaveRequestFilterModal, setShowLeaveRequestFilterModal] =
-    useState(false);
-  const [showCommon3, setShowCommon3] = useState(false);
-
-  // State for filter chips
-  const [filters, setFilters] = useState([
-    {id: '1', mainText: 'Marketing', subText: 'Department'},
-    {id: '2', mainText: 'Manager', subText: 'Position'},
-    {id: '3', mainText: 'Approved', subText: 'Status'},
-  ]);
+  const navigation = useNavigation<NavigationProp>();
 
   if (loading || !theme || !lang) {
     return (
@@ -50,203 +27,162 @@ const CommonScreen2: React.FC = () => {
     );
   }
 
-  const handleApplyOTFilters = (filters: OTRequestFilters) => {
-    console.log('OT Filters applied:', filters);
-    // TODO: Apply filters to your data/API call
+  const isDark = theme.name === 'dark';
+  const isEnglish = lang.code === 'en';
+
+  const handleToggleTheme = () => {
+    setUIState({theme: isDark ? 'light' : 'dark'});
   };
 
-  const handleApplyEmployeeFilters = (filters: EmployeeFilters) => {
-    console.log('Employee Filters applied:', filters);
-    // TODO: Apply filters to your data/API call
-  };
-
-  const handleApplyICRequestFilters = (filters: ICRequestFilters) => {
-    console.log('IC Request Filters applied:', filters);
-    // TODO: Apply filters to your data/API call
-  };
-
-  const handleApplyLeaveRequestFilters = (filters: LeaveRequestFilters) => {
-    console.log('Leave Request Filters applied:', filters);
-    // TODO: Apply filters to your data/API call
-  };
-
-  const removeFilter = (id: string) => {
-    setFilters(prev => prev.filter(filter => filter.id !== id));
+  const handleToggleLanguage = () => {
+    setUIState({lang: isEnglish ? 'vi' : 'en'});
   };
 
   return (
-    <>
-      <ScrollView style={styles.container}>
-        {/* Đổi theme */}
-        <View style={{height: 40}} />
-        <Button
-          title={lang.t('theme.dark')}
-          onPress={() => setUIState({theme: 'dark'})}
-        />
-        <Button
-          title={lang.t('theme.light')}
-          onPress={() => setUIState({theme: 'light'})}
-        />
-
-        <View style={{height: theme.spacing(2)}} />
-
-        {/* Đổi ngôn ngữ */}
-        <Button title="Tiếng Việt" onPress={() => setUIState({lang: 'vi'})} />
-        <Button title="English" onPress={() => setUIState({lang: 'en'})} />
-
-        <View style={{height: theme.spacing(2)}} />
-
-        {/* Filter Modal Buttons */}
-        <Button
-          title="OT Request Filter"
-          onPress={() => setShowOTFilterModal(true)}
-        />
-        <Button
-          title="Employee Filter"
-          onPress={() => setShowEmployeeFilterModal(true)}
-        />
-        <Button
-          title="Info Change Request Filter"
-          onPress={() => setShowICRequestFilterModal(true)}
-        />
-        <Button
-          title="Leave Request Filter"
-          onPress={() => setShowLeaveRequestFilterModal(true)}
-        />
-        <Button
-          title="CommonScreen3 (Leave Request Filter)"
-          onPress={() => setShowCommon3(true)}
-        />
-
-        <View style={{height: theme.spacing(2)}} />
-
-        {/* FilterBar Example */}
-        <View style={{paddingHorizontal: 16, gap: 16}}>
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: 'bold',
-              color: theme.colors.text,
-            }}>
-            FilterBar Example:
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: theme.colors.background}]}>
+      <View style={{height: 32}} />
+      {/* Theme and Language Toggle Buttons */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-around',
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          backgroundColor: theme.colors.background,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.colors.borderLight,
+        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+          <Text style={{color: theme.colors.text, fontSize: 14}}>
+            {isDark ? `🌙 ${lang.t('darkMode')}` : `☀️ ${lang.t('lightMode')}`}
           </Text>
-
-          <FilterBar
-            title="Employee List"
-            onFilterPress={() => setShowEmployeeFilterModal(true)}
-            theme={theme}>
-            {filters.map(filter => (
-              <FilterChip
-                key={filter.id}
-                mainText={filter.mainText}
-                subText={filter.subText}
-                onRemove={() => removeFilter(filter.id)}
-                theme={theme}
-              />
-            ))}
-          </FilterBar>
-        </View>
-
-        <View style={{height: theme.spacing(2)}} />
-
-        {/* List Item Examples */}
-        <View style={{paddingHorizontal: 16, gap: 12}}>
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: 'bold',
-              color: theme.colors.text,
-            }}>
-            List Item Examples:
-          </Text>
-
-          <Attendance
-            avatarSource={require('../assets/images/delete.png')}
-            name="Jane Smith"
-            position="Designer"
-            isLate={true}
-            lateMinutes={45}
-            latePercentage={15}
-            onCall={() => console.log('Call Jane')}
-            onMessage={() => console.log('Message Jane')}
-            onMail={() => console.log('Mail Jane')}
-          />
-
-          <ICRequest
-            avatarSource={require('../assets/images/delete.png')}
-            name="John Doe"
-            position="Developer"
-            status="pending"
-            date="12/05/2025"
-          />
-
-          <Timesheet
-            avatarSource={require('../assets/images/delete.png')}
-            name="Alice Cooper"
-            position="HR Specialist"
-          />
-
-          <EmployeeListItem
-            avatarSource={require('../assets/images/delete.png')}
-            name="Bob Johnson"
-            position="Manager"
-            isSelected={true}
-            onToggleSelect={() => console.log('Toggle Bob')}
-          />
-
-          <FeatureItem text="Overtime" color="#FFAF2A" />
-
-          <OTRequest
-            avatarSource={require('../assets/images/delete.png')}
-            name="Charlie Brown"
-            position="Developer"
-            status="approved"
-            code="OT001"
-            date="15/05/2025"
-            time="17h - 19h"
-            createdAt="12/05/2025"
+          <Switch
+            value={isDark}
+            onValueChange={handleToggleTheme}
+            trackColor={{false: '#767577', true: theme.colors.primary}}
+            thumbColor={isDark ? theme.colors.primary : '#f4f3f4'}
           />
         </View>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+          <Text style={{color: theme.colors.text, fontSize: 14}}>
+            {isEnglish ? '🇺🇸 EN' : '🇻🇳 VI'}
+          </Text>
+          <Switch
+            value={isEnglish}
+            onValueChange={handleToggleLanguage}
+            trackColor={{false: '#767577', true: theme.colors.primary}}
+            thumbColor={isEnglish ? theme.colors.primary : '#f4f3f4'}
+          />
+        </View>
+      </View>
 
-        <View style={{height: 40}} />
-      </ScrollView>
+      {/* Navigation Buttons */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('ICRequestScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('icRequestTitle')}</Text>
+        </TouchableOpacity>
 
-      {/* Filter Modals */}
-      <OTRequestFilterModal
-        visible={showOTFilterModal}
-        onClose={() => setShowOTFilterModal(false)}
-        onApplyFilters={handleApplyOTFilters}
-      />
-      <EmployeeFilterModal
-        visible={showEmployeeFilterModal}
-        onClose={() => setShowEmployeeFilterModal(false)}
-        onApplyFilters={handleApplyEmployeeFilters}
-      />
-      <ICRequestFilterModal
-        visible={showICRequestFilterModal}
-        onClose={() => setShowICRequestFilterModal(false)}
-        onApplyFilters={handleApplyICRequestFilters}
-      />
-      <LeaveRequestFilterModal
-        visible={showLeaveRequestFilterModal}
-        onClose={() => setShowLeaveRequestFilterModal(false)}
-        onApplyFilters={handleApplyLeaveRequestFilters}
-      />
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('LeaveRequestScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('leaveRequestTitle')}</Text>
+        </TouchableOpacity>
 
-      {/* CommonScreen3 Modal */}
-      <BottomSheetModal
-        visible={showCommon3}
-        onClose={() => setShowCommon3(false)}
-        maxHeightRatio={0.9}>
-        <CommonScreen3 />
-      </BottomSheetModal>
-    </>
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('OTRequestScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('otRequestTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('TimesheetScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('timesheetTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('MonthTimesheetScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('monthTimesheetTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('DailyRecordScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('dailyRecordTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('NotificationScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('notificationTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('OTRecordScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('otRecordTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('LeaveRecordScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('leaveRecordTitle')}</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  buttonContainer: {
+    flex: 1,
+    padding: 16,
+    gap: 16,
+    justifyContent: 'center',
+  },
+  navButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });
 

@@ -1,7 +1,6 @@
-import React from 'react';
 import {View, ScrollView, SafeAreaView, Text, Switch} from 'react-native';
+import {useState} from 'react';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
-import {setUIState} from '../../ui/factory/selector';
 import {useFilterSystem} from '../../hooks/useFilterSystem';
 import FilterBar from '../../components/common/FilterBar';
 import OTRequestFilterModal, {
@@ -9,8 +8,11 @@ import OTRequestFilterModal, {
 } from '../../components/modals/filter-modals/OTRequestFilterModal';
 import OTRequest from '../../components/list_items/OTRequest';
 import Header2 from '../../components/common/Header2';
+import OTRequestDetailModal, {
+  OTRequestDetail,
+} from '../../components/modals/detail-modals/OTRequestDetailModal';
 
-export default function OTRequestsScreen() {
+export default function OTRequestScreen() {
   const {loading, theme, lang} = useUIFactory();
   const {
     activeFilters,
@@ -21,48 +23,83 @@ export default function OTRequestsScreen() {
     removeFilter,
   } = useFilterSystem<OTRequestFilters>();
 
-  console.log('OTRequestsScreen - isModalVisible:', isModalVisible);
+  const [selectedRequest, setSelectedRequest] =
+    useState<OTRequestDetail | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  console.log('OTRequestScreen - isModalVisible:', isModalVisible);
 
   if (loading || !theme || !lang) {
     return null;
   }
 
-  // Mock data - replace with actual data
-  const mockRequests = [
+  // Enhanced mock data with full details
+  const mockRequests: OTRequestDetail[] = [
     {
-      id: '1',
       avatarSource: require('../../assets/images/examples/avatar1.png'),
       name: 'Nguyễn Văn A',
       position: 'Developer',
-      status: 'approved' as const,
+      department: 'Phòng IT',
+      status: 'approved',
       code: 'OT-001',
       date: '12/10/2024',
       time: '18:00 - 20:00',
+      hours: 2,
+      reason:
+        'Làm thêm giờ để hoàn thành dự án trước deadline. Cần deploy hệ thống production.',
       createdAt: '10/10/2024',
+      approver: {
+        name: 'Lê Văn D',
+        date: '11/10/2024',
+      },
     },
     {
-      id: '2',
       avatarSource: require('../../assets/images/examples/avatar2.png'),
       name: 'Trần Thị B',
       position: 'Designer',
-      status: 'pending' as const,
+      department: 'Phòng Thiết Kế',
+      status: 'pending',
       code: 'OT-002',
       date: '15/10/2024',
       time: '19:00 - 21:00',
+      hours: 2,
+      reason: 'Hoàn thiện design cho campaign mới của khách hàng.',
       createdAt: '13/10/2024',
     },
     {
-      id: '3',
       avatarSource: require('../../assets/images/examples/avatar3.png'),
       name: 'Lê Văn C',
       position: 'Manager',
-      status: 'rejected' as const,
+      department: 'Phòng Quản Lý',
+      status: 'rejected',
       code: 'OT-003',
       date: '18/10/2024',
       time: '17:00 - 19:00',
+      hours: 2,
+      reason: 'Họp với đối tác nước ngoài.',
       createdAt: '16/10/2024',
     },
   ];
+
+  const handleRequestPress = (request: OTRequestDetail) => {
+    setSelectedRequest(request);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedRequest(null);
+  };
+
+  const handleApprove = () => {
+    console.log('Approving OT request:', selectedRequest?.code);
+    // TODO: Add API call to approve request
+  };
+
+  const handleReject = () => {
+    console.log('Rejecting OT request:', selectedRequest?.code);
+    // TODO: Add API call to reject request
+  };
 
   const handleApplyFilters = (filters: OTRequestFilters) => {
     // Format filters into FilterChipData
@@ -148,63 +185,10 @@ export default function OTRequestsScreen() {
   const isDark = theme.name === 'dark';
   const isEnglish = lang.code === 'en';
 
-  const handleToggleTheme = () => {
-    setUIState({theme: isDark ? 'light' : 'dark'});
-  };
-
-  const handleToggleLanguage = () => {
-    setUIState({lang: isEnglish ? 'vi' : 'en'});
-  };
-
   return (
     <SafeAreaView
       style={{flex: 1, backgroundColor: theme.colors.background}}>
       <Header2 title={lang.t('otRequestTitle')} theme={theme} />
-
-      {/* Theme and Language Toggle Buttons */}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          backgroundColor: theme.colors.background,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.colors.borderLight,
-        }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-          <Text style={{color: theme.colors.text, fontSize: 14}}>
-            {isDark ? `🌙 ${lang.t('darkMode')}` : `☀️ ${lang.t('lightMode')}`}
-          </Text>
-          <Switch
-            value={isDark}
-            onValueChange={handleToggleTheme}
-            trackColor={{false: '#767577', true: theme.colors.primary}}
-            thumbColor={isDark ? theme.colors.primary : '#f4f3f4'}
-          />
-        </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-          <Text style={{color: theme.colors.text, fontSize: 14}}>
-            {isEnglish ? '🇺🇸 EN' : '🇻🇳 VI'}
-          </Text>
-          <Switch
-            value={isEnglish}
-            onValueChange={handleToggleLanguage}
-            trackColor={{false: '#767577', true: theme.colors.primary}}
-            thumbColor={isEnglish ? theme.colors.primary : '#f4f3f4'}
-          />
-        </View>
-      </View>
 
       <ScrollView
         contentContainerStyle={{
@@ -222,9 +206,9 @@ export default function OTRequestsScreen() {
 
         {/* Request List */}
         <View style={{gap: 12, marginTop: 8}}>
-          {mockRequests.map(request => (
+          {mockRequests.map((request, index) => (
             <OTRequest
-              key={request.id}
+              key={index}
               avatarSource={request.avatarSource}
               name={request.name}
               position={request.position}
@@ -233,6 +217,7 @@ export default function OTRequestsScreen() {
               date={request.date}
               time={request.time}
               createdAt={request.createdAt}
+              onPress={() => handleRequestPress(request)}
             />
           ))}
         </View>
@@ -242,6 +227,17 @@ export default function OTRequestsScreen() {
         visible={isModalVisible}
         onClose={closeModal}
         onApplyFilters={handleApplyFilters}
+      />
+
+      <OTRequestDetailModal
+        visible={showDetailModal}
+        onClose={handleCloseDetailModal}
+        request={selectedRequest}
+        theme={theme}
+        lang={lang}
+        isAdmin={true}
+        onApprove={handleApprove}
+        onReject={handleReject}
       />
     </SafeAreaView>
   );
