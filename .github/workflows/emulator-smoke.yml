@@ -29,30 +29,67 @@ jobs:
           .\gradlew.bat --no-daemon assembleDebug
 
       - name: Boot AVD & Install APK
+        shell: powershell
         env:
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}   # Đảm bảo biến môi trường đã cấu hình ở runner
-          AVD_NAME: CI_CD_emu                        # Đổi theo AVD của bạn
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }} # đảm bảo đã set ở machine runner
+          AVD_NAME: CI_CD_emu                      # đổi theo AVD của bạn
+          # (khuyến nghị) truyền APP_ID để khỏi phải parse build.gradle:
+          # APP_ID: com.yourcompany.yourapp
         run: |
+          $ErrorActionPreference = 'Stop'
+      
           Write-Host "Killing stray adb (ignore error if not found)"
-          try { taskkill /F /IM adb.exe } catch {}
+          try { taskkill /F /IM adb.exe | Out-Null } catch {}
+      
           $adb = Join-Path $env:ANDROID_SDK_ROOT 'platform-tools\adb.exe'
+          $emu = Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe'
+      
+          if (-not (Test-Path $adb)) { throw "adb not found at $adb" }
+          if (-not (Test-Path $emu)) { throw "emulator not found at $emu" }
+      
           & $adb kill-server
-          Start-Process -FilePath (Join-Path $env:ANDROID_SDK_ROOT 'emulator\emulator.exe') `
-            -ArgumentList @("-avd","$env:AVD_NAME","-no-snapshot","-no-boot-anim","-gpu","host","-no-audio","-no-window") `
-            -PassThru | Out-Null
-          Write-Host "Waiting for device..."
+      
+          Write-Host "Starting emulator: $($env:AVD_NAME)"
+          Start-Process -FilePath $emu -ArgumentList @(
+            "-avd",$env:AVD_NAME,
+            "-no-snapshot","-no-boot-anim",
+            "-gpu","host",
+            "-no-audio","-no-window"
+          ) -PassThru | Out-Null
+      
+          Write-Host "Waiting for device to connect..."
           & $adb wait-for-device
-          # Chờ boot hoàn tất (dò sys.boot_completed)
-          for ($i=0; $i -lt 120; $i++) {
-            $state = & $adb shell getprop sys.boot_completed
-            if ($state -match "1") { break }
+      
+          Write-Host "Waiting for sys.boot_completed..."
+          for ($i=0; $i -lt 180; $i++) {
+            $state = (& $adb shell getprop sys.boot_completed).Trim()
+            if ($state -eq '1') { break }
             Start-Sleep -Seconds 2
           }
+      
           $apk = Resolve-Path "android/app/build/outputs/apk/debug/app-debug.apk"
+          if (-not (Test-Path $apk)) { throw "APK not found at $apk" }
+      
+          Write-Host "Installing APK: $apk"
           & $adb install -r "$apk"
-          # Mở app (đổi ứng với applicationId của bạn)
-          $appId = (Select-String -Path "android/app/build.gradle" -Pattern "applicationId\s+\"([^\"]+)\"" -AllMatches).Matches.Groups[1].Value
-          if (-not $appId) { $appId = "com.yourapp" }
+      
+          # Lấy applicationId: ưu tiên APP_ID từ env, nếu không có thì parse build.gradle
+          if ([string]::IsNullOrWhiteSpace($env:APP_ID)) {
+            $gradleText = Get-Content -LiteralPath "android/app/build.gradle" -Raw
+            $m = [regex]::Match($gradleText, 'applicationId\s+"([^"]+)"')
+            if ($m.Success) { $appId = $m.Groups[1].Value } else { $appId = $null }
+          } else {
+            $appId = $env:APP_ID
+          }
+      
+          if ([string]::IsNullOrWhiteSpace($appId)) {
+            Write-Warning "Cannot detect applicationId. Falling back to com.example.app"
+            $appId = 'com.example.app'
+          } else {
+            Write-Host "Detected applicationId: $appId"
+          }
+      
+          Write-Host "Launching app..."
           & $adb shell monkey -p $appId -c android.intent.category.LAUNCHER 1
 
       - name: Smoke assertions (logcat contains)
