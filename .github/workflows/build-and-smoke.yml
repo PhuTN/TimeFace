@@ -140,12 +140,12 @@ jobs:
           Write-Host "Launching app via monkey... ($appId)"
           & $ADB shell monkey -p $appId -c android.intent.category.LAUNCHER 1
 
-      - name: Smoke assertions (pidof – retry & null-safe)
+      - name: Smoke assertions (minimal – foreground check)
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
       
-          function SDK {
+          function Resolve-AndroidSdk {
             $c = @()
             if ($env:ANDROID_SDK_ROOT -and (Test-Path $env:ANDROID_SDK_ROOT)) { $c += $env:ANDROID_SDK_ROOT }
             if ($env:ANDROID_HOME -and (Test-Path $env:ANDROID_HOME)) { $c += $env:ANDROID_HOME }
@@ -153,45 +153,55 @@ jobs:
             if ($env:USERPROFILE)  { $c += (Join-Path $env:USERPROFILE  'AppData\Local\Android\Sdk') }
             $c += 'C:\Android\Sdk'
             foreach ($p in $c | Select-Object -Unique) {
-              if (Test-Path (Join-Path $p 'platform-tools\adb.exe')) { return (Resolve-Path $p).Path }
+              if ($p -and (Test-Path (Join-Path $p 'platform-tools\adb.exe'))) {
+                return (Resolve-Path $p).Path
+              }
             }
             return $null
           }
-          $sdk = SDK
+      
+          $sdk = Resolve-AndroidSdk
+          if (-not $sdk) { throw "Không tìm thấy Android SDK." }
           $ADB = Join-Path $sdk 'platform-tools\adb.exe'
       
+          # đảm bảo device online & boot xong
           & $ADB start-server | Out-Null
           & $ADB wait-for-device
+          for ($i=0; $i -lt 120; $i++) {
+            $boot = (& $ADB shell getprop sys.boot_completed 2>$null) -as [string]
+            if (($boot + '').Trim() -eq '1') { break }
+            Start-Sleep -Seconds 2
+          }
       
           $appId = ($env:APP_ID + '').Trim()
-          if ([string]::IsNullOrWhiteSpace($appId)) { throw "APP_ID rỗng." }
+          if ([string]::IsNullOrWhiteSpace($appId)) { throw "APP_ID rỗng – set env.APP_ID trong job." }
       
-          # re-launch trước khi assert
+          # package đã cài?
+          $pm = & $ADB shell pm path $appId 2>$null
+          if (-not $pm) { throw "Package $appId chưa cài – kiểm tra bước install." }
+      
+          # mở app
           & $ADB shell monkey -p $appId -c android.intent.category.LAUNCHER 1 | Out-Null
       
-          $deadline = (Get-Date).AddSeconds(90)
-          $pid = ''
+          # đợi app vào foreground bằng dumpsys (ít lỗi hơn pidof)
+          $deadline = (Get-Date).AddSeconds(45)
+          $ok = $false
           do {
-            $raw = & $ADB shell pidof $appId 2>$null
-            if ($LASTEXITCODE -eq 0 -and $raw) {
-              $pid = ($raw | Out-String).Trim()
-            } else {
-              $pid = ''
-            }
-            if (-not [string]::IsNullOrWhiteSpace($pid)) { break }
+            # Android mới: dumpsys window windows; cũ: dumpsys window | findstr
+            $focus = & $ADB shell dumpsys window windows 2>$null | Select-String -SimpleMatch $appId
+            if ($focus) { $ok = $true; break }
             Start-Sleep -Seconds 3
-            & $ADB shell monkey -p $appId -c android.intent.category.LAUNCHER 1 | Out-Null
           } while ((Get-Date) -lt $deadline)
       
-          if ([string]::IsNullOrWhiteSpace($pid)) {
+          if (-not $ok) {
             Write-Host "== Diagnostics =="
             & $ADB devices -l
             & $ADB logcat -d | Select-Object -Last 200
-            throw "App process not found - smoke failed"
+            throw "App không lên foreground trong thời gian cho phép."
           }
       
-          Write-Host "App running with pid: $pid"
-
+          Write-Host "App launched and is in foreground."
+          
       - name: Shutdown emulator
         if: always()
         continue-on-error: true
