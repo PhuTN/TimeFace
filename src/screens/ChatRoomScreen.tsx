@@ -102,9 +102,9 @@ export default function ChatRoomScreen() {
 
       <ComposerBar
         value={text}
-        onChange={setText}
+        onChange={(t: string) => setText(t)}
         onSend={onSend}
-        onEmoji={() => setText(t => t + '😊')}
+        //onEmoji={() => setText(t => t + '😊')}
       />
     </View>
   );
