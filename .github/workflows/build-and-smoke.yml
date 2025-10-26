@@ -1,0 +1,195 @@
+name: Android Build & Smoke
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: app-debug-apk
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.gradle/caches/build-cache-*
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Build Debug APK
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace --build-cache --parallel assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  smoke-on-emulator:
+    needs: build-apk
+    runs-on: [self-hosted]     # Windows self-hosted runner của bạn
+    defaults:
+      run:
+        shell: powershell
+    env:
+      # Điền applicationId để khỏi phải parse từ APK
+      APP_ID: com.gokuune     # <-- ĐỔI CHO ĐÚNG
+      AVD_NAME: CI_CD_emu            # <-- ĐỔI CHO ĐÚNG
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download APK from previous job
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-apk.outputs.artifact-name }}
+          path: ./apk
+
+      - name: List downloaded APKs
+        run: Get-ChildItem -Recurse ./apk
+
+      - name: Boot emulator, install & launch app
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          # ------- Auto-detect Android SDK on Windows -------
+          function Resolve-AndroidSdk {
+            $candidates = @()
+            if ($env:ANDROID_SDK_ROOT -and (Test-Path $env:ANDROID_SDK_ROOT)) { $candidates += $env:ANDROID_SDK_ROOT }
+            if ($env:ANDROID_HOME -and (Test-Path $env:ANDROID_HOME)) { $candidates += $env:ANDROID_HOME }
+            if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'Android\Sdk') }
+            if ($env:USERPROFILE)  { $candidates += (Join-Path $env:USERPROFILE  'AppData\Local\Android\Sdk') }
+            $candidates += 'C:\Android\Sdk'
+            foreach ($p in $candidates | Select-Object -Unique) {
+              if ($p -and (Test-Path (Join-Path $p 'platform-tools\adb.exe'))) {
+                return (Resolve-Path $p).Path
+              }
+            }
+            return $null
+          }
+
+          $sdk = Resolve-AndroidSdk
+          if (-not $sdk) { throw "Không tìm thấy Android SDK. Cài Android Studio/SDK hoặc set ANDROID_SDK_ROOT." }
+
+          $ADB = Join-Path $sdk 'platform-tools\adb.exe'
+          $EMU = Join-Path $sdk 'emulator\emulator.exe'
+          if (-not (Test-Path $ADB)) { throw "adb not found at $ADB" }
+          if (-not (Test-Path $EMU)) { throw "emulator not found at $EMU" }
+
+          Write-Host "Killing stray adb (ignore errors)"
+          try { taskkill /F /IM adb.exe | Out-Null } catch {}
+          & $ADB kill-server
+
+          $avd = if ($env:AVD_NAME) { $env:AVD_NAME } else { 'Pixel_7_API_34' }
+          Write-Host "Starting emulator: $avd"
+          # Nếu máy bạn không có GPU phù hợp, thay 'host' -> 'swiftshader_indirect'
+          $gpuArg = 'host'
+          Start-Process -FilePath $EMU -ArgumentList @(
+            "-avd",$avd,
+            "-no-snapshot","-no-boot-anim",
+            "-gpu",$gpuArg,
+            "-no-audio","-no-window"
+          ) -PassThru | Out-Null
+
+          Write-Host "Waiting for device..."
+          & $ADB wait-for-device
+
+          Write-Host "Waiting for sys.boot_completed..."
+          for ($i=0; $i -lt 240; $i++) {
+            $state = (& $ADB shell getprop sys.boot_completed).Trim()
+            if ($state -eq '1') { break }
+            Start-Sleep -Seconds 2
+          }
+
+          $apk = Get-ChildItem -Recurse ./apk -Filter *.apk | Select-Object -First 1
+          if (-not $apk) { throw "APK not found after download-artifact" }
+          Write-Host "Installing APK: $($apk.FullName)"
+          & $ADB install -r "$($apk.FullName)"
+
+          # Launch app (đã biết APP_ID)
+          $appId = $env:APP_ID
+          if ([string]::IsNullOrWhiteSpace($appId)) {
+            throw "APP_ID is empty. Hãy set env.APP_ID cho job smoke-on-emulator."
+          }
+          Write-Host "Launching app via monkey... ($appId)"
+          & $ADB shell monkey -p $appId -c android.intent.category.LAUNCHER 1
+
+      - name: Smoke assertions (pidof + optional logs)
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Resolve-AndroidSdk {
+            $candidates = @()
+            if ($env:ANDROID_SDK_ROOT -and (Test-Path $env:ANDROID_SDK_ROOT)) { $candidates += $env:ANDROID_SDK_ROOT }
+            if ($env:ANDROID_HOME -and (Test-Path $env:ANDROID_HOME)) { $candidates += $env:ANDROID_HOME }
+            if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'Android\Sdk') }
+            if ($env:USERPROFILE)  { $candidates += (Join-Path $env:USERPROFILE  'AppData\Local\Android\Sdk') }
+            $candidates += 'C:\Android\Sdk'
+            foreach ($p in $candidates | Select-Object -Unique) {
+              if ($p -and (Test-Path (Join-Path $p 'platform-tools\adb.exe'))) {
+                return (Resolve-Path $p).Path
+              }
+            }
+            return $null
+          }
+          $sdk = Resolve-AndroidSdk
+          $ADB = Join-Path $sdk 'platform-tools\adb.exe'
+
+          # Kiểm tra process có chạy (ổn định hơn log 'ReactNativeJS' khi không có Metro)
+          $appId = $env:APP_ID
+          $pid = (& $ADB shell pidof $appId).Trim()
+          if (-not $pid) {
+            Write-Host "== Dump last 200 log lines =="
+            & $ADB logcat -d | Select-Object -Last 200
+            throw "App process not found - smoke failed"
+          }
+          Write-Host "App is running with pid(s): $pid"
+
+      - name: Shutdown emulator
+        if: always()
+        continue-on-error: true
+        run: |
+          function Resolve-AndroidSdk {
+            $candidates = @()
+            if ($env:ANDROID_SDK_ROOT -and (Test-Path $env:ANDROID_SDK_ROOT)) { $candidates += $env:ANDROID_SDK_ROOT }
+            if ($env:ANDROID_HOME -and (Test-Path $env:ANDROID_HOME)) { $candidates += $env:ANDROID_HOME }
+            if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'Android\Sdk') }
+            if ($env:USERPROFILE)  { $candidates += (Join-Path $env:USERPROFILE  'AppData\Local\Android\Sdk') }
+            $candidates += 'C:\Android\Sdk'
+            foreach ($p in $candidates | Select-Object -Unique) {
+              if ($p -and (Test-Path (Join-Path $p 'platform-tools\adb.exe'))) {
+                return (Resolve-Path $p).Path
+              }
+            }
+            return $null
+          }
+          $sdk = Resolve-AndroidSdk
+          if ($sdk) {
+            $ADB = Join-Path $sdk 'platform-tools\adb.exe'
+            & $ADB emu kill
+          }
