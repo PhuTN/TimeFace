@@ -16,30 +16,39 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # (tuỳ chọn) cache node_modules để nhanh hơn nữa
+      # - name: Cache node_modules
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: node_modules
+      #     key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      #     restore-keys: nm-${{ runner.os }}-
+
       - name: Install deps
         run: npm ci
 
-      # Java 17 cho Gradle Android
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # Cache Gradle
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
+            ~/.gradle/caches/build-cache-*
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
 
       - name: Build Android (Debug)
         working-directory: android
-        run: ./gradlew --no-daemon --stacktrace assembleDebug
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace --build-cache --parallel assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
