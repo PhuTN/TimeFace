@@ -140,53 +140,35 @@ jobs:
           Write-Host "Launching app via monkey... ($appId)"
           & $ADB shell monkey -p $appId -c android.intent.category.LAUNCHER 1
 
-      - name: Smoke assertions (pidof + retry + diagnostics)
+      - name: Smoke assertions (pidof – retry & null-safe)
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
       
-          function Resolve-AndroidSdk {
-            $candidates = @()
-            if ($env:ANDROID_SDK_ROOT -and (Test-Path $env:ANDROID_SDK_ROOT)) { $candidates += $env:ANDROID_SDK_ROOT }
-            if ($env:ANDROID_HOME -and (Test-Path $env:ANDROID_HOME)) { $candidates += $env:ANDROID_HOME }
-            if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'Android\Sdk') }
-            if ($env:USERPROFILE)  { $candidates += (Join-Path $env:USERPROFILE  'AppData\Local\Android\Sdk') }
-            $candidates += 'C:\Android\Sdk'
-            foreach ($p in $candidates | Select-Object -Unique) {
-              if ($p -and (Test-Path (Join-Path $p 'platform-tools\adb.exe'))) {
-                return (Resolve-Path $p).Path
-              }
+          function SDK {
+            $c = @()
+            if ($env:ANDROID_SDK_ROOT -and (Test-Path $env:ANDROID_SDK_ROOT)) { $c += $env:ANDROID_SDK_ROOT }
+            if ($env:ANDROID_HOME -and (Test-Path $env:ANDROID_HOME)) { $c += $env:ANDROID_HOME }
+            if ($env:LOCALAPPDATA) { $c += (Join-Path $env:LOCALAPPDATA 'Android\Sdk') }
+            if ($env:USERPROFILE)  { $c += (Join-Path $env:USERPROFILE  'AppData\Local\Android\Sdk') }
+            $c += 'C:\Android\Sdk'
+            foreach ($p in $c | Select-Object -Unique) {
+              if (Test-Path (Join-Path $p 'platform-tools\adb.exe')) { return (Resolve-Path $p).Path }
             }
             return $null
           }
-      
-          $sdk = Resolve-AndroidSdk
-          if (-not $sdk) { throw "Không tìm thấy Android SDK." }
+          $sdk = SDK
           $ADB = Join-Path $sdk 'platform-tools\adb.exe'
       
-          # Đảm bảo adb server đang chạy và device online
           & $ADB start-server | Out-Null
-          & $ADB devices -l
-      
-          Write-Host "Ensure device ready (wait-for-device + sys.boot_completed)..."
           & $ADB wait-for-device
-          for ($i=0; $i -lt 120; $i++) {
-            $boot = (& $ADB shell getprop sys.boot_completed 2>$null) -as [string]
-            if (($boot + '').Trim() -eq '1') { break }
-            Start-Sleep -Seconds 2
-          }
       
-          # Lấy appId từ env (đã set ở job trước)
           $appId = ($env:APP_ID + '').Trim()
-          if ([string]::IsNullOrWhiteSpace($appId)) {
-            throw "APP_ID is empty. Set env.APP_ID ở job smoke-on-emulator."
-          }
+          if ([string]::IsNullOrWhiteSpace($appId)) { throw "APP_ID rỗng." }
       
-          # Thử re-launch để chắc chắn app đang foreground
-          Write-Host "Re-launch app before assertions..."
+          # re-launch trước khi assert
           & $ADB shell monkey -p $appId -c android.intent.category.LAUNCHER 1 | Out-Null
       
-          # Poll pidof nhiều lần (tránh .Trim() trên $null)
           $deadline = (Get-Date).AddSeconds(90)
           $pid = ''
           do {
@@ -196,26 +178,19 @@ jobs:
             } else {
               $pid = ''
             }
-      
             if (-not [string]::IsNullOrWhiteSpace($pid)) { break }
-      
-            # Nếu chưa thấy PID: chờ 3s rồi thử launch lại 1 lần nữa
             Start-Sleep -Seconds 3
             & $ADB shell monkey -p $appId -c android.intent.category.LAUNCHER 1 | Out-Null
           } while ((Get-Date) -lt $deadline)
       
           if ([string]::IsNullOrWhiteSpace($pid)) {
             Write-Host "== Diagnostics =="
-            Write-Host "-- adb devices --"
             & $ADB devices -l
-            Write-Host "-- top 200 logs --"
             & $ADB logcat -d | Select-Object -Last 200
-            Write-Host "-- packages (filter by appId) --"
-            & $ADB shell pm list packages | Select-String $appId -SimpleMatch
             throw "App process not found - smoke failed"
           }
       
-          Write-Host "App is running with pid(s): $pid"
+          Write-Host "App running with pid: $pid"
 
       - name: Shutdown emulator
         if: always()
