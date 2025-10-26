@@ -174,11 +174,13 @@ jobs:
           }
       
           $appId = ($env:APP_ID + '').Trim()
-          if ([string]::IsNullOrWhiteSpace($appId)) { throw "APP_ID rỗng – set env.APP_ID trong job." }
+          if ([string]::IsNullOrWhiteSpace($appId)) {
+            throw 'APP_ID is empty. Set env.APP_ID in the smoke-on-emulator job.'
+          }
       
           # package đã cài?
           $pm = & $ADB shell pm path $appId 2>$null
-          if (-not $pm) { throw "Package $appId chưa cài – kiểm tra bước install." }
+          if (-not $pm) { throw "Package $appId is not installed – check install steps." }
       
           # mở app
           & $ADB shell monkey -p $appId -c android.intent.category.LAUNCHER 1 | Out-Null
@@ -197,7 +199,7 @@ jobs:
             Write-Host "== Diagnostics =="
             & $ADB devices -l
             & $ADB logcat -d | Select-Object -Last 200
-            throw "App không lên foreground trong thời gian cho phép."
+            throw "App does not come to foreground within the allowed time."
           }
       
           Write-Host "App launched and is in foreground."
