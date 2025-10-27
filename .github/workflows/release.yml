@@ -7,8 +7,11 @@ on:
 
 jobs:
   android-release:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 45
+
     steps:
       - uses: actions/checkout@v4
 
@@ -27,7 +30,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Cache Gradle
+      - name: Cache Gradle (wrapper + caches)
         uses: actions/cache@v4
         with:
           path: |
@@ -37,8 +40,19 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      # (Tuỳ chọn) Giải mã keystore từ secrets
-      # Lưu ý: chỉ cần nếu bạn thực sự muốn ký release
+      - name: Cache Gradle build-cache dir
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches/build-cache-1
+          key: gradle-buildcache-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            gradle-buildcache-${{ runner.os }}-
+
+      - name: Ensure gradlew executable
+        working-directory: android
+        run: chmod +x ./gradlew
+
+      # (Optional) Decode keystore if you want signing
       - name: Decode keystore
         if: env.SHOULD_SIGN == 'true'
         env:
@@ -46,7 +60,6 @@ jobs:
         run: |
           echo "$KEYSTORE_B64" | base64 -d > android/app/release.keystore
 
-      # (Tuỳ chọn) Thiết lập signing gradle bằng env
       - name: Set signing env
         if: env.SHOULD_SIGN == 'true'
         run: |
@@ -55,11 +68,12 @@ jobs:
           echo "SIGNING_STORE_PASSWORD=${{ secrets.ANDROID_STORE_PASSWORD }}" >> $GITHUB_ENV
           echo "SIGNING_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
 
-      - name: Build Release APK
+      # GỘP TASK + BẬT CACHE/PARALLEL
+      # Nếu chỉ cần 1 định dạng, giữ lại 1 task cho nhanh hơn nữa
+      - name: Build Release (APK + AAB, one shot)
         working-directory: android
         run: |
-          ./gradlew --no-daemon --stacktrace assembleRelease
-          ./gradlew --no-daemon --stacktrace bundleRelease
+          ./gradlew assembleRelease bundleRelease --build-cache --parallel --stacktrace
 
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
