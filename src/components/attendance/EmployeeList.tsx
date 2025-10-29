@@ -16,28 +16,28 @@ export type Employee =
       avatar: {uri: string} | number;
       lateCount: number;
       latePercent: number;
-      notePrefix: string;
+      notePrefix?: string; // e.g. 'Số phút đi trễ:' | 'Số phút về sớm:'
     }
   | {
       id: number | string;
       name: string;
       role: string;
       avatar: {uri: string} | number;
-      status: string;
+      status: string; // e.g. 'Xin nghỉ lý do: Bị cảm sốt'
     };
 
-type Props = {employees: Employee[]};
+type Props = {employees: Employee[]; title?: string};
 
-export default function EmployeeList({employees}: Props) {
+export default function EmployeeList({employees, title}: Props) {
   return (
     <View style={styles.wrapper}>
       {/* Header pill */}
       <View style={styles.headerPill}>
-        <Text style={styles.title}>DANH SÁCH NHÂN VIÊN ĐÚNG GIỜ</Text>
+        <Text style={styles.title}>
+          {(title ?? 'Danh sách nhân viên').toUpperCase()}
+        </Text>
 
-        {/* Nút mắt bên phải */}
         <TouchableOpacity activeOpacity={0.7} style={styles.titleIcon}>
-          {/* dùng eye hoặc eye-off tùy trạng thái */}
           <Feather name="eye" size={16} color="#6B7EFF" />
         </TouchableOpacity>
       </View>
@@ -74,21 +74,32 @@ export default function EmployeeList({employees}: Props) {
             </View>
           </View>
 
-          {/* gạch xám chia đôi */}
+          {/* divider */}
           <View style={styles.midDivider} />
 
           {/* ---- BOTTOM NOTE ---- */}
           <View style={styles.bottomArea}>
             {'lateCount' in emp ? (
               <Text style={styles.stats}>
-                Số phút đi trễ: <Text style={styles.hl}>{emp.lateCount}</Text>.
-                Chiếm <Text style={styles.hl}>{emp.latePercent}%</Text> thời
-                gian ca làm việc
+                {(emp.notePrefix ?? 'Số phút đi trễ:') + ' '}
+                <Text style={styles.hl}>{emp.lateCount}</Text>. Chiếm{' '}
+                <Text style={styles.hl}>{emp.latePercent}%</Text> thời gian ca làm việc
               </Text>
             ) : (
-              <Text style={styles.leave}>
-                Xin nghỉ lý do: <Text style={styles.hl}>Bị cảm{'\n'}sốt</Text>
-              </Text>
+              (() => {
+                const s: string = emp.status;
+                const [p1, p2] = s.split(':');
+                return (
+                  <Text style={styles.leave}>
+                    {p1}
+                    {p2 ? (
+                      <Text>
+                        : <Text style={styles.hl}>{p2.trim()}</Text>
+                      </Text>
+                    ) : null}
+                  </Text>
+                );
+              })()
             )}
           </View>
         </View>
@@ -128,7 +139,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // style cho nút mắt
   titleIcon: {
     width: 28,
     height: 28,
@@ -199,3 +209,4 @@ const styles = StyleSheet.create({
   leave: {fontSize: 16, color: '#6B7280', lineHeight: 22, fontWeight: '600'},
   hl: {color: '#E11D48', fontWeight: '700'},
 });
+
