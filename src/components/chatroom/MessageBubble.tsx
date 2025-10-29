@@ -17,6 +17,7 @@ export default function MessageBubble({
   avatar,
 }: Props) {
   const isMe = !!fromMe;
+  void audioSec;
 
   if (type === 'audio') {
     return (

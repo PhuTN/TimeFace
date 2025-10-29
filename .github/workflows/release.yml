@@ -1,0 +1,94 @@
+name: Android Release (Tag)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  android-release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache Gradle (wrapper + caches)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Cache Gradle build-cache dir
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches/build-cache-1
+          key: gradle-buildcache-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            gradle-buildcache-${{ runner.os }}-
+
+      - name: Ensure gradlew executable
+        working-directory: android
+        run: chmod +x ./gradlew
+
+      # (Optional) Decode keystore if you want signing
+      - name: Decode keystore
+        if: env.SHOULD_SIGN == 'true'
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > android/app/release.keystore
+
+      - name: Set signing env
+        if: env.SHOULD_SIGN == 'true'
+        run: |
+          echo "SIGNING_STORE_FILE=release.keystore" >> $GITHUB_ENV
+          echo "SIGNING_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
+          echo "SIGNING_STORE_PASSWORD=${{ secrets.ANDROID_STORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "SIGNING_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
+
+      # GỘP TASK + BẬT CACHE/PARALLEL
+      # Nếu chỉ cần 1 định dạng, giữ lại 1 task cho nhanh hơn nữa
+      - name: Build Release (APK + AAB, one shot)
+        working-directory: android
+        run: |
+          ./gradlew assembleRelease bundleRelease --build-cache --parallel --stacktrace
+
+      - name: Upload Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
