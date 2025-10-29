@@ -30,7 +30,7 @@ export default function MessageBubble({
           ]}>
           <View style={styles.wave} />
           <View style={styles.playWrap}>
-            <Icon name="play" size={20} color="#2E7CF6" />
+            <Icon name="play" size={20} color="#3BB6A1" />
           </View>
         </View>
       </View>
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   text: {fontSize: 16, color: '#454F66'},
   bubblePeer: {backgroundColor: '#EDEEF2'},
-  bubbleMe: {backgroundColor: '#C9DAFF'},
+  bubbleMe: {backgroundColor: '#D6E4FF'},
   audioWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     height: 24,
     flex: 1,
     borderRadius: 8,
-    backgroundColor: '#9BC1FF',
+    backgroundColor: '#3BB6A1',
     marginRight: 12,
   },
   playWrap: {

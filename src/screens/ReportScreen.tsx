@@ -17,7 +17,6 @@ import EmployeeList, {Employee} from '../components/attendance/EmployeeList';
 import StatsCards from '../components/attendance/StatsCards';
 import AttendanceAreaChart from '../components/charts/AttendanceAreaChart';
 import PieWithLabels, {Slice} from '../components/charts/PieWithLabels';
-import WeeklyLineChart from '../components/charts/WeeklyLineChart';
 import Footer from '../components/common/Footer';
 import HeaderBar from '../components/common/HeaderBar';
 
@@ -86,6 +85,36 @@ export default function ReportScreen() {
     },
   ];
 
+  // ---- Fake datasets per selected stat ----
+  const employeesBy: Record<'onTime'|'late'|'leaveEarly'|'withPermit'|'withoutPermit', Employee[]> = {
+    onTime: [
+      { id: 'ot1', name: 'Keneth Conroy', role: 'UI UX Designer', avatar: {uri: 'https://i.pravatar.cc/100?img=12'}, lateCount: 0, latePercent: 0, notePrefix: 'Số phút đi trễ:' },
+      { id: 'ot2', name: 'Bill Gaston', role: 'Full Stack Engineer', avatar: {uri: 'https://i.pravatar.cc/100?img=65'}, lateCount: 0, latePercent: 0, notePrefix: 'Số phút đi trễ:' },
+      { id: 'ot3', name: 'Luna Bright', role: 'Product Manager', avatar: {uri: 'https://i.pravatar.cc/100?img=47'}, lateCount: 0, latePercent: 0, notePrefix: 'Số phút đi trễ:' },
+    ],
+    late: [
+      { id: 'lt1', name: 'Keneth Conroy', role: 'UI UX Designer', avatar: {uri: 'https://i.pravatar.cc/100?img=12'}, lateCount: 120, latePercent: 25, notePrefix: 'Số phút đi trễ:' },
+      { id: 'lt2', name: 'Bill Gaston', role: 'Full Stack Engineer', avatar: {uri: 'https://i.pravatar.cc/100?img=65'}, lateCount: 75, latePercent: 15, notePrefix: 'Số phút đi trễ:' },
+    ],
+    leaveEarly: [
+      { id: 'le1', name: 'Zack Oliver', role: 'QA Engineer', avatar: {uri: 'https://i.pravatar.cc/100?img=19'}, lateCount: 40, latePercent: 10, notePrefix: 'Số phút về sớm:' },
+      { id: 'le2', name: 'Emma Watson', role: 'iOS Developer', avatar: {uri: 'https://i.pravatar.cc/100?img=32'}, lateCount: 22, latePercent: 6, notePrefix: 'Số phút về sớm:' },
+    ],
+    withPermit: [
+      { id: 'wp1', name: 'Ruslan Kosinov', role: 'Digital Marketing', avatar: {uri: 'https://i.pravatar.cc/100?img=33'}, status: 'Xin nghỉ lý do: Bị cảm sốt' },
+      { id: 'wp2', name: 'Amy Star', role: 'HR Executive', avatar: {uri: 'https://i.pravatar.cc/100?img=66'}, status: 'Xin nghỉ lý do: Về quê có việc' },
+    ],
+    withoutPermit: [
+      { id: 'wop1', name: 'John Doe', role: 'Intern', avatar: {uri: 'https://i.pravatar.cc/100?img=11'}, status: 'Vắng không phép' },
+    ],
+  };
+  const listTitleBy = {
+    onTime: 'Danh sách nhân viên đúng giờ',
+    late: 'Danh sách nhân viên đi trễ',
+    leaveEarly: 'Danh sách nhân viên về sớm',
+    withPermit: 'Danh sách nhân viên có phép',
+    withoutPermit: 'Danh sách nhân viên không phép',
+  } as const;
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F5F7FA" />
@@ -124,13 +153,13 @@ export default function ReportScreen() {
         <StatsCards
           selectedKey={selectedStat}
           onSelect={setSelectedStat}
-          worked={1}
-          absent={5}
-          onTime={5}
-          late={2}
-          leaveEarly={2}
-          withPermit={2}
-          withoutPermit={1}
+          worked={employeesBy.onTime.length + employeesBy.late.length + employeesBy.leaveEarly.length}
+          absent={employeesBy.withoutPermit.length + employeesBy.withPermit.length}
+          onTime={employeesBy.onTime.length}
+          late={employeesBy.late.length}
+          leaveEarly={employeesBy.leaveEarly.length}
+          withPermit={employeesBy.withPermit.length}
+          withoutPermit={employeesBy.withoutPermit.length}
         />
 
         <View style={[styles.chartCard, styles.cardShadow]}>
@@ -156,9 +185,12 @@ export default function ReportScreen() {
           </View>
         </View>
 
-        <EmployeeList employees={employees} />
+        <EmployeeList
+          title={listTitleBy[selectedStat]}
+          employees={employeesBy[selectedStat]}
+        />
 
-        <View style={[styles.bottomChartSection, styles.cardShadow]}>
+        {/* <View style={[styles.bottomChartSection, styles.cardShadow]}>
           <View style={styles.bottomHeader}>
             <Text style={styles.chartTitle}>Biểu đồ thống kê</Text>
             <View style={styles.chip}>
@@ -166,7 +198,7 @@ export default function ReportScreen() {
             </View>
           </View>
           <WeeklyLineChart />
-        </View>
+        </View> */}
         <View style={[styles.bottomChartSection, styles.cardShadow]}>
           <View style={styles.bottomHeader}>
             <Text style={styles.chartTitle}>Biểu đồ thống kê</Text>

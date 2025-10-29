@@ -78,7 +78,7 @@ export default function ChatRoomScreen() {
 
       <ScrollView
         ref={scrollRef}
-        style={{flex: 1}}
+        style={{flex: 1, backgroundColor: '#FFFFFF'}}
         contentContainerStyle={{paddingVertical: 12}}
         onContentSizeChange={() =>
           scrollRef.current?.scrollToEnd({animated: false})
