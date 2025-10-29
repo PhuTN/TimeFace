@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {ThemeKey} from '../theme/theme';
 import type {LangCode} from '../lang/lang';
 import type {UIFactory} from './abstract';
@@ -8,8 +7,9 @@ import {LightEnFactory} from './lightEnFactory';
 import {DarkViFactory} from './darkViFactory';
 import {DarkEnFactory} from './darkEnFactory';
 
-const THEME_KEY = 'ui.theme'; // "light" | "dark"
-const LANG_KEY = 'ui.lang'; // "vi" | "en"
+// In‑memory UI state (no persistence) as requested
+let currentTheme: ThemeKey = 'light';
+let currentLang: LangCode = 'vi';
 
 /* ------------------------- Tiny Event Bus ------------------------- */
 type Listener = () => void;
@@ -31,12 +31,8 @@ function emitUIChange() {
 
 /** Chọn Concrete Factory theo state lưu trong AsyncStorage */
 export async function getUIFactory(): Promise<UIFactory> {
-  const theme = (await AsyncStorage.getItem(THEME_KEY)) as ThemeKey | null;
-  const lang = (await AsyncStorage.getItem(LANG_KEY)) as LangCode | null;
-
-  const t: ThemeKey = theme === 'dark' ? 'dark' : 'light';
-  const l: LangCode = lang === 'en' ? 'en' : 'vi';
-
+  const t = currentTheme;
+  const l = currentLang;
   if (t === 'light' && l === 'vi') {return new LightViFactory();}
   if (t === 'light' && l === 'en') {return new LightEnFactory();}
   if (t === 'dark' && l === 'vi') {return new DarkViFactory();}
@@ -45,7 +41,7 @@ export async function getUIFactory(): Promise<UIFactory> {
 
 /** Ghi AsyncStorage và phát sự kiện đổi UI để hook re-load */
 export async function setUIState(next: {theme?: ThemeKey; lang?: LangCode}) {
-  if (next.theme) {await AsyncStorage.setItem(THEME_KEY, next.theme);}
-  if (next.lang) {await AsyncStorage.setItem(LANG_KEY, next.lang);}
+  if (next.theme) { currentTheme = next.theme; }
+  if (next.lang) { currentLang = next.lang; }
   emitUIChange();
 }
