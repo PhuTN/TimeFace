@@ -17,5 +17,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   line: {flex: 1, height: 1, backgroundColor: '#EEF2F8'},
-  text: {marginHorizontal: 8, color: '#9DA8C1', fontSize: 13.5},
+  text: {marginHorizontal: 8, color: '#B1B8C9', fontSize: 13.5},
 });
