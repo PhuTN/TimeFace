@@ -1,4 +1,4 @@
-import {Image, Platform, StyleSheet, Text, View} from 'react-native';
+import {Image, Platform, Pressable, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -18,7 +18,9 @@ export default function Header({
   return (
     <SafeAreaView edges={['top']} style={[styles.safe, {paddingTop: extraTop}]}>
       <View style={styles.row}>
-        <Icon name="chevron-back" size={26} color="#6F7FA1" />
+        <Pressable style={styles.backBtn}>
+          <Icon name="chevron-back" size={20} color="#7C6AF2" />
+        </Pressable>
         <Image source={{uri: avatar}} style={styles.avatar} />
         <View style={styles.titleWrap}>
           <View
@@ -57,6 +59,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
+  },
+  backBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEE9FF',
   },
   avatar: {width: 44, height: 44, borderRadius: 22, marginHorizontal: 10},
   titleWrap: {flex: 1, minWidth: 0},

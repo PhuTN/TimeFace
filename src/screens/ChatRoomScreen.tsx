@@ -78,7 +78,7 @@ export default function ChatRoomScreen() {
 
       <ScrollView
         ref={scrollRef}
-        style={{flex: 1}}
+        style={{flex: 1, backgroundColor: '#FFFFFF'}}
         contentContainerStyle={{paddingVertical: 12}}
         onContentSizeChange={() =>
           scrollRef.current?.scrollToEnd({animated: false})
@@ -102,9 +102,9 @@ export default function ChatRoomScreen() {
 
       <ComposerBar
         value={text}
-        onChange={setText}
+        onChange={(t: string) => setText(t)}
         onSend={onSend}
-        onEmoji={() => setText(t => t + '😊')}
+        //onEmoji={() => setText(t => t + '😊')}
       />
     </View>
   );

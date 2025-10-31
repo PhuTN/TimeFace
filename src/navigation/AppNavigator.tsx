@@ -15,6 +15,7 @@ import DepartmentDetailScreen from '../screens/DepartmentDetailScreen';
 import CommonScreen2 from '../screens/CommonScreen2';
 import ManagementScreen from '../screens/ManagementScreen';
 import ReportScreen from '../screens/ReportScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -34,6 +35,7 @@ export type RootStackParamList = {
   Auth: undefined;
   ChatList: undefined;
   ChatRoom: undefined;
+  Settings: undefined;
 };
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -52,6 +54,8 @@ const AppNavigator = () => {
         <Stack.Screen name="Report" component={ReportScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="ChatList" component={ChatListScreen} />
+        <Stack.Screen name="ChatRoom" component={ChatRoomScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
