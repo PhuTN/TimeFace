@@ -12,6 +12,7 @@ import AddButton from "../components/common/AddButton";
 import AddDepartmentModal from "../components/common/AddDepartmentModal";
 import Chip from "../components/common/Chip.tsx";
 import HeaderBar from "../components/common/HeaderBar.tsx";
+import FilterChip from "../components/other-group-2-stuff/FilterChip.tsx";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DepartmentManagement'>;
 
@@ -30,6 +31,10 @@ const DepartmentManagementScreen = ({ route, navigation }: Props) => {
     headName: "",
     sortBy: "created_desc",
   });
+
+  const [activeFilters, setActiveFilters] = useState<
+    { key: string; mainText: string; subText: string }[]
+  >([]);
 
   function formatVNDate(iso: string) {
     const d = new Date(iso);
@@ -128,6 +133,57 @@ const DepartmentManagementScreen = ({ route, navigation }: Props) => {
           </TouchableOpacity>
         </View>
 
+        {/* Hiển thị các filter chip đang áp dụng */}
+        {activeFilters.length > 0 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12, marginBottom: 8 }}>
+            {activeFilters.map(f => (
+              <FilterChip
+                key={f.key}
+                mainText={f.mainText}
+                subText={f.subText}
+                theme={theme}
+                onRemove={() => {
+                  // Khi xóa chip, reset field tương ứng rồi reapply
+                  const newValues = { ...criteria };
+                  if (f.key === 'headName') newValues.headName = '';
+                  if (f.key === 'departmentName') newValues.departmentName = '';
+                  if (f.key === 'sortBy') newValues.sortBy = 'created_desc';
+
+                  // Gọi lại apply để lọc lại danh sách
+                  setCriteria(newValues);
+                  // Giả lập bấm "Áp dụng" với giá trị mới
+                  const dname = newValues.departmentName.trim().toLowerCase();
+                  const hname = newValues.headName.trim().toLowerCase();
+
+                  let next = DEPARTMENTS.filter(d =>
+                    (!dname || d.name.toLowerCase().includes(dname)) &&
+                    (!hname || d.head.toLowerCase().includes(hname))
+                  );
+
+                  next = next.sort((a, b) => {
+                    switch (newValues.sortBy) {
+                      case "created_asc":
+                        return +new Date(a.createdAt) - +new Date(b.createdAt);
+                      case "name_asc":
+                        return a.name.localeCompare(b.name);
+                      case "name_desc":
+                        return b.name.localeCompare(a.name);
+                      case "created_desc":
+                      default:
+                        return +new Date(b.createdAt) - +new Date(a.createdAt);
+                    }
+                  });
+
+                  setDisplayed(next);
+
+                  // Cập nhật lại danh sách chip sau khi xóa
+                  setActiveFilters(prev => prev.filter(c => c.key !== f.key));
+                }}
+              />
+            ))}
+          </View>
+        )}
+
         {/* Danh sách phòng ban */}
         <View style={styles.container}>
           <FlatList
@@ -173,6 +229,49 @@ const DepartmentManagementScreen = ({ route, navigation }: Props) => {
             });
 
             setDisplayed(next);
+
+            // Tạo danh sách chip đang hoạt động
+            const chips: { key: string; mainText: string; subText: string }[] = [];
+
+            if (values.headName.trim()) {
+              chips.push({
+                key: 'headName',
+                mainText: 'Tên trưởng phòng',
+                subText: values.headName.trim(),
+              });
+            }
+
+            if (values.departmentName.trim()) {
+              chips.push({
+                key: 'departmentName',
+                mainText: 'Tên phòng ban',
+                subText: values.departmentName.trim(),
+              });
+            }
+
+            // Hiển thị chip sắp xếp
+            let sortLabel = '';
+            switch (values.sortBy) {
+              case 'created_desc':
+                sortLabel = 'Ngày tạo mới nhất → cũ nhất';
+                break;
+              case 'created_asc':
+                sortLabel = 'Ngày tạo cũ nhất → mới nhất';
+                break;
+              case 'name_asc':
+                sortLabel = 'Tên A → Z';
+                break;
+              case 'name_desc':
+                sortLabel = 'Tên Z → A';
+                break;
+            }
+            chips.push({
+              key: 'sortBy',
+              mainText: 'Sắp xếp bởi',
+              subText: sortLabel,
+            });
+
+            setActiveFilters(chips);
           }}
         />
 

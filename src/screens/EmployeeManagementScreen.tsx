@@ -17,10 +17,10 @@ import Footer from "../components/common/Footer";
 import FilterIcon from "../assets/icons/filter_icon.svg";
 import AddButton from "../components/common/AddButton";
 import EmployeeFilter, { EmployeeFilterValues, EmpSortValue } from "../components/common/EmployeeFilter";
-import { Employee, EMPLOYEES } from "../fake_data/Dien/fake_data.tsx";
-import { PasswordChangeStatus } from "../fake_data/Dien/fake_data.tsx";
+import { Employee, EMPLOYEES, DEPARTMENTS, PasswordChangeStatus } from "../fake_data/Dien/fake_data.tsx";
 import AddEmployeeModal from "../components/common/AddEmployeeModal";
 import Chip from "../components/common/Chip.tsx";
+import FilterChip from "../components/other-group-2-stuff/FilterChip.tsx";
 
 type Props = any; // hoặc: NativeStackScreenProps<RootStackParamList, 'EmployeeManagement'>
 
@@ -79,6 +79,9 @@ export default function EmployeeManagementScreen({ navigation }: Props) {
         position: "",
         sortBy: "created_desc",
     });
+    const [activeFilters, setActiveFilters] = useState<
+        { key: string; mainText: string; subText: string }[]
+    >([]);
 
     const formatDate = useMemo(
         () => (lang?.code === "en" ? formatENDate : formatVNDate),
@@ -90,6 +93,103 @@ export default function EmployeeManagementScreen({ navigation }: Props) {
 
     const S = makeStyles(theme);
     const t = lang.t;
+
+    const DEFAULT_CRITERIA: EmployeeFilterValues = {
+        employeeName: "",
+        passwordChangeStatus: "",
+        accountActive: "",
+        departmentId: "",
+        position: "",
+        sortBy: "created_desc",
+    };
+
+    const departmentNameById = (id: string) =>
+        DEPARTMENTS.find(d => d.id === id)?.name ?? id;
+
+    const getAccountLabel = (value: EmployeeFilterValues["accountActive"]) => {
+        if (value === "active") return t("active");
+        if (value === "inactive") return t("inactive");
+        return "";
+    };
+
+    const getPasswordLabel = (value: EmployeeFilterValues["passwordChangeStatus"]) => {
+        switch (value) {
+            case "changed":
+                return t("password_changed");
+            case "waiting_for_changed":
+                return t("waiting_for_password_change");
+            case "do_not_change":
+                return t("do_not_change_password");
+            default:
+                return "";
+        }
+    };
+
+    const getSortLabel = (value: EmployeeFilterValues["sortBy"]) => {
+        switch (value) {
+            case "created_asc":
+                return t("sort_created_asc");
+            case "name_asc":
+                return t("sort_name_asc");
+            case "name_desc":
+                return t("sort_name_desc");
+            case "created_desc":
+            default:
+                return t("sort_created_desc");
+        }
+    };
+
+    const buildActiveFilterChips = (values: EmployeeFilterValues) => {
+        const chips: { key: string; mainText: string; subText: string }[] = [];
+
+        if (values.employeeName.trim()) {
+            chips.push({
+                key: "employeeName",
+                mainText: t("employee_name_label"),
+                subText: values.employeeName.trim(),
+            });
+        }
+
+        if (values.position.trim()) {
+            chips.push({
+                key: "position",
+                mainText: t("position_name_label"),
+                subText: values.position.trim(),
+            });
+        }
+
+        if (values.departmentId?.trim()) {
+            chips.push({
+                key: "departmentId",
+                mainText: t("department_label"),
+                subText: departmentNameById(values.departmentId.trim()),
+            });
+        }
+
+        if (values.accountActive) {
+            chips.push({
+                key: "accountActive",
+                mainText: t("account_status_label"),
+                subText: getAccountLabel(values.accountActive),
+            });
+        }
+
+        if (values.passwordChangeStatus) {
+            chips.push({
+                key: "passwordChangeStatus",
+                mainText: t("password_change_label"),
+                subText: getPasswordLabel(values.passwordChangeStatus),
+            });
+        }
+
+        chips.push({
+            key: "sortBy",
+            mainText: t("sort_by_label"),
+            subText: getSortLabel(values.sortBy),
+        });
+
+        return chips;
+    };
 
     // ---------- ITEM
     const EmployeeCard = memo(
@@ -155,9 +255,7 @@ export default function EmployeeManagementScreen({ navigation }: Props) {
     );
 
     // ---------- FILTER APPLY
-    const applyFilter = (values: EmployeeFilterValues) => {
-        setCriteria(values);
-
+    const filterEmployeesData = (values: EmployeeFilterValues) => {
         const name = values.employeeName.trim().toLowerCase();
         const position = values.position.trim().toLowerCase();
         const depId = values.departmentId?.trim() || "";
@@ -189,7 +287,37 @@ export default function EmployeeManagementScreen({ navigation }: Props) {
             }
         });
 
+        return next;
+    };
+
+    const applyFilter = (values: EmployeeFilterValues) => {
+        setCriteria(values);
+        const next = filterEmployeesData(values);
         setDisplayed(next);
+        setActiveFilters(buildActiveFilterChips(values));
+    };
+
+    const handleRemoveFilter = (key: string) => {
+        const next: EmployeeFilterValues = { ...criteria };
+
+        if (key === "employeeName") {
+            next.employeeName = "";
+        } else if (key === "position") {
+            next.position = "";
+        } else if (key === "departmentId") {
+            next.departmentId = "";
+        } else if (key === "accountActive") {
+            next.accountActive = "";
+        } else if (key === "passwordChangeStatus") {
+            next.passwordChangeStatus = "";
+        } else if (key === "sortBy") {
+            next.sortBy = DEFAULT_CRITERIA.sortBy;
+        }
+
+        const updated = filterEmployeesData(next);
+        setCriteria(next);
+        setDisplayed(updated);
+        setActiveFilters(prev => prev.filter(c => c.key !== key));
     };
 
     const sortCompare = (a: Employee, b: Employee, by: EmpSortValue) => {
@@ -260,6 +388,20 @@ export default function EmployeeManagementScreen({ navigation }: Props) {
                 </View>
 
                 {/* Danh sách */}
+                {activeFilters.length > 0 && (
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                        {activeFilters.map(f => (
+                            <FilterChip
+                                key={f.key}
+                                mainText={f.mainText}
+                                subText={f.subText}
+                                theme={theme}
+                                onRemove={() => handleRemoveFilter(f.key)}
+                            />
+                        ))}
+                    </View>
+                )}
+
                 <FlatList
                     data={displayed}
                     keyExtractor={(it) => it.id}

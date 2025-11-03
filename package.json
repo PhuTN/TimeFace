@@ -21,6 +21,7 @@
     "@react-navigation/native-stack": "^7.3.2",
     "@shopify/react-native-skia": "^2.2.14",
     "axios": "^1.12.2",
+    "country-state-city": "^3.2.1",
     "d3-shape": "^3.2.0",
     "linear-gradient": "^1.0.6",
     "lucide-react": "^0.545.0",

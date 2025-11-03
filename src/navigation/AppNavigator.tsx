@@ -11,11 +11,15 @@ import HomeScreen from '../screens/HomeScreen';
 //import FaceDetectionScreen from '../screens/FaceDetectionScreen';
 import DepartmentManagementScreen from '../screens/DepartmentManagementScreen';
 import EmployeeManagementScreen from '../screens/EmployeeManagementScreen';
+import EmployeeAttendanceScreen from '../screens/EmployeeAttendanceScreen';
 import DepartmentDetailScreen from '../screens/DepartmentDetailScreen';
 import CommonScreen2 from '../screens/CommonScreen2';
 import ManagementScreen from '../screens/ManagementScreen';
 import ReportScreen from '../screens/ReportScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import JobInformationScreen from '../screens/JobInformationScreen';
+import PersonalInformationScreen from '../screens/PersonalInformationScreen';
+import EmployeeFaceDetectionScreen from '../screens/EmployeeFaceDetectionScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -28,6 +32,8 @@ export type RootStackParamList = {
   DepartmentManagement: undefined;
   DepartmentDetail: { departmentDetail: any } | undefined;
   EmployeeManagement: undefined;
+  EmployeeAttendance: undefined;
+  EmployeeFaceDetection: undefined;
   Facene: undefined;
   CommonScreen2: undefined;
   Management: undefined;
@@ -36,6 +42,8 @@ export type RootStackParamList = {
   ChatList: undefined;
   ChatRoom: undefined;
   Settings: undefined;
+  JobInformation: undefined;
+  PersonalInformation: undefined;
 };
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -50,12 +58,16 @@ const AppNavigator = () => {
         <Stack.Screen name="DepartmentManagement" component={DepartmentManagementScreen} />
         <Stack.Screen name="DepartmentDetail" component={DepartmentDetailScreen} />
         <Stack.Screen name="EmployeeManagement" component={EmployeeManagementScreen} />
+        <Stack.Screen name="EmployeeAttendance" component={EmployeeAttendanceScreen} />
+        <Stack.Screen name="EmployeeFaceDetection" component={EmployeeFaceDetectionScreen} />
         <Stack.Screen name="Management" component={ManagementScreen} />
         <Stack.Screen name="Report" component={ReportScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="ChatList" component={ChatListScreen} />
         <Stack.Screen name="ChatRoom" component={ChatRoomScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="JobInformation" component={JobInformationScreen} />
+        <Stack.Screen name="PersonalInformation" component={PersonalInformationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
