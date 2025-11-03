@@ -15,6 +15,7 @@ import FilterIcon from "../assets/icons/filter_icon.svg";
 import EmployeeFilterInDepartment, { EmployeeFilterInDeptValues } from
     "../components/common/EmployeeFilterInDepartment";
 import HeaderBar from "../components/common/HeaderBar.tsx";
+import FilterChip from "../components/other-group-2-stuff/FilterChip.tsx";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DepartmentDetail'>;
 
@@ -35,6 +36,9 @@ export default function DepartmentDetailScreen({ route, navigation }: Props) {
         sortBy: "created_desc",
         inDeptOnly: false, // NEW: mặc định tắt
     });
+    const [activeFilters, setActiveFilters] = useState<
+        { key: string; mainText: string; subText: string }[]
+    >([]);
 
     // Danh sách hiển thị sau khi áp dụng tiêu chí + phòng hiện tại
     const [visibleEmployees, setVisibleEmployees] = useState<Employee[]>([]);
@@ -117,6 +121,88 @@ export default function DepartmentDetailScreen({ route, navigation }: Props) {
     if (loading || !theme || !lang || !dept) return null;
     const S = makeStyles(theme);
     const t = lang.t;
+
+    const DEFAULT_CRITERIA: EmployeeFilterInDeptValues = {
+        employeeName: "",
+        position: "",
+        sortBy: "created_desc",
+        inDeptOnly: false,
+    };
+
+    const getSortLabel = (value: EmployeeFilterInDeptValues["sortBy"]) => {
+        switch (value) {
+            case "created_asc":
+                return t("sort_created_asc");
+            case "name_asc":
+                return t("sort_name_asc");
+            case "name_desc":
+                return t("sort_name_desc");
+            case "created_desc":
+            default:
+                return t("sort_created_desc");
+        }
+    };
+
+    const scopeMainText = lang.code === "en" ? "Scope" : "Pham vi";
+
+    const buildActiveFilterChips = (values: EmployeeFilterInDeptValues) => {
+        const chips: { key: string; mainText: string; subText: string }[] = [];
+
+        if (values.employeeName.trim()) {
+            chips.push({
+                key: "employeeName",
+                mainText: t("employee_name_label"),
+                subText: values.employeeName.trim(),
+            });
+        }
+
+        if (values.position.trim()) {
+            chips.push({
+                key: "position",
+                mainText: t("position_name_label"),
+                subText: values.position.trim(),
+            });
+        }
+
+        if (values.inDeptOnly) {
+            chips.push({
+                key: "inDeptOnly",
+                mainText: scopeMainText,
+                subText: t("employees_in_this_dept"),
+            });
+        }
+
+        chips.push({
+            key: "sortBy",
+            mainText: t("sort_by_label"),
+            subText: getSortLabel(values.sortBy),
+        });
+
+        return chips;
+    };
+
+    const handleRemoveFilter = (key: string) => {
+        const next = { ...criteria };
+
+        if (key === "employeeName") {
+            next.employeeName = "";
+        } else if (key === "position") {
+            next.position = "";
+        } else if (key === "inDeptOnly") {
+            next.inDeptOnly = DEFAULT_CRITERIA.inDeptOnly;
+        } else if (key === "sortBy") {
+            next.sortBy = DEFAULT_CRITERIA.sortBy;
+        }
+
+        setCriteria(next);
+        if (departmentDetail?.id) {
+            const updated = applyCriteria(employees, departmentDetail.id, next);
+            setVisibleEmployees(updated);
+        } else {
+            setVisibleEmployees([]);
+        }
+        setActiveFilters(prev => prev.filter(c => c.key !== key));
+    };
 
     const toggleSelect = (id: string) => {
         setSelectedIds(prev => {
@@ -252,6 +338,20 @@ export default function DepartmentDetailScreen({ route, navigation }: Props) {
                     </TouchableOpacity>
                 </View>
 
+                {activeFilters.length > 0 && (
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                        {activeFilters.map(f => (
+                            <FilterChip
+                                key={f.key}
+                                mainText={f.mainText}
+                                subText={f.subText}
+                                theme={theme}
+                                onRemove={() => handleRemoveFilter(f.key)}
+                            />
+                        ))}
+                    </View>
+                )}
+
                 <FlatList
                     scrollEnabled={false}              // giao cho ScrollView cuộn
                     data={data}
@@ -273,6 +373,7 @@ export default function DepartmentDetailScreen({ route, navigation }: Props) {
                         } else {
                             setVisibleEmployees([]);
                         }
+                        setActiveFilters(buildActiveFilterChips(values));
                     }}
                 />
             </ScrollView>

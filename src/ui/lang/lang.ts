@@ -124,5 +124,51 @@ export const Lang = {
   type_of_employee: ["Loại nhân viên", "Type of employees"],
   employee_management: ["Quản lý nhân viên", "Employee Management"],
 
+  attendance_title: ["Chấm công", "Attendance"],
+  attendance_summary_title: ["Tổng số giờ làm việc", "Total working hours"],
+  attendance_today: ["Hôm nay", "Today"],
+  attendance_this_month: ["Trong tháng", "This month"],
+  attendance_hours: ["Giờ", "Hours"],
+  attendance_hours_suffix: ["Giờ", "Hours"],
+  attendance_list: ["Danh sách chấm công", "Attendance list"],
+  attendance_total_hours: ["Tổng giờ", "Total hours"],
+  attendance_check_in_out: ["Check-in va check-out", "Check-in & Check-out"],
+  attendance_check_in: ["Check-in", "Check-in"],
+  attendance_check_out: ["Check-out", "Check-out"],
+  attendance_outside_area: ["Chưa vào khu vực công ty", "Outside company area"],
+
+  filter_attendance_title: ["Bộ lọc chấm công", "Attendance filters"],
+  filter_start_date: ["Ngày bắt đầu", "Start date"],
+  filter_end_date: ["Ngày kết thúc", "End date"],
+
+  face_detection_title: ["Nhận diện khuôn mặt", "Facial recognition"],
+  face_step_put_face_into_frame: ["Đưa khuôn mặt vào khung", "Put your face in the frame"],
+  face_step_put_face_hint: [
+    "Canh khuôn mặt của bạn ngay giữa vòng elip để hệ thống ghi nhận",
+    "Align your face right in the center of the ellipse for the system to record",
+  ],
+  face_step_smile: ["Hãy mỉm cười", "Smile"],
+  face_step_smile_hint: [
+    "Mỉm cười tự nhiên để xác thực chuyển động khuôn mặt",
+    "Smile naturally to authenticate facial movements",
+  ],
+  face_step_blink: ["Hãy nháy mắt", "Blink"],
+  face_step_blink_hint: [
+    "Nháy mắt một lần để xác minh bạn là người thật",
+    "Blink once to verify you're human",
+  ],
+  face_step_waiting: ["Chờ xác nhận", "Waiting for confirmation"],
+  face_step_waiting_hint: [
+    "Đang chờ hệ thống xác nhận kết qủa nhận diện",
+    "Waiting for system to confirm recognition results",
+  ],
+  face_step_status_active: ["Đang thực hiện", "In progress"],
+  face_step_status_done: ["Hoàn thành", "Complete"],
+  face_step_status_skipped: ["Đã bỏ qua", "Skipped"],
+  face_step_status_pending: ["Chưa thực hiện", "Not done"],
+  face_step_detecting: ["Đang kiểm tra điều kiện...", "Checking conditions..."],
+  face_step_detect_failed: ["Chưa nhận diện được, vui lòng thử lại", "Not recognized, please try again"],
+  face_step_detect_success: ["Hoàn thành điều kiện", "Condition fulfilled"],
+
 } as const;
 

@@ -7,6 +7,7 @@ import { useUIFactory } from "../../ui/factory/useUIFactory";
 import type { Option } from "../../types/common";
 import AddEmployeeIntoDepartmentFilter, { EmployeeFilterInDeptValues } from "./AddEmployeeIntoDepartmentFilter";
 import FilterIcon from "../../assets/icons/filter_icon.svg"
+import FilterChip from "../other-group-2-stuff/FilterChip.tsx";
 import { Department, Employee, EMPLOYEES as EMP_FAKE, DEPARTMENTS } from "../../fake_data/Dien/fake_data.tsx";
 
 export type AddDepartmentModal = {
@@ -51,6 +52,9 @@ export default function AddEmployeeModal({ visible, onClose, onSubmit, initial }
         position: "",
         sortBy: "created_desc"
     });
+    const [activeFilters, setActiveFilters] = useState<
+        { key: string; mainText: string; subText: string }[]
+    >([]);
 
     // SelectedIds: đang chọn trong phòng này
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -92,6 +96,69 @@ export default function AddEmployeeModal({ visible, onClose, onSubmit, initial }
     const S = makeStyles(theme);
     const t = lang.t;
 
+    const DEFAULT_CRITERIA: EmployeeFilterInDeptValues = {
+        employeeName: "",
+        position: "",
+        sortBy: "created_desc",
+    };
+
+    const getSortLabel = (value: EmployeeFilterInDeptValues["sortBy"]) => {
+        switch (value) {
+            case "created_asc":
+                return t("sort_created_asc");
+            case "name_asc":
+                return t("sort_name_asc");
+            case "name_desc":
+                return t("sort_name_desc");
+            case "created_desc":
+            default:
+                return t("sort_created_desc");
+        }
+    };
+
+    const buildActiveFilterChips = (values: EmployeeFilterInDeptValues) => {
+        const chips: { key: string; mainText: string; subText: string }[] = [];
+
+        if (values.employeeName.trim()) {
+            chips.push({
+                key: "employeeName",
+                mainText: t("employee_name_label"),
+                subText: values.employeeName.trim(),
+            });
+        }
+
+        if (values.position.trim()) {
+            chips.push({
+                key: "position",
+                mainText: t("position_name_label"),
+                subText: values.position.trim(),
+            });
+        }
+
+        chips.push({
+            key: "sortBy",
+            mainText: t("sort_by_label"),
+            subText: getSortLabel(values.sortBy),
+        });
+
+        return chips;
+    };
+
+    const handleRemoveFilter = (key: string) => {
+        const next = { ...criteria };
+
+        if (key === "employeeName") {
+            next.employeeName = "";
+        } else if (key === "position") {
+            next.position = "";
+        } else if (key === "sortBy") {
+            next.sortBy = DEFAULT_CRITERIA.sortBy;
+        }
+
+        setCriteria(next);
+        setActiveFilters(prev => prev.filter(c => c.key !== key));
+    };
+
     const toggleSelect = (id: string) => {
         setSelectedIds(prev => {
             const next = new Set(prev);
@@ -121,15 +188,10 @@ export default function AddEmployeeModal({ visible, onClose, onSubmit, initial }
 
     const isDisabled = !name.trim();
 
-    const DEFAULT_CRITERIA: EmployeeFilterInDeptValues = {
-        employeeName: "",
-        position: "",
-        sortBy: "created_desc",
-    };
-
     const handleClose = () => {
         setSelectedIds(new Set());
         setCriteria(DEFAULT_CRITERIA);
+        setActiveFilters([]);
         setShowFilter(false);
         onClose();
     };
@@ -180,6 +242,20 @@ export default function AddEmployeeModal({ visible, onClose, onSubmit, initial }
                     </TouchableOpacity>
                 </View>
 
+                {activeFilters.length > 0 && (
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                        {activeFilters.map(f => (
+                            <FilterChip
+                                key={f.key}
+                                mainText={f.mainText}
+                                subText={f.subText}
+                                theme={theme}
+                                onRemove={() => handleRemoveFilter(f.key)}
+                            />
+                        ))}
+                    </View>
+                )}
+
                 <FlatList
                     scrollEnabled={false}              // giao cho ScrollView cuộn
                     data={data}
@@ -193,7 +269,10 @@ export default function AddEmployeeModal({ visible, onClose, onSubmit, initial }
                     visible={showFilter}
                     current={criteria}
                     onClose={() => setShowFilter(false)}
-                    onApply={(values) => setCriteria(values)}
+                    onApply={(values) => {
+                        setCriteria(values);
+                        setActiveFilters(buildActiveFilterChips(values));
+                    }}
                 />
             </ScrollView>
             {/* Nút hành động */}
