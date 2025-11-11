@@ -26,6 +26,21 @@ export type Employee = {
   createdAt: string;
 };
 
+// Kiểu dữ liệu cho 1 user
+type User = {
+  firstname: string;
+  lastname: string;
+  dateOfBirth: Date;
+  countryCode: string;
+  stateCode: string;
+  cityName: string;
+  fullAddress: string;
+  avatar: string;
+  image_left: string;
+  image_front: string;
+  image_right: string;
+};
+
 // 10 phòng ban mẫu (đã Việt hóa có dấu)
 export const DEPARTMENTS: Department[] = [
   {

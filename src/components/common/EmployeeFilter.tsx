@@ -11,7 +11,7 @@ export type EmpSortValue = "created_desc" | "created_asc" | "name_asc" | "name_d
 
 export type EmployeeFilterValues = {
   employeeName: string;
-  passwordChangeStatus?: "changed" | "waiting_for_changed" | "do_not_change" |""; // rỗng = không lọc
+  passwordChangeStatus?: "changed" | "waiting_for_changed" | "do_not_change" | ""; // rỗng = không lọc
   accountActive?: "active" | "inactive" | "";
   departmentId?: string; // rỗng = không lọc
   position: string;
@@ -28,9 +28,9 @@ type Props = {
 function useSortingOptions<T extends (...a: any[]) => string>(t: T): Option[] {
   return React.useMemo<Option[]>(() => [
     { value: "created_desc", label: t("sort_created_desc" as any) },
-    { value: "created_asc",  label: t("sort_created_asc"  as any) },
-    { value: "name_asc",     label: t("sort_name_asc"     as any) },
-    { value: "name_desc",    label: t("sort_name_desc"    as any) },
+    { value: "created_asc", label: t("sort_created_asc" as any) },
+    { value: "name_asc", label: t("sort_name_asc" as any) },
+    { value: "name_desc", label: t("sort_name_desc" as any) },
   ], [t]);
 }
 
@@ -39,10 +39,10 @@ export default function EmployeeFilter({ visible, onClose, onApply, current }: P
 
   // ---- Hooks ALWAYS before any conditional return
   const [employeeName, setEmployeeName] = React.useState<string>(current?.employeeName ?? "");
-  const [passwordChangeStatus, setPasswordChangeStatus] = React.useState<"changed" | "waiting_for_changed" | "do_not_change" |"">(
+  const [passwordChangeStatus, setPasswordChangeStatus] = React.useState<"changed" | "waiting_for_changed" | "do_not_change" | "">(
     (current?.passwordChangeStatus as any) ?? ""
   );
-  const [accountActive, setAccountActive] = React.useState<"active"|"inactive"|"">(
+  const [accountActive, setAccountActive] = React.useState<"active" | "inactive" | "">(
     (current?.accountActive as any) ?? ""
   );
   const [departmentId, setDepartmentId] = React.useState<string>(current?.departmentId ?? "");
@@ -56,14 +56,14 @@ export default function EmployeeFilter({ visible, onClose, onApply, current }: P
   // Options khác
   const passwordOptions = React.useMemo<Option[]>(() => [
     { value: "", label: "—" },
-    { value: "changed",     label: lang?.t("password_changed") ?? "Đã đổi mật khẩu" },
+    { value: "changed", label: lang?.t("password_changed") ?? "Đã đổi mật khẩu" },
     { value: "waiting_for_changed", label: lang?.t("waiting_for_password_change") ?? "Chờ đổi mật khẩu" },
-    { value: "do_not_change",     label: lang?.t("do_not_change_password") ?? "Không đổi mật khẩu" },
+    { value: "do_not_change", label: lang?.t("do_not_change_password") ?? "Không đổi mật khẩu" },
   ], [lang]);
 
   const accountOptions = React.useMemo<Option[]>(() => [
     { value: "", label: "—" },
-    { value: "active",   label: lang?.t("active") ?? "Hoạt động" },
+    { value: "active", label: lang?.t("active") ?? "Hoạt động" },
     { value: "inactive", label: lang?.t("inactive") ?? "Ngừng hoạt động" },
   ], [lang]);
 
@@ -206,7 +206,9 @@ const makeStyles = (theme: any) =>
       paddingTop: 16,
       paddingBottom: Platform.select({ ios: 28, android: 20 }),
       paddingHorizontal: 16,
-      backgroundColor: theme.colors.card ?? "#fff",
+      backgroundColor: theme.colors.background,
+      borderWidth: 1,
+      borderColor: theme.colors.contrastBackground,
       borderTopLeftRadius: 15,
       borderTopRightRadius: 15,
     },

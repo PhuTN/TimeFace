@@ -1,171 +1,262 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { SafeAreaView, View, Text, StyleSheet, ScrollView } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  SafeAreaView,
+  View,
+  StyleSheet,
+  ScrollView,
+  useWindowDimensions,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useUIFactory } from "../ui/factory/useUIFactory";
 import HeaderBar from "../components/common/HeaderBar.tsx";
 import GradientButton from "../components/common/GradientButton";
 import { RootStackParamList } from "../navigation/AppNavigator";
+import MaskedView from "@react-native-masked-view/masked-view";
+import Svg, { Path as SvgPath } from "react-native-svg";
+import { Camera } from "react-native-vision-camera";
+import { useFaceDetectionHandle, FaceDetectionStep } from "../utils/FaceDetectionHandle";
+// === THÊM IMPORT CỦA SKIA ===
+import {
+  Canvas,
+  Path as SkiaPath,
+  Skia,
+  LinearGradient, // Skia có component LinearGradient riêng
+  vec,
+  PathOp
+} from "@shopify/react-native-skia";
 
-type StepKey = "frame" | "smile" | "blink" | "waiting";
-type StepStatus = "pending" | "active" | "completed" | "skipped";
-type StepDefinition = { key: StepKey; label: string; helper?: string };
+type StepKey = FaceDetectionStep;
+type StepDefinition = { key: StepKey; label: string };
 
 type Props = NativeStackScreenProps<RootStackParamList, "EmployeeFaceDetection">;
 
-// Gradient giống ảnh: xanh ngọc -> xanh dương
-const RING_GRADIENT = ["#2EF5D2", "#1E4DFF"];
-const BUTTON_GRADIENT = ["#BCD9FF", "#488EEB"];
-const BUTTON_RADIUS = 12;
-
 export default function EmployeeFaceDetectionScreen({ navigation }: Props) {
-  const { loading, theme, lang } = useUIFactory();
-  const [activeStep, setActiveStep] = useState<StepKey>("frame");
-  const [completedSteps, setCompletedSteps] = useState<StepKey[]>([]);
-  const [skippedStep, setSkippedStep] = useState<StepKey | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string>("");
+  const { width } = useWindowDimensions();
+  // === ĐỊNH NGHĨA KÍCH THƯỚC OVAL MONG MUỐN ===
+  const OVAL_WIDTH = width * 0.8;
+  const OVAL_HEIGHT = OVAL_WIDTH * (4.5 / 3);
+  const STROKE_WIDTH = 12;
 
+  const RING_GRADIENT = ["#2EF5D2", "#1E4DFF"];
+  const BUTTON_GRADIENT = ["#BCD9FF", "#488EEB"];
+  const BUTTON_RADIUS = 12;
+
+  const { loading, theme, lang } = useUIFactory();
   const t = lang?.t;
-  const stepDefinitions = useMemo<StepDefinition[]>(
+
+  const steps = useMemo<StepDefinition[]>(
     () => [
-      {
-        key: "frame",
-        label: t?.("face_step_put_face_into_frame") ?? "Đưa khuôn mặt vào khung",
-        helper:
-          t?.("face_step_put_face_hint") ??
-          "Canh khuôn mặt của bạn ngay giữa vòng elip để hệ thống ghi nhận.",
-      },
-      {
-        key: "smile",
-        label: t?.("face_step_smile") ?? "Hãy mỉm cười",
-        helper: t?.("face_step_smile_hint") ?? "Mỉm cười tự nhiên để xác thực chuyển động khuôn mặt.",
-      },
-      {
-        key: "blink",
-        label: t?.("face_step_blink") ?? "Hãy nháy mắt",
-        helper: t?.("face_step_blink_hint") ?? "Nháy mắt một lần để xác minh bạn là người thật.",
-      },
-      {
-        key: "waiting",
-        label: t?.("face_step_waiting") ?? "Chờ xác nhận",
-        helper: t?.("face_step_waiting_hint") ?? "Đang chờ hệ thống xác nhận kết quả nhận diện.",
-      },
+      { key: "frame", label: t?.("face_step_put_face_into_frame") ?? "Đưa khuôn mặt vào khung" },
+      { key: "smile", label: t?.("face_step_smile") ?? "Hãy mỉm cười" },
+      { key: "blink", label: t?.("face_step_blink") ?? "Hãy nháy mắt" },
+      { key: "waiting", label: t?.("face_step_waiting") ?? "Chờ nhận diện" },
     ],
     [t]
   );
 
   const stepMap = useMemo(
-    () => stepDefinitions.reduce<Record<StepKey, StepDefinition>>((acc, def) => ((acc[def.key] = def), acc), {} as any),
-    [stepDefinitions]
+    () => steps.reduce<Record<StepKey, StepDefinition>>((acc, s) => { acc[s.key] = s; return acc; }, {} as any),
+    [steps]
   );
+
+  const {
+    cameraRef,
+    device,
+    hasPermission,
+    permissionStatus,
+    isCameraActive,
+    isCameraReady,
+    frameProcessor,
+    handlePutFaceIntoFrame: detectFaceInFrame,
+    handleSmile: detectSmile,
+    handleBlink: detectBlink,
+    refreshPermission,
+  } = useFaceDetectionHandle();
+
+  const permissionBlocked = permissionStatus === "denied" || permissionStatus === "restricted";
+  const cameraStatusMessage = useMemo(() => {
+    if (permissionBlocked) return "Allow camera access in settings to continue.";
+    if (!hasPermission) return "Waiting for camera permission...";
+    if (!device) return "No compatible camera found.";
+    if (!isCameraReady) return "Preparing camera...";
+    return "Camera is waking up...";
+  }, [device, hasPermission, isCameraReady, permissionBlocked]);
+
+  // Bước hiện tại (mặc định: frame)
+  const [currentStep, setCurrentStep] = useState<StepKey>("frame");
+  const [flowAttempt, setFlowAttempt] = useState(0);
+  const [flowState, setFlowState] = useState<"idle" | "running" | "error" | "done">("idle");
+  const [flowError, setFlowError] = useState<string | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ⬇️ NEW: lưu thử thách (smile | blink) cho mỗi attempt
+  const challengeRef = useRef<"smile" | "blink">("smile");
+  const pickChallenge = useCallback(
+    () => (Math.random() < 0.5 ? "smile" : "blink"),
+    []
+  );
+
+  const startFlow = useCallback(() => {
+    challengeRef.current = pickChallenge(); // chốt thử thách cho lần chạy này
+    setFlowAttempt(prev => prev + 1);
+  }, [pickChallenge]);
+
+  const cancelRetry = useCallback(() => {
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleRetry = useCallback(
+    (delay = 1600) => {
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = setTimeout(() => {
+        retryTimeoutRef.current = null;
+        if (hasPermission && isCameraReady && device) {
+          startFlow();
+        }
+      }, delay);
+    },
+    [device, hasPermission, isCameraReady, startFlow]
+  );
+
+  useEffect(() => () => cancelRetry(), [cancelRetry]);
+
+  const getErrorMessage = useCallback((reason?: string) => {
+    switch (reason) {
+      case "camera_not_ready":
+        return lang?.t('face_camera_not_ready');
+      case "face_not_centered":
+        return lang?.t('face_face_not_centered');
+      case "smile_not_detected":
+        return lang?.t('face_smile_not_detected');
+      case "blink_not_detected":
+        return lang?.t('face_blink_not_detected');
+      case "capture_failed":
+        return lang?.t('face_capture_failed');
+      default:
+        return null;
+    }
+  }, []);
+
+  const handleFlowFailure = useCallback(
+    (reason?: string, step?: StepKey, shouldRetry = true) => {
+      setFlowState("error");
+      const fallbackLabel = step ? stepMap[step]?.label : null;
+      setFlowError(getErrorMessage(reason) ?? fallbackLabel ?? null);
+      cancelRetry();
+      if (shouldRetry) {
+        scheduleRetry();
+      }
+    },
+    [getErrorMessage, scheduleRetry, stepMap]
+  );
+
+  // ==== 4 hàm handle để bạn thêm logic camera sau ====
+  const handlePutFaceIntoFrame = useCallback(() => detectFaceInFrame(), [detectFaceInFrame]);
+
+  const handleSmile = useCallback(() => detectSmile(), [detectSmile]);
+
+  const handleBlink = useCallback(() => detectBlink(), [detectBlink]);
+
+  const handleWaiting = useCallback(() => {
+    // Placeholder: future submission logic can use captured frames.
+  }, []);
+  // ===================================================
 
   useEffect(() => {
-    if (activeStep === "waiting") setStatusMessage(stepMap.waiting?.helper ?? "");
-  }, [activeStep, stepMap.waiting?.helper]);
+    if (isCameraReady && hasPermission && device && flowAttempt === 0) {
+      startFlow();
+    }
+  }, [device, flowAttempt, hasPermission, isCameraReady, startFlow]);
 
-  const runMockDetection = useCallback(async (_step: StepKey) => {
-    return new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 1200));
-  }, []);
+  useEffect(() => {
+    if (!flowAttempt || !isCameraReady || !hasPermission || !device) return;
 
-  const markStepCompleted = useCallback((step: StepKey) => {
-    setCompletedSteps((prev) => (prev.includes(step) ? prev : [...prev, step]));
-  }, []);
+    let cancelled = false;
 
-  const getStepStatus = useCallback(
-    (step: StepKey): StepStatus => {
-      if (completedSteps.includes(step)) return "completed";
-      if (skippedStep === step) return "skipped";
-      if (step === activeStep) return "active";
-      return "pending";
-    },
-    [activeStep, completedSteps, skippedStep]
-  );
+    const runFlow = async () => {
+      setFlowState("running");
+      setFlowError(null);
 
-  const statusLabel = useCallback(
-    (status: StepStatus) =>
-      status === "active"
-        ? t?.("face_step_status_active") ?? "Đang thực hiện"
-        : status === "completed"
-        ? t?.("face_step_status_done") ?? "Hoàn thành"
-        : status === "skipped"
-        ? t?.("face_step_status_skipped") ?? "Đã bỏ qua"
-        : t?.("face_step_status_pending") ?? "Chưa thực hiện",
-    [t]
-  );
-
-  const handleStepPress = useCallback(
-    async (step: StepKey) => {
-      const interactive: StepKey[] = ["frame", "smile", "blink"];
-      if (isProcessing || step !== activeStep || !interactive.includes(step)) return;
-
-      setIsProcessing(true);
-      setStatusMessage(t?.("face_step_detecting") ?? "Đang kiểm tra điều kiện...");
-
-      const success = await runMockDetection(step);
-      setIsProcessing(false);
-
-      if (!success) {
-        setStatusMessage(t?.("face_step_detect_failed") ?? "Chưa nhận diện được, vui lòng thử lại.");
+      // 1) Đưa mặt vào khung
+      setCurrentStep("frame");
+      const frameResult = await handlePutFaceIntoFrame();
+      if (cancelled) return;
+      if (!frameResult?.ok) {
+        handleFlowFailure(frameResult?.reason, "frame", frameResult?.reason !== "camera_not_ready");
         return;
       }
 
-      markStepCompleted(step);
-      setStatusMessage(t?.("face_step_detect_success") ?? "Hoàn thành điều kiện.");
+      // 2) Chọn NGẪU NHIÊN: "smile" hoặc "blink" và CHỈ chạy đúng bước đó
+      const which = challengeRef.current;              // "smile" | "blink"
+      setCurrentStep(which);
 
-      if (step === "frame") {
-        const next: StepKey = Math.random() > 0.5 ? "smile" : "blink";
-        setSkippedStep(next === "smile" ? "blink" : "smile");
-        setActiveStep(next);
-      } else if (step === "smile" || step === "blink") {
-        setActiveStep("waiting");
+      const result = which === "smile" ? await handleSmile() : await handleBlink();
+      if (cancelled) return;
+      if (!result?.ok) {
+        handleFlowFailure(result?.reason, which);
+        return;
       }
-    },
-    [activeStep, isProcessing, t, markStepCompleted, runMockDetection]
-  );
 
-  if (loading || !theme || !lang) return null;
-
-  const styles = makeStyles(theme);
-
-  const renderStepButton = (step: StepKey, containerStyle?: any) => {
-    const definition = stepMap[step];
-    const status = getStepStatus(step);
-    const isInteractive = step === "frame" || step === "smile" || step === "blink";
-    const isDisabled = step !== activeStep || isProcessing || !isInteractive;
-    const shouldDim = (isInteractive && isDisabled) || (!isInteractive && step !== activeStep);
-
-    const onPress = () => {
-      if (!isDisabled) handleStepPress(step);
+      // 3) Waiting / kết thúc
+      setCurrentStep("waiting");
+      handleWaiting();
+      cancelRetry();
+      setFlowState("done");
     };
 
-    return (
-      <View key={step} style={[styles.stepWrapper, containerStyle]}>
-        <GradientButton
-          text={definition.label}
-          onPress={onPress}
-          colors={BUTTON_GRADIENT}
-          borderRadius={BUTTON_RADIUS}
-          style={[
-            styles.stepButton,
-            status === "completed" && styles.stepButtonCompleted,
-            status === "skipped" && styles.stepButtonSkipped,
-            shouldDim && styles.stepButtonDisabled,
-          ]}
-          textColor="#0B1A39"
-        />
-        <Text
-          style={[
-            styles.stepStatus,
-            status === "completed" && styles.stepStatusDone,
-            status === "skipped" && styles.stepStatusSkipped,
-          ]}
-        >
-          {statusLabel(status)}
-        </Text>
-      </View>
-    );
-  };
+    runFlow();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    flowAttempt,
+    isCameraReady,
+    hasPermission,
+    device,
+    handleBlink,
+    handleFlowFailure,
+    handlePutFaceIntoFrame,
+    handleSmile,
+    handleWaiting,
+    cancelRetry,
+  ]);
+
+  // === TẠO PATH CHO SKIA ===
+  // 1. Path cho nền xám bên trong
+
+  const { innerOvalPath, innerOvalSvgPath, outerOvalPath, dimOutsidePath } = useMemo(() => {
+    const innerRect = Skia.XYWHRect(STROKE_WIDTH / 2, STROKE_WIDTH / 2, OVAL_WIDTH - STROKE_WIDTH, OVAL_HEIGHT - STROKE_WIDTH);
+    const inner = Skia.Path.Make();
+    inner.addOval(innerRect);
+
+    const outerRect = Skia.XYWHRect(STROKE_WIDTH / 2, STROKE_WIDTH / 2, OVAL_WIDTH - STROKE_WIDTH, OVAL_HEIGHT - STROKE_WIDTH);
+    const outer = Skia.Path.Make();
+    outer.addOval(outerRect);
+
+    // Lớp phủ tối = (hình chữ nhật bao ngoài) - (elip bên trong)
+    const fullRect = Skia.Path.Make();
+    fullRect.addRect(Skia.XYWHRect(0, 0, OVAL_WIDTH, OVAL_HEIGHT));
+
+    const outside = fullRect.copy();
+    outside.op(inner, PathOp.Difference);
+
+    return {
+      innerOvalPath: inner,
+      innerOvalSvgPath: inner.toSVGString(),
+      outerOvalPath: outer,
+      dimOutsidePath: outside,
+    };
+  }, [OVAL_HEIGHT, OVAL_WIDTH, STROKE_WIDTH]);
+
+  // =====================================
+
+  if (loading || !theme || !lang) return null;
+  const styles = makeStyles(theme);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -173,46 +264,88 @@ export default function EmployeeFaceDetectionScreen({ navigation }: Props) {
         <HeaderBar
           title={lang.t("face_detection_title")}
           onBack={() => navigation?.goBack?.()}
-          extra={<View style={{ width: 34 }} />} // giữ layout như hình
+          extra={<View style={{ width: 34 }} />}
         />
 
-        <View style={styles.screenPad}>
-          {/* Card trắng như ảnh */}
-          <View style={[styles.card, { backgroundColor: theme.colors.card || "#FFFFFF" }]}>
-            {/* Vòng oval gradient */}
-            <View style={styles.faceGuide}>
-              <LinearGradient
-                colors={RING_GRADIENT}
-                start={{ x: 0.1, y: 0 }}
-                end={{ x: 0.9, y: 1 }}
-                style={styles.faceRing}
-              >
-                <View style={styles.faceInner} />
-              </LinearGradient>
-            </View>
+        {/* Khung oval (THAY BẰNG SKIA CANVAS) */}
+        <View style={styles.faceGuide}>
+          <View style={[styles.ovalWrapper, { width: OVAL_WIDTH, height: OVAL_HEIGHT }]}>
+            <MaskedView
+              style={StyleSheet.absoluteFillObject}
+              maskElement={
+                <Svg width={OVAL_WIDTH} height={OVAL_HEIGHT}>
+                  <SvgPath d={innerOvalSvgPath} fill="#fff" />
+                </Svg>
+              }
+            >
+              <View style={styles.cameraSurface}>
+                {device && hasPermission ? (
+                  <Camera
+                    ref={cameraRef}
+                    style={StyleSheet.absoluteFillObject}
+                    device={device}
+                    isActive={isCameraActive}
+                    photo={true}
+                    frameProcessor={frameProcessor}
+                  />
+                ) : (
+                  <View style={styles.cameraFallback}>
+                    <Text style={styles.cameraFallbackText}>{cameraStatusMessage}</Text>
+                    {!permissionBlocked && (
+                      <TouchableOpacity style={styles.cameraFallbackButton} onPress={refreshPermission}>
+                        <Text style={styles.cameraFallbackButtonText}>Enable camera</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </View>
+            </MaskedView>
 
-            {/* Nút chính: Đưa khuôn mặt vào khung */}
-            {renderStepButton("frame", styles.primaryStep)}
-
-            {/* Gợi ý / trạng thái */}
-            <Text style={[styles.instruction, { color: theme.colors.mutedText || "#5B6C87" }]}>
-              {stepMap[activeStep]?.helper ?? stepMap[activeStep]?.label}
-            </Text>
-            {!!statusMessage && (
-              <Text style={[styles.statusMessage, { color: theme.colors.primary || "#3366FF" }]}>
-                {statusMessage}
-              </Text>
-            )}
+            <Canvas style={[StyleSheet.absoluteFillObject]} pointerEvents="none">
+              <SkiaPath path={dimOutsidePath} style="fill" color={theme.colors.background} />
+              <SkiaPath path={outerOvalPath} style="stroke" strokeWidth={STROKE_WIDTH}>
+                <LinearGradient
+                  start={vec(OVAL_WIDTH * 0.1, 0)}
+                  end={vec(OVAL_WIDTH * 0.9, OVAL_HEIGHT)}
+                  colors={RING_GRADIENT}
+                />
+              </SkiaPath>
+            </Canvas>
           </View>
-
-          {/* Các bước phụ giữ lại */}
-          <View style={styles.followUpZone}>
-            {renderStepButton("smile")}
-            {renderStepButton("blink")}
-          </View>
-
-          <View style={styles.waitingZone}>{renderStepButton("waiting")}</View>
         </View>
+        {/* (Kết thúc khối Skia) */}
+
+        {/* Nút hiển thị như LABEL (không bấm) */}
+        {flowError ? (
+          <Text style={styles.statusText}>{flowError}</Text>
+        ) : flowState === "running" ? (
+          <Text style={styles.statusText}>{lang.t('face_status_label')}</Text>
+        ) : null}
+        {flowState === "error" && (
+          <TouchableOpacity style={styles.retryLink} onPress={startFlow}>
+            <Text style={styles.retryLinkText}>{lang.t('face_retry_link')}</Text>
+          </TouchableOpacity>
+        )}
+        <View style={{ alignItems: "center", marginBottom: 50 }}>
+          <GradientButton
+            text={stepMap[currentStep].label}
+            onPress={() => {
+              if (flowState === "running") return;
+              if (!hasPermission) {
+                refreshPermission();
+                return;
+              }
+              if (device && isCameraReady) {
+                startFlow();
+              }
+            }}
+            colors={BUTTON_GRADIENT}
+            borderRadius={BUTTON_RADIUS}
+            textColor="#0B1A39"
+            style={{ width: "80%" }}
+          />
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -220,94 +353,68 @@ export default function EmployeeFaceDetectionScreen({ navigation }: Props) {
 
 const makeStyles = (theme: any) =>
   StyleSheet.create({
-    screenPad: {
-      paddingHorizontal: 16,
-      paddingBottom: 24,
-    },
-    card: {
-      borderRadius: 24,
-      paddingVertical: 24,
-      paddingHorizontal: 16,
-      shadowColor: "#000000",
-      shadowOpacity: 0.06,
-      shadowOffset: { width: 0, height: 6 },
-      shadowRadius: 12,
-      elevation: 3,
-      alignItems: "center",
-    },
-
-    // --- Vòng oval giống ảnh ---
     faceGuide: {
-      marginTop: 8,
-      marginBottom: 18,
-      alignItems: "center",
+      marginTop: "20%",
+      marginBottom: "10%",
+      alignItems: "center", // Giữ lại để căn giữa Canvas
       justifyContent: "center",
       width: "100%",
-    },
-    faceRing: {
-      width: 210,     // đường kính ngang
-      height: 270,    // đường kính dọc
-      borderRadius: 140,
-      padding: 6,     // độ dày viền gradient
-      alignItems: "center",
-      justifyContent: "center",
+
+      // Thêm shadow/elevation vào đây nếu bạn muốn
       shadowColor: "#1E4DFF",
       shadowOpacity: 0.15,
       shadowOffset: { width: 0, height: 4 },
       shadowRadius: 8,
       elevation: 2,
-      backgroundColor: "transparent",
-    },
-    faceInner: {
-      width: 210 - 12,   // trừ 2*padding
-      height: 270 - 12,
-      borderRadius: 130,
-      backgroundColor: "#D9D9D9", // màu xám trong hình
     },
 
-    // --- Nút / status ---
-    primaryStep: {
-      marginTop: 6,
-      marginBottom: 8,
+    ovalWrapper: {
+      position: "relative",
     },
-    instruction: {
-      marginTop: 6,
-      fontSize: 14,
+    cameraSurface: {
+      flex: 1,
+      backgroundColor: "#0B1A39",
+    },
+    cameraFallback: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 24,
+      backgroundColor: "#0B1A39",
+      gap: 12,
+    },
+    cameraFallbackText: {
+      color: "#ffffff",
       textAlign: "center",
+      fontSize: 14,
       lineHeight: 20,
     },
-    statusMessage: {
-      marginTop: 8,
-      fontSize: 13,
-      textAlign: "center",
+    cameraFallbackButton: {
+      paddingHorizontal: 20,
+      paddingVertical: 8,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: "#ffffff",
+    },
+    cameraFallbackButtonText: {
+      color: "#ffffff",
       fontWeight: "600",
     },
-
-    // --- Nhóm nút phụ ---
-    followUpZone: {
-      marginTop: 20,
-      gap: 14,
-      alignItems: "center",
+    statusText: {
+      marginTop: 16,
+      paddingHorizontal: 24,
+      textAlign: "center",
+      fontSize: 13,
+      color: "#6B7AA1",
     },
-    waitingZone: {
-      marginTop: 28,
-      alignItems: "center",
+    retryLink: {
+      marginTop: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 6,
     },
-
-    // --- Button states ---
-    stepWrapper: { alignItems: "center" },
-    stepButton: { marginTop: 0, width: 260, borderRadius: 12 },
-    stepButtonDisabled: { opacity: 0.55 },
-    stepButtonCompleted: {
-      opacity: 1,
-      shadowColor: "#2463D6",
-      shadowOpacity: 0.22,
-      shadowOffset: { width: 0, height: 4 },
-      shadowRadius: 8,
-      elevation: 3,
+    retryLinkText: {
+      color: "#1E4DFF",
+      fontWeight: "700",
+      alignSelf: "center"
     },
-    stepButtonSkipped: { opacity: 0.35 },
-    stepStatus: { marginTop: 6, fontSize: 12.5, color: "#5B6C87" },
-    stepStatusDone: { color: "#1E9E62", fontWeight: "600" },
-    stepStatusSkipped: { color: "#A0AEC0", fontStyle: "italic" },
   });

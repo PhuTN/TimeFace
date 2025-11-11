@@ -253,21 +253,21 @@ const DepartmentManagementScreen = ({ route, navigation }: Props) => {
             let sortLabel = '';
             switch (values.sortBy) {
               case 'created_desc':
-                sortLabel = 'Ngày tạo mới nhất → cũ nhất';
+                sortLabel = lang.t('sort_created_desc');
                 break;
               case 'created_asc':
-                sortLabel = 'Ngày tạo cũ nhất → mới nhất';
+                sortLabel = lang.t('sort_created_asc');
                 break;
               case 'name_asc':
-                sortLabel = 'Tên A → Z';
+                sortLabel = lang.t('sort_name_asc');
                 break;
               case 'name_desc':
-                sortLabel = 'Tên Z → A';
+                sortLabel = lang.t('sort_name_desc');
                 break;
             }
             chips.push({
               key: 'sortBy',
-              mainText: 'Sắp xếp bởi',
+              mainText: lang.t('sort_by'),
               subText: sortLabel,
             });
 
@@ -377,12 +377,12 @@ const makeStyles = (theme: any) =>
     title: {
       fontSize: 20,
       fontWeight: "700",
-      color: "#222",
+      color: theme.colors.contrastBackground,
       maxWidth: "70%",
     },
     subtitle: {
       fontSize: 16,
-      color: "#555",
+      color: theme.colors.contrastBackground,
     },
     meta: {
       fontSize: 13,

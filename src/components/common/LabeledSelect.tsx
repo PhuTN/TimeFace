@@ -100,7 +100,7 @@ const {width, height} = Dimensions.get('window');
 const themedStyles = (theme: any) =>
   StyleSheet.create({
     field: {flexGrow: 1, flexBasis: '48%', minWidth: '48%'},
-    label: {fontSize: 13, color: theme.colors.text, marginBottom: 6},
+    label: {fontSize: 13, color: theme.colors.contrastBackground, marginBottom: 6},
     inputBox: {
       borderWidth: 2,
       borderColor: theme.colors.border,
@@ -144,7 +144,7 @@ const themedStyles = (theme: any) =>
       fontSize: 16,
       fontWeight: '600',
       marginBottom: 8,
-      color: theme.colors.text,
+      color: theme.colors.contrastBackground,
     },
     optionRow: {
       paddingVertical: 14,

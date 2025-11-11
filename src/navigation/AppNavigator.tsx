@@ -20,6 +20,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import JobInformationScreen from '../screens/JobInformationScreen';
 import PersonalInformationScreen from '../screens/PersonalInformationScreen';
 import EmployeeFaceDetectionScreen from '../screens/EmployeeFaceDetectionScreen';
+import PersonalInformationFaceDetectionScreen from '../screens/PersonalInformationFaceDetectionScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -43,7 +44,8 @@ export type RootStackParamList = {
   ChatRoom: undefined;
   Settings: undefined;
   JobInformation: undefined;
-  PersonalInformation: undefined;
+  PersonalInformation: { faces: any } | undefined;
+  PersonalInformationFaceDetection: undefined
 };
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -68,6 +70,7 @@ const AppNavigator = () => {
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="JobInformation" component={JobInformationScreen} />
         <Stack.Screen name="PersonalInformation" component={PersonalInformationScreen} />
+        <Stack.Screen name="PersonalInformationFaceDetection" component={PersonalInformationFaceDetectionScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
