@@ -7,9 +7,11 @@ import Divider from '../components/settings/Divider';
 import ProfileCard from '../components/settings/ProfileCard';
 import SettingRow from '../components/settings/SettingRow';
 import SettingSection from '../components/settings/SettingSection';
-import {useUIFactory} from '../ui/factory/useUIFactory';
+import ToggleButton_Language from '../components/common/ToggleButton_Language';
+import ToggleButton_Notification from '../components/common/ToggleButton_Notification';
+import ToggleButton_Theme from '../components/common/ToggleButton_Theme';
 import {setUIState} from '../ui/factory/selector';
-import LangSwitch from '../components/settings/LangSwitch';
+import {useUIFactory} from '../ui/factory/useUIFactory';
 
 export default function SettingsScreen() {
   const {theme, lang} = useUIFactory();
@@ -44,6 +46,19 @@ export default function SettingsScreen() {
   const L = lang?.code === 'en' ? en : vi;
 
   const isDark = theme?.name === 'dark';
+  const isEnglish = lang?.code === 'en';
+
+  const handleThemeToggle = () => {
+    setUIState({theme: isDark ? 'light' : 'dark'});
+  };
+
+  const handleLanguageToggle = () => {
+    setUIState({lang: isEnglish ? 'vi' : 'en'});
+  };
+
+  const handleNotificationToggle = () => {
+    setNotifications(prev => !prev);
+  };
 
   return (
     <SafeAreaView
@@ -84,19 +99,18 @@ export default function SettingsScreen() {
             <SettingRow
               icon={<Feather name="moon" size={18} color={PURPLE} />}
               label="Theme"
-              switchProps={{
-                value: theme?.name === 'dark',
-                onValueChange: (v: boolean) => setUIState({theme: v ? 'dark' : 'light'}),
-              }}
+              right={
+                <ToggleButton_Theme value={isDark} onToggle={handleThemeToggle} />
+              }
             />
             <Divider />
             <SettingRow
               icon={<Feather name="globe" size={18} color={PURPLE} />}
               label={L.language}
               right={
-                <LangSwitch
-                  code={lang?.code === 'en' ? 'en' : 'vi'}
-                  onToggle={next => setUIState({lang: next})}
+                <ToggleButton_Language
+                  value={isEnglish}
+                  onToggle={handleLanguageToggle}
                 />
               }
             />
@@ -104,10 +118,12 @@ export default function SettingsScreen() {
             <SettingRow
               icon={<Feather name="bell" size={18} color={PURPLE} />}
               label={L.notifications}
-              switchProps={{
-                value: notifications,
-                onValueChange: setNotifications,
-              }}
+              right={
+                <ToggleButton_Notification
+                  value={notifications}
+                  onToggle={handleNotificationToggle}
+                />
+              }
             />
             <Divider />
             <SettingRow
