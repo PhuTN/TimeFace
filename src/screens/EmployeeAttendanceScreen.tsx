@@ -34,8 +34,6 @@ type AttendanceEntry = {
 
 type Props = NativeStackScreenProps<RootStackParamList, "EmployeeAttendance">;
 
-const GRADIENT = ["#002AFF", "#002AFF"];
-
 const MOCK_HISTORY: AttendanceEntry[] = [
     {
         id: "2025-01-03",
@@ -60,7 +58,7 @@ const MOCK_HISTORY: AttendanceEntry[] = [
     },
 ];
 
-const EmployeeAttendanceScreen: React.FC<Props> = ({ navigation }) => {
+const EmployeeAttendanceScreen = ({ route, navigation }: Props) => {
     const { loading, theme, lang } = useUIFactory();
     const [activeTab, setActiveTab] = useState<number>(2);
     const [showFilter, setShowFilter] = useState(false);
@@ -68,6 +66,10 @@ const EmployeeAttendanceScreen: React.FC<Props> = ({ navigation }) => {
         startDate: "",
         endDate: "",
     });
+    // Giả lập IP mạng công ty và IP người dùng hiện tại (test nhanh)
+    const COMPANY_IP = "192.168.1.100";
+    const [currentIP, setCurrentIP] = useState("192.168.1.100"); // bạn có thể đổi để test
+    const [isOutsideArea, setIsOutsideArea] = useState(false);
 
     const activeChips = useMemo(() => {
         const chips: { key: keyof AttendanceFilterValues; mainText: string; subText: string }[] =
@@ -127,7 +129,7 @@ const EmployeeAttendanceScreen: React.FC<Props> = ({ navigation }) => {
     const styles = makeStyles(theme);
 
     const renderItem: ListRenderItem<AttendanceEntry> = ({ item }) => (
-        <View style={[styles.historyCard, { backgroundColor: theme.colors.card || "#FFFFFF" }]}>
+        <View style={[styles.historyCard, { backgroundColor: theme.colors.background }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <View style={styles.historyIconBox}>
                     <CalendarIcon width={20} height={20} />
@@ -153,13 +155,27 @@ const EmployeeAttendanceScreen: React.FC<Props> = ({ navigation }) => {
         </View>
     );
 
+    /** Kiểm tra xem user có đang trong mạng công ty không */
+    const handleIsOutsideArea = () => {
+        const outside = currentIP !== COMPANY_IP;
+        setIsOutsideArea(outside);
+        return outside;
+    };
+
     const handleCheckIn = () => {
+        if (handleIsOutsideArea()) {
+            // Nếu khác IP -> chỉ đổi text, không chạy logic Check-in
+            console.log("⚠️ Ngoài khu vực công ty, không thể Check-in");
+            return;
+        }
+
         // TODO: Tích hợp API check-in
+        navigation.navigate("EmployeeFaceDetection");
     };
 
     const handleCheckOut = () => {
         // TODO: Tích hợp API check-out
-    };
+    }
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -183,7 +199,7 @@ const EmployeeAttendanceScreen: React.FC<Props> = ({ navigation }) => {
                                     </Text>
                                 </View>
                                 <Text style={[styles.summaryStatValue, { color: theme.colors.text }]}>
-                                    08:00 <Text style={styles.gradientText}>{lang.t("attendance_hours")}</Text>
+                                    00:00 <Text style={styles.gradientText}>{lang.t("attendance_hours")}</Text>
                                 </Text>
                             </View>
                             <View style={{ width: 10 }} />
@@ -195,13 +211,17 @@ const EmployeeAttendanceScreen: React.FC<Props> = ({ navigation }) => {
                                     </Text>
                                 </View>
                                 <Text style={[styles.summaryStatValue, { color: theme.colors.text }]}>
-                                    32:00 <Text style={{ fontSize: 13 }}>{lang.t("attendance_hours")}</Text>
+                                    00:00 <Text style={{ fontSize: 13 }}>{lang.t("attendance_hours")}</Text>
                                 </Text>
                             </View>
                         </View>
                         <GradientButton
-                            text={lang.t("attendance_check_in")}
-                            colors={GRADIENT}
+                            text={
+                                isOutsideArea
+                                    ? lang.t("attendance_outside_area") // 🔹 text khi ngoài khu vực
+                                    : lang.t("attendance_check_in")
+                            }
+                            colors={["#002AFF", "#002AFF"]}
                             borderRadius={16}
                             onPress={handleCheckIn}
                             style={styles.mainAction}
@@ -244,23 +264,6 @@ const EmployeeAttendanceScreen: React.FC<Props> = ({ navigation }) => {
                         scrollEnabled={false}
                         style={{ marginTop: 12 }}
                     />
-
-                    <View>
-                        <GradientButton
-                            text={lang.t("attendance_check_out")}
-                            colors={GRADIENT}
-                            borderRadius={16}
-                            onPress={handleCheckOut}
-                            style={styles.secondaryAction}
-                        />
-                        <GradientButton
-                            text={lang.t("attendance_outside_area")}
-                            colors={GRADIENT}
-                            borderRadius={16}
-                            onPress={() => { }}
-                            style={styles.secondaryAction}
-                        />
-                    </View>
                 </View>
             </ScrollView>
 
@@ -277,19 +280,18 @@ const EmployeeAttendanceScreen: React.FC<Props> = ({ navigation }) => {
             />
         </SafeAreaView>
     );
-};
-
-export default EmployeeAttendanceScreen;
+}
 
 const makeStyles = (theme: any) =>
     StyleSheet.create({
         screen: {
             flex: 1,
             paddingHorizontal: 20,
-            paddingTop: 10,
-            paddingBottom: 24,
+            paddingTop: 20,
+            paddingBottom: 100,
         },
         card: {
+            backgroundColor: theme.colors.background,
             borderRadius: 24,
             padding: 20,
             shadowColor: "#00000033",
@@ -315,6 +317,8 @@ const makeStyles = (theme: any) =>
         },
         summaryBox: {
             borderRadius: 16,
+            borderWidth: 1,
+            borderColor: theme.colors.contrastBackground,
             backgroundColor: theme.colors.background,
             padding: 16,
             gap: 14,
@@ -335,7 +339,7 @@ const makeStyles = (theme: any) =>
             flex: 1,
             padding: 12,
             borderRadius: 12,
-            backgroundColor: "#F9F9F9",
+            backgroundColor: theme.colors.background,
             borderWidth: 1,
             borderColor: "#E5ECFF",
             gap: 6,
@@ -382,7 +386,7 @@ const makeStyles = (theme: any) =>
             padding: 16,
             borderRadius: 16,
             borderWidth: 1,
-            borderColor: "#E6EEFF",
+            borderColor: theme.colors.contrastBackground,
             gap: 12,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 1 },
@@ -417,3 +421,5 @@ const makeStyles = (theme: any) =>
             borderRadius: 16,
         },
     });
+
+export default EmployeeAttendanceScreen;

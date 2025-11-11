@@ -8,10 +8,10 @@ import {
     Image,
     TouchableOpacity,
     Alert,
+    Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { State, City } from 'country-state-city';
-
 import HeaderBar from '../components/common/HeaderBar';
 import LabeledTextInput from '../components/common/LabeledTextInput';
 import LabeledDate from '../components/common/LabeledDate';
@@ -23,61 +23,47 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import ReupImageIcon from '../assets/icons/reup_image_icon.svg';
 import GradientButton from '../components/common/GradientButton';
+import {
+    launchCamera,
+    launchImageLibrary,
+    Asset,
+    ImageLibraryOptions,
+    CameraOptions,
+} from 'react-native-image-picker';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PersonalInformation'>;
 
-const DEFAULT_COUNTRY_CODE = 'ID';
-const DEFAULT_STATE_NAME = 'DKI Jakarta';
-const DEFAULT_CITY_NAME = 'Jakarta Selatan';
-
-const profileImage = 'https://i.pravatar.cc/200?img=64';
-
-type FaceTriplet = { left: string; front: string; right: string };
-
-const DEFAULT_FACES: FaceTriplet = {
-    left: 'https://i.pravatar.cc/200?img=66',
-    front: 'https://i.pravatar.cc/200?img=67',
-    right: 'https://i.pravatar.cc/200?img=68',
+const USER_DEFAULT = {
+    firstname: 'Tonald',
+    lastname: 'Drump',
+    dateOfBirth: new Date(1997, 11, 10),
+    countryCode: 'ID',
+    stateCode: 'DKI Jakarta',
+    cityName: 'Jakarta Selatan',
+    fullAddress: 'Jl Mampang Prapatan XIV No 7A, Jakarta Selatan 12790',
+    avatar: 'https://i.pravatar.cc/200?img=64',
+    image_left: 'https://i.pravatar.cc/200?img=66',
+    image_front: 'https://i.pravatar.cc/200?img=67',
+    image_right: 'https://i.pravatar.cc/200?img=68',
 };
-
-const resolveDefaultLocation = () => {
-    const countryCode = DEFAULT_COUNTRY_CODE;
-    const states = State.getStatesOfCountry(countryCode);
-    const pickedState =
-        states.find(item => item.name === DEFAULT_STATE_NAME) ?? states[0] ?? null;
-    const cities =
-        pickedState
-            ? City.getCitiesOfState(countryCode, pickedState.isoCode) ?? []
-            : City.getCitiesOfCountry(countryCode) ?? [];
-    const pickedCity =
-        cities.find(item => item.name === DEFAULT_CITY_NAME) ?? cities[0] ?? null;
-
-    return {
-        countryCode,
-        stateCode: pickedState?.isoCode ?? '',
-        cityName: pickedCity?.name ?? '',
-    };
-};
-
-const defaultLocation = resolveDefaultLocation();
 
 const PersonalInformationScreen = ({ route, navigation }: Props) => {
-    const insets = useSafeAreaInsets();
-    const { loading, theme } = useUIFactory();
+    const [avatarUri, setAvatarUri] = useState(USER_DEFAULT.avatar);
+    const [faces, setFaces] = useState({
+        left: USER_DEFAULT.image_left,
+        front: USER_DEFAULT.image_front,
+        right: USER_DEFAULT.image_right,
+    });
+    const [firstName, setFirstName] = useState(USER_DEFAULT.firstname);
+    const [lastName, setLastName] = useState(USER_DEFAULT.lastname);
+    const [dateOfBirth, setDateOfBirth] = useState(USER_DEFAULT.dateOfBirth);
+    const [countryCode, setCountryCode] = useState(USER_DEFAULT.countryCode);
+    const [stateCode, setStateCode] = useState(USER_DEFAULT.stateCode);
+    const [cityName, setCityName] = useState(USER_DEFAULT.cityName);
+    const [fullAddress, setFullAddress] = useState(USER_DEFAULT.fullAddress);
 
-    const [firstName, setFirstName] = useState('Tonald');
-    const [lastName, setLastName] = useState('Drump');
-    const [dateOfBirth, setDateOfBirth] = useState(
-        () => new Date(1997, 11, 10),
-    );
-    const [countryCode, setCountryCode] = useState(
-        defaultLocation.countryCode,
-    );
-    const [stateCode, setStateCode] = useState(defaultLocation.stateCode);
-    const [cityName, setCityName] = useState(defaultLocation.cityName);
-    const [fullAddress, setFullAddress] = useState(
-        'Jl Mampang Prapatan XIV No 7A, Jakarta Selatan 12790',
-    );
+    const insets = useSafeAreaInsets();
+    const { loading, theme, lang } = useUIFactory();
 
     const prevCountry = useRef(countryCode);
     const prevState = useRef(stateCode);
@@ -97,18 +83,87 @@ const PersonalInformationScreen = ({ route, navigation }: Props) => {
         }
     }, [stateCode]);
 
-    const [faces, setFaces] = useState<FaceTriplet>(DEFAULT_FACES);
+    // Khi quay lại từ màn hình chụp khuôn mặt, cập nhật lại 3 ảnh
+    React.useEffect(() => {
+        if (route.params?.faces) {
+            setFaces(prev => ({
+                left: route.params?.faces.image_left ?? prev.left,
+                front: route.params?.faces.image_front ?? prev.front,
+                right: route.params?.faces.image_right ?? prev.right,
+            }));
+        }
+    }, [route.params?.faces]);
 
-    if (loading || !theme) {
+    if (loading || !theme || !lang) {
         return null;
     }
 
     const S = makeStyles(theme);
 
+    // ====== HANDLERS ======
+
+    // 1) Mở thư viện hoặc camera để chọn/chụp avatar, sau đó hiển thị ngay lên UI
+    const handleUploadAvatar = async () => {
+        try {
+            // Cho người dùng chọn: mở thư viện hay chụp ảnh
+            Alert.alert(
+                lang.t('profile_select_avatar_title'),
+                lang.t('profile_select_avatar_text'),
+                [
+                    {
+                        text: lang.t('profile_photo_library'),
+                        onPress: async () => {
+                            const libOptions: ImageLibraryOptions = {
+                                mediaType: 'photo',
+                                selectionLimit: 1,
+                                quality: 0.9,
+                            };
+                            const res = await launchImageLibrary(libOptions);
+                            if (res.didCancel) return;
+                            const asset = res.assets?.[0];
+                            if (asset?.uri) setAvatarUri(asset.uri);
+                        },
+                    },
+                    {
+                        text: lang.t('profile_take_a_photo'),
+                        onPress: async () => {
+                            const camOptions: CameraOptions = {
+                                mediaType: 'photo',
+                                saveToPhotos: false,
+                                quality: 0.9,
+                                cameraType: 'front',
+                            };
+                            const res = await launchCamera(camOptions);
+                            if (res.didCancel) return;
+                            const asset = res.assets?.[0];
+                            if (asset?.uri) setAvatarUri(asset.uri);
+                        },
+                    },
+                    { text: lang.t('profile_cancel'), style: 'cancel' },
+                ],
+                { cancelable: true },
+            );
+        } catch (e) {
+            console.warn('handleUploadAvatar error', e);
+            Alert.alert('Không thể chọn ảnh', 'Vui lòng thử lại.');
+        }
+    };
+
+    // 2) Điều hướng sang màn hình chụp khuôn mặt (bạn sẽ làm auto-capture sau)
+    const handleUploadFaceImage = () => {
+        navigation.navigate('PersonalInformationFaceDetection');
+    };
+
+    // 3) Hiện “Cập nhật thành công” (chưa gọi BE)
+    const handleUpdate = () => {
+        // sau này bạn thay bằng gọi API + loading + try/catch
+        Alert.alert('Cập nhật thành công');
+    };
+
     return (
         <SafeAreaView style={S.safeArea}>
             <HeaderBar
-                title="Thong Tin Ca Nhan"
+                title={lang?.t('profile_information')}
                 onBack={() => navigation?.goBack?.()}
                 topInset={insets.top}
             />
@@ -119,22 +174,31 @@ const PersonalInformationScreen = ({ route, navigation }: Props) => {
                     S.content,
                     { paddingBottom: insets.bottom + theme.spacing(3) },
                 ]}
-                showsVerticalScrollIndicator={false}>
+                showsVerticalScrollIndicator={false}
+            >
+                {/* AVATAR */}
                 <View style={S.photoWrapper}>
                     <View style={S.photoCard}>
-                        <Image source={{ uri: profileImage }} style={S.photo} />
-                        <TouchableOpacity style={S.photoAction} onPress={() => { }}>
+                        <Image
+                            source={
+                                avatarUri
+                                    ? { uri: avatarUri }
+                                    : require('../assets/images/meow.jpg') // Đảm bảo bạn có ảnh này
+                            }
+                            style={S.photo}
+                            resizeMode="cover"
+                        />
+                        <TouchableOpacity style={S.photoAction} onPress={handleUploadAvatar}>
                             <ReupImageIcon height={34} width={34} />
                         </TouchableOpacity>
                     </View>
-                    <Text style={S.uploadTitle}>Upload Photo</Text>
-                    <Text style={S.uploadHint}>
-                        Format should be in .jpeg .png at least 800x800px and less than 5MB
-                    </Text>
+                    <Text style={S.uploadTitle}>{lang.t('profile_upload_title')}</Text>
+                    <Text style={S.uploadHint}>{lang.t('profile_upload_hint')}</Text>
                 </View>
 
+                {/* FORM */}
                 <LabeledTextInput
-                    label="First Name"
+                    label={lang.t('profile_first_name')}
                     value={firstName}
                     onChangeText={setFirstName}
                     placeholder="Enter first name"
@@ -144,7 +208,7 @@ const PersonalInformationScreen = ({ route, navigation }: Props) => {
                 <View style={S.fieldSpacing} />
 
                 <LabeledTextInput
-                    label="Last Name"
+                    label={lang.t('profile_last_name')}
                     value={lastName}
                     onChangeText={setLastName}
                     placeholder="Enter last name"
@@ -154,7 +218,7 @@ const PersonalInformationScreen = ({ route, navigation }: Props) => {
                 <View style={S.fieldSpacing} />
 
                 <LabeledDate
-                    label="Date of Birth"
+                    label={lang?.t('profile_date_of_birth')}
                     date={dateOfBirth}
                     onChange={setDateOfBirth}
                     theme={theme}
@@ -162,13 +226,13 @@ const PersonalInformationScreen = ({ route, navigation }: Props) => {
                 <View style={S.sectionSpacing} />
 
                 <View style={S.sectionHeader}>
-                    <Text style={S.sectionTitle}>Address</Text>
-                    <Text style={S.sectionSubtitle}>Your current domicile</Text>
+                    <Text style={S.sectionTitle}>{lang.t('profile_address')}</Text>
+                    <Text style={S.sectionSubtitle}>{lang.t('profile_address_hint')}</Text>
                 </View>
                 <View style={S.fieldSpacing} />
 
                 <LabeledSelectCountry
-                    label="Country"
+                    label={lang.t('profile_country')}
                     value={countryCode}
                     onChange={option => setCountryCode(option.value)}
                     theme={theme}
@@ -176,7 +240,7 @@ const PersonalInformationScreen = ({ route, navigation }: Props) => {
                 <View style={S.fieldSpacing} />
 
                 <LabeledSelectState
-                    label="State"
+                    label={lang.t('profile_state')}
                     countryCode={countryCode}
                     value={stateCode}
                     onChange={option => setStateCode(option.value)}
@@ -185,7 +249,7 @@ const PersonalInformationScreen = ({ route, navigation }: Props) => {
                 <View style={S.fieldSpacing} />
 
                 <LabeledSelectCity
-                    label="City"
+                    label={lang.t('profile_city')}
                     countryCode={countryCode}
                     stateCode={stateCode}
                     value={cityName}
@@ -195,7 +259,7 @@ const PersonalInformationScreen = ({ route, navigation }: Props) => {
                 <View style={S.fieldSpacing} />
 
                 <LabeledTextInput
-                    label="Full Address"
+                    label={lang.t('profile_full_address')}
                     value={fullAddress}
                     onChangeText={setFullAddress}
                     placeholder="Enter full address"
@@ -206,40 +270,40 @@ const PersonalInformationScreen = ({ route, navigation }: Props) => {
                 />
 
                 <View style={S.sectionSpacing} />
+
+                {/* FACES */}
                 <View style={S.faceHeader}>
                     <View>
-                        <Text style={S.sectionTitle}>Khuon mat</Text>
-                        <Text style={S.sectionSubtitle}>Your current domicile</Text>
+                        <Text style={S.sectionTitle}>{lang.t('profile_faces')}</Text>
+                        <Text style={S.sectionSubtitle}>{lang.t('profile_faces_hint')}</Text>
                     </View>
-                    <TouchableOpacity style={S.refreshButton} onPress={() => { }}>
+                    <TouchableOpacity style={S.refreshButton} onPress={handleUploadFaceImage}>
                         <ReupImageIcon height={34} width={34} />
                     </TouchableOpacity>
                 </View>
+
                 <View style={S.faceGrid}>
                     <View style={S.faceItem}>
                         <Image source={{ uri: faces.left }} style={S.faceImage} />
-                        <Text style={S.faceLabel}>Ảnh mặt trái</Text>
+                        <Text style={S.faceLabel}>{lang.t('profile_left_side_photo')}</Text>
                     </View>
                     <View style={S.faceItem}>
                         <Image source={{ uri: faces.front }} style={S.faceImage} />
-                        <Text style={S.faceLabel}>Ảnh mặt thẳng</Text>
+                        <Text style={S.faceLabel}>{lang.t('profile_front_side_photo')}</Text>
                     </View>
                     <View style={S.faceItem}>
                         <Image source={{ uri: faces.right }} style={S.faceImage} />
-                        <Text style={S.faceLabel}>Ảnh mặt phải</Text>
+                        <Text style={S.faceLabel}>{lang.t('profile_right_side_photo')}</Text>
                     </View>
                 </View>
             </ScrollView>
 
             <View style={{ paddingHorizontal: 20, paddingBottom: 20 }}>
-                <GradientButton
-                    text="Cập nhật"
-                    onPress={() => Alert.alert(`Cập nhật thành công`)}
-                />
+                <GradientButton text={lang.t('profile_button_update')} onPress={handleUpdate} />
             </View>
         </SafeAreaView>
     );
-}
+};
 
 const makeStyles = (theme: any) =>
     StyleSheet.create({
@@ -268,6 +332,7 @@ const makeStyles = (theme: any) =>
             width: 140,
             height: 140,
             borderRadius: 20,
+            backgroundColor: '#EFEFEF',
         },
         photoAction: {
             position: 'absolute',
@@ -324,7 +389,7 @@ const makeStyles = (theme: any) =>
             width: 34,
             height: 34,
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
         },
         faceGrid: {
             flexDirection: 'row',

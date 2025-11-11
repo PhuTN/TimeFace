@@ -20,7 +20,7 @@ const createDefaultDate = () => new Date(1997, 11, 10);
 
 const JobInformationScreen = ({ route, navigation }: Props) => {
     const insets = useSafeAreaInsets();
-    const { loading, theme } = useUIFactory();
+    const { loading, theme, lang } = useUIFactory();
 
     const [jobTitle, setJobTitle] = useState('Tonald');
     const [salary, setSalary] = useState('20.000.000');
@@ -29,7 +29,7 @@ const JobInformationScreen = ({ route, navigation }: Props) => {
     const [contractStart, setContractStart] = useState<Date>(createDefaultDate);
     const [contractEnd, setContractEnd] = useState<Date>(createDefaultDate);
 
-    if (loading || !theme) {
+    if (loading || !theme || !lang) {
         return null;
     }
 
@@ -38,7 +38,7 @@ const JobInformationScreen = ({ route, navigation }: Props) => {
     return (
         <SafeAreaView style={S.safeArea}>
             <HeaderBar
-                title={"Thông tin công việc"}
+                title={lang.t('job_information')}
                 onBack={() => navigation?.goBack?.()}
             />
 
@@ -51,7 +51,7 @@ const JobInformationScreen = ({ route, navigation }: Props) => {
                 showsVerticalScrollIndicator={false}>
                 <View style={S.formCard}>
                     <LabeledTextInput
-                        label="Tên công việc"
+                        label= {lang.t('job_title')}
                         value={jobTitle}
                         onChangeText={setJobTitle}
                         placeholder="Nhập tên công việc"
@@ -60,7 +60,7 @@ const JobInformationScreen = ({ route, navigation }: Props) => {
                     <View style={S.fieldSpacing} />
 
                     <LabeledTextInput
-                        label="Mức lương"
+                        label={lang.t('job_salary')}
                         value={salary}
                         onChangeText={setSalary}
                         placeholder="VD: 20.000.000"
@@ -69,7 +69,7 @@ const JobInformationScreen = ({ route, navigation }: Props) => {
                     <View style={S.fieldSpacing} />
 
                     <LabeledTextInput
-                        label="Lương OT/Giờ"
+                        label={lang.t('job_OT_salary')}
                         value={otRate}
                         onChangeText={setOtRate}
                         placeholder="VD: 200.000"
@@ -78,7 +78,7 @@ const JobInformationScreen = ({ route, navigation }: Props) => {
                     <View style={S.fieldSpacing} />
 
                     <LabeledTextInput
-                        label="Số ngày phép trong năm"
+                        label={lang.t('job_number_of_days_off')}
                         value={annualLeaveDays}
                         onChangeText={setAnnualLeaveDays}
                         placeholder="VD: 15"
@@ -87,7 +87,7 @@ const JobInformationScreen = ({ route, navigation }: Props) => {
                     <View style={S.fieldSpacing} />
 
                     <LabeledDate
-                        label="Ngày bắt đầu hợp đồng"
+                        label={lang?.t('job_contract_start_date')}
                         date={contractStart}
                         onChange={setContractStart}
                         theme={theme}
@@ -95,7 +95,7 @@ const JobInformationScreen = ({ route, navigation }: Props) => {
                     <View style={S.fieldSpacing} />
 
                     <LabeledDate
-                        label="Ngày kết thúc hợp đồng"
+                        label={lang?.t('job_contract_end_date')}
                         date={contractEnd}
                         onChange={setContractEnd}
                         theme={theme}
@@ -110,7 +110,7 @@ const makeStyles = (theme: any) =>
     StyleSheet.create({
         safeArea: {
             flex: 1,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: theme.colors.background,
         },
         scroll: {
             flex: 1,
