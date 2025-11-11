@@ -11,16 +11,26 @@ import {activeIds, conversationsAll, users} from '../fake_data/chat';
 export default function ChatListScreen() {
   const [q, setQ] = useState('');
 
-  const activeUsers = useMemo(
-    () => users.filter(u => activeIds.includes(u.id)),
-    [],
-  );
+  const normalizedQuery = useMemo(() => q.trim().toLowerCase(), [q]);
+
+  const activeUsers = useMemo(() => {
+    const pool = users.filter(u => activeIds.includes(u.id));
+    if (!normalizedQuery) {
+      return pool;
+    }
+    return pool.filter(user =>
+      user.name.toLowerCase().includes(normalizedQuery),
+    );
+  }, [normalizedQuery]);
 
   const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return conversationsAll;
-    return conversationsAll.filter(c => c.title.toLowerCase().includes(s));
-  }, [q]);
+    if (!normalizedQuery) {
+      return conversationsAll;
+    }
+    return conversationsAll.filter(conversation =>
+      conversation.title.toLowerCase().includes(normalizedQuery),
+    );
+  }, [normalizedQuery]);
 
   return (
     <SafeAreaView style={styles.safe}>

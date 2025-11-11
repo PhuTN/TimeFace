@@ -1,5 +1,5 @@
 import React from 'react';
-import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 
 type Props = {
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#2A87FF',
+    color: '#1D5EE3',
     letterSpacing: 0.3,
   },
   headerAvatar: {

@@ -33,7 +33,7 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Report"
+        initialRouteName="ChatList"
         screenOptions={{headerShown: false}}>
         {/* <Stack.Screen name="Facene" component={FaceDetectionScreen} /> */}
         <Stack.Screen name="Home" component={HomeScreen} />
