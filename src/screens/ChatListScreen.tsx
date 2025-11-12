@@ -37,7 +37,7 @@ export default function ChatListScreen() {
       <StatusBar barStyle="dark-content" />
 
       {/* PHẦN CỐ ĐỊNH */}
-      <HeaderBar />
+      <HeaderBar titleColor="#0A7AFF" title="Nhắn tin" />
       <SearchBar value={q} onChange={setQ} />
       <View style={styles.storiesWrap}>
         <ActiveStories data={activeUsers} />
