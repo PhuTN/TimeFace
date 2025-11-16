@@ -7,6 +7,7 @@ type Props = {
   text?: string;
   audioSec?: number;
   avatar?: string;
+  label?: string;
 };
 
 export default function MessageBubble({
@@ -15,22 +16,27 @@ export default function MessageBubble({
   text,
   audioSec,
   avatar,
+  label,
 }: Props) {
   const isMe = !!fromMe;
   void audioSec;
+  const showLabel = !!label && !isMe;
 
   if (type === 'audio') {
     return (
       <View style={[styles.row, isMe ? styles.right : styles.left]}>
         {!isMe && <Image source={{uri: avatar}} style={styles.avtSmall} />}
-        <View
-          style={[
-            styles.audioWrap,
-            isMe ? styles.bubbleMe : styles.bubblePeer,
-          ]}>
-          <View style={styles.wave} />
-          <View style={styles.playWrap}>
-            <Icon name="play" size={20} color="#3BB6A1" />
+        <View style={styles.content}>
+          {showLabel && <Text style={styles.label}>{label}</Text>}
+          <View
+            style={[
+              styles.audioWrap,
+              isMe ? styles.bubbleMe : styles.bubblePeer,
+            ]}>
+            <View style={styles.wave} />
+            <View style={styles.playWrap}>
+              <Icon name="play" size={20} color="#3BB6A1" />
+            </View>
           </View>
         </View>
       </View>
@@ -40,8 +46,12 @@ export default function MessageBubble({
   return (
     <View style={[styles.row, isMe ? styles.right : styles.left]}>
       {!isMe && <Image source={{uri: avatar}} style={styles.avtSmall} />}
-      <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubblePeer]}>
-        <Text style={[styles.text, isMe && {color: '#21436D'}]}>{text}</Text>
+      <View style={styles.content}>
+        {showLabel && <Text style={styles.label}>{label}</Text>}
+        <View
+          style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubblePeer]}>
+          <Text style={[styles.text, isMe && {color: '#21436D'}]}>{text}</Text>
+        </View>
       </View>
     </View>
   );
@@ -58,6 +68,7 @@ const styles = StyleSheet.create({
   left: {justifyContent: 'flex-start'},
   right: {justifyContent: 'flex-end'},
   avtSmall: {width: AV, height: AV, borderRadius: AV / 2, marginRight: 10},
+  content: {maxWidth: '78%'},
   bubble: {
     maxWidth: '78%',
     paddingHorizontal: 16,
@@ -70,7 +81,6 @@ const styles = StyleSheet.create({
   audioWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    maxWidth: '78%',
     paddingLeft: 18,
     paddingRight: 12,
     paddingVertical: 14,
@@ -94,5 +104,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 3,
     elevation: 1,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#74809A',
+    marginBottom: 4,
   },
 });
