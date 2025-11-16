@@ -1,22 +1,27 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Platform} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 type Props = {
   label: string;
-  date: Date;
+  date?: Date | null;
   onChange: (d: Date) => void;
   theme: any;
+  placeholder?: string;
 };
 
-const LabeledDate: React.FC<Props> = ({label, date, onChange, theme}) => {
+const LabeledDate: React.FC<Props> = ({label, date, onChange, theme, placeholder}) => {
   const [show, setShow] = useState(false);
   const S = themedStyles(theme);
 
-  const format = (d: Date) =>
-    `${String(d.getDate()).padStart(2, '0')}-${String(
-      d.getMonth() + 1,
-    ).padStart(2, '0')}-${d.getFullYear()}`;
+  const format = useMemo(() => {
+    return (d: Date) =>
+      `${String(d.getDate()).padStart(2, '0')}/${String(
+        d.getMonth() + 1,
+      ).padStart(2, '0')}/${d.getFullYear()}`;
+  }, []);
+
+  const displayValue = date ? format(date) : placeholder ?? 'Select date';
 
   return (
     <View style={S.field}>
@@ -25,15 +30,21 @@ const LabeledDate: React.FC<Props> = ({label, date, onChange, theme}) => {
         style={[S.inputBox, S.selectBox]}
         onPress={() => setShow(true)}
         activeOpacity={0.7}>
-        <Text style={[S.input, {color: theme.colors.text}]}>
-          {format(date)}
+        <Text
+          style={[
+            S.input,
+            {
+              color: date ? theme.colors.text : theme.colors.mutedText ?? '#8E94A4',
+            },
+          ]}>
+          {displayValue}
         </Text>
-        <Text style={S.calendarIcon}>🗓️</Text>
+        <Text style={S.calendarIcon}>📅</Text>
       </TouchableOpacity>
 
       {show && (
         <DateTimePicker
-          value={date}
+          value={date ?? new Date()}
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           mode="date"
           onChange={(_, d) => {
@@ -54,7 +65,7 @@ const themedStyles = (theme: any) =>
       borderWidth: 2,
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.background,
-      borderRadius: 14,
+      borderRadius: 10,
       paddingHorizontal: 14,
       paddingVertical: 14,
       minHeight: 48,
