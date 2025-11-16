@@ -45,24 +45,26 @@ export function pickTheme(mode: ThemeKey): Theme {
 // ✅ Thêm màu/token mới = chỉ thêm 1 dòng dưới đây
 export const ThemePack = {
   colors: {
-    background: ['#FFFFFF', '#000000'],
-    text: ['#111111', '#FFFFFF'],
-    primary: ['#1976d2', '#90CAF9'],
-    secondary: ['#E3F2FD', '#0D47A1'],
-    border: ['#EAEAEA', '#1F1F1F'],
-    danger: ['#E53935', '#EF5350'],
-
+    background: ["#FFFFFF", "#000000"],
+    text: ["#111111", "#FFFFFF"],
+    primary: ["#1976d2", "#90CAF9"],
+    secondary: ["#E3F2FD", "#0D47A1"],
+    border: ["#EAEAEA", "#1F1F1F"],
+    danger: ["#E53935", "#EF5350"],
+    contrastBackground: ["#000000", "#FFFFFF"],
+    placeholder: ["#808080", "#808080"],
+    active: ["#54FE70", "#54FE70"],
+    inactive: ["#FE5454", "#FE5454"],
+    waiting: ["#FEE254", "#FEE254"],
     greyText: ['#333', '#AAAAAA'],
     filterChipBackground: ['#C0F0F0', '#4A90E2'],
     filterChipText: ['#999999', '#CCCCCC'],
-
     borderLight: ['#D9D9D9', '#666666'],
     approved: ['#54FE70', '#2E8B57'],
     rejected: ['#FF4B4B', '#B22222'],
     pending: ['#D9FE54', '#FFD700'],
     mutedText: ['#666666', '#CCCCCC'],
-    contrastBackground: ['#000000', '#FFFFFF'],
-    placeholder: ['#808080', '#808080'],
+    cardBoder: ['#D9D8D8', "#D9D8D8"]
     // accent:     ["#FF8A00", "#FFB74D"], // ví dụ thêm 1 dòng
   },
   tokens: {

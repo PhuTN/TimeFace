@@ -5,7 +5,7 @@
 //   makeApprovalOptions,
 //   makeDepartmentOptions,
 //   makeSortingOptions,
-// } from '../fake_data/Dien/fake_data';
+// } from '../fake_data/Dien/fake_data.js';
 // import LabeledDate from '../components/common/LabeledDate';
 // import LabeledSelect from '../components/common/LabeledSelect';
 // import LabeledTextInput from '../components/common/LabeledTextInput';
