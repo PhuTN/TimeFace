@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AuthScreen from '../screens/AuthScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatRoomScreen from '../screens/ChatRoomScreen';
+import GroupChatScreen from '../screens/GroupChatScreen';
 import HomeScreen from '../screens/HomeScreen';
 //import ThemeLanguageTester from '../components/test_ui/ThemeLanguageTester';
 //import FaceDetectionScreen from '../screens/FaceDetectionScreen';
@@ -15,6 +16,7 @@ import EmployeeAttendanceScreen from '../screens/EmployeeAttendanceScreen';
 import DepartmentDetailScreen from '../screens/DepartmentDetailScreen';
 import CommonScreen2 from '../screens/CommonScreen2';
 import ManagementScreen from '../screens/ManagementScreen';
+//import NotificationSenderScreen from '../screens/NotificationSenderScreen';
 import ReportScreen from '../screens/ReportScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import JobInformationScreen from '../screens/JobInformationScreen';
@@ -46,6 +48,8 @@ export type RootStackParamList = {
   JobInformation: undefined;
   PersonalInformation: { faces: any } | undefined;
   PersonalInformationFaceDetection: undefined
+  GroupChat: undefined;
+  NotificationSender: undefined;
 };
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -53,7 +57,7 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Home" screenOptions={{ headerShown: false }}>
+        initialRouteName="Home" screenOptions={{headerShown: false}}>
         <Stack.Screen name="Home" component={HomeScreen} />
         {/* <Stack.Screen name="Facene" component={FaceDetectionScreen} /> */}
         <Stack.Screen name="CommonScreen2" component={CommonScreen2} />
@@ -67,10 +71,12 @@ const AppNavigator = () => {
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="ChatList" component={ChatListScreen} />
         <Stack.Screen name="ChatRoom" component={ChatRoomScreen} />
+        <Stack.Screen name="GroupChat" component={GroupChatScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="JobInformation" component={JobInformationScreen} />
         <Stack.Screen name="PersonalInformation" component={PersonalInformationScreen} />
         <Stack.Screen name="PersonalInformationFaceDetection" component={PersonalInformationFaceDetectionScreen} />
+        {/* <Stack.Screen name="NotificationSender" component={NotificationSenderScreen} /> */}
       </Stack.Navigator>
     </NavigationContainer>
   );
