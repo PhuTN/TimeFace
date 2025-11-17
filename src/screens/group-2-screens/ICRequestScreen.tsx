@@ -23,7 +23,8 @@ export default function ICRequestScreen() {
     removeFilter,
   } = useFilterSystem<ICRequestFilters>();
 
-  const [selectedRequest, setSelectedRequest] = useState<ICRequestDetail | null>(null);
+  const [selectedRequest, setSelectedRequest] =
+    useState<ICRequestDetail | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
   console.log('ICRequestsScreen - isModalVisible:', isModalVisible);
@@ -180,13 +181,14 @@ export default function ICRequestScreen() {
 
   return (
     <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.background}}>
+      style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
       <Header2 title={lang.t('icRequestTitle')} theme={theme} />
 
       <ScrollView
         contentContainerStyle={{
           padding: 16,
-          gap: 12,
+          paddingBottom: 24,
+          gap: 16,
         }}
         showsVerticalScrollIndicator={false}>
         <FilterBar

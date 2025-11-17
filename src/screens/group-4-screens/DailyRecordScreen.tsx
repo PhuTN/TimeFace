@@ -54,17 +54,20 @@ const DailyRecordScreen: React.FC = () => {
   const currentDate = new Date();
   const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
   const currentYear = currentDate.getFullYear();
-  const title = `${lang.t('dailyRecordTitleWithMonth')} ${currentMonth}/${currentYear}`;
+  const title = `${lang.t(
+    'dailyRecordTitleWithMonth',
+  )} ${currentMonth}/${currentYear}`;
 
   return (
     <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.background}}>
+      style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
       <Header2 title={title} theme={theme} />
 
       <ScrollView
         contentContainerStyle={{
           padding: 16,
-          gap: 12,
+          paddingBottom: 24,
+          gap: 16,
         }}
         showsVerticalScrollIndicator={false}>
         <FilterBar
@@ -76,15 +79,17 @@ const DailyRecordScreen: React.FC = () => {
         />
 
         {/* Daily Records List */}
-        {fakeDailyRecords.map(item => (
-          <DailyRecord
-            key={item.id}
-            date={item.date}
-            totalHours={item.totalHours}
-            checkIn={item.checkIn}
-            checkOut={item.checkOut}
-          />
-        ))}
+        <View style={{gap: 12}}>
+          {fakeDailyRecords.map(item => (
+            <DailyRecord
+              key={item.id}
+              date={item.date}
+              totalHours={item.totalHours}
+              checkIn={item.checkIn}
+              checkOut={item.checkOut}
+            />
+          ))}
+        </View>
       </ScrollView>
 
       {/* Filter Modal */}

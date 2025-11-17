@@ -56,23 +56,29 @@ const NotificationScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
+    <SafeAreaView
+      style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
       <Header2 title={lang.t('notificationTitle')} theme={theme} />
 
       <ScrollView
-        contentContainerStyle={{paddingVertical: 16}}
+        contentContainerStyle={{
+          paddingTop: 8,
+          paddingBottom: 24,
+        }}
         showsVerticalScrollIndicator={false}>
         {/* Notifications List */}
-        {fakeNotifications.map(notification => (
-          <Notification
-            key={notification.id}
-            title={notification.title}
-            status={notification.status}
-            value={notification.value}
-            approverName={notification.approverName}
-            time={notification.time}
-          />
-        ))}
+        <View style={{gap: 1}}>
+          {fakeNotifications.map(notification => (
+            <Notification
+              key={notification.id}
+              title={notification.title}
+              status={notification.status}
+              value={notification.value}
+              approverName={notification.approverName}
+              time={notification.time}
+            />
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

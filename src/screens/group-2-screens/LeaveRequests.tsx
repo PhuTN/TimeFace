@@ -196,13 +196,14 @@ export default function LeaveRequestScreen() {
 
   return (
     <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.background}}>
+      style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
       <Header2 title={lang.t('leaveRequestTitle')} theme={theme} />
 
       <ScrollView
         contentContainerStyle={{
           padding: 16,
-          gap: 12,
+          paddingBottom: 24,
+          gap: 16,
         }}
         showsVerticalScrollIndicator={false}>
         <FilterBar
@@ -214,7 +215,7 @@ export default function LeaveRequestScreen() {
         />
 
         {/* Request List */}
-        <View style={{gap: 12, marginTop: 8}}>
+        <View style={{gap: 12}}>
           {mockRequests.map((request, index) => (
             <ICRequest
               key={index}
