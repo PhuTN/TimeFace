@@ -57,8 +57,7 @@ const MonthTimesheetScreen: React.FC = () => {
   const isEnglish = lang.code === 'en';
 
   return (
-    <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.background}}>
+    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
       <Header2 title={lang.t('monthTimesheetTitle')} theme={theme} />
 
       <ScrollView

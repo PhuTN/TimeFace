@@ -195,8 +195,7 @@ export default function LeaveRequestScreen() {
   const isEnglish = lang.code === 'en';
 
   return (
-    <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.background}}>
+    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
       <Header2 title={lang.t('leaveRequestTitle')} theme={theme} />
 
       <ScrollView

@@ -56,7 +56,8 @@ const NotificationScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
+    <SafeAreaView
+      style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
       <Header2 title={lang.t('notificationTitle')} theme={theme} />
 
       <ScrollView

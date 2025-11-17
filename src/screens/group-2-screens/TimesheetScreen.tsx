@@ -136,8 +136,7 @@ export default function TimesheetScreen() {
   const isEnglish = lang.code === 'en';
 
   return (
-    <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.background}}>
+    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
       <Header2 title={lang.t('timesheetTitle')} theme={theme} />
 
       <ScrollView
