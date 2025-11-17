@@ -60,14 +60,13 @@ const DailyRecordScreen: React.FC = () => {
 
   return (
     <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
+      style={{flex: 1, backgroundColor: theme.colors.background}}>
       <Header2 title={title} theme={theme} />
 
       <ScrollView
         contentContainerStyle={{
           padding: 16,
-          paddingBottom: 24,
-          gap: 16,
+          gap: 12,
         }}
         showsVerticalScrollIndicator={false}>
         <FilterBar
@@ -79,17 +78,15 @@ const DailyRecordScreen: React.FC = () => {
         />
 
         {/* Daily Records List */}
-        <View style={{gap: 12}}>
-          {fakeDailyRecords.map(item => (
-            <DailyRecord
-              key={item.id}
-              date={item.date}
-              totalHours={item.totalHours}
-              checkIn={item.checkIn}
-              checkOut={item.checkOut}
-            />
-          ))}
-        </View>
+        {fakeDailyRecords.map(item => (
+          <DailyRecord
+            key={item.id}
+            date={item.date}
+            totalHours={item.totalHours}
+            checkIn={item.checkIn}
+            checkOut={item.checkOut}
+          />
+        ))}
       </ScrollView>
 
       {/* Filter Modal */}

@@ -112,8 +112,7 @@ const OTRecordScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
+    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
       <Header2 title={lang.t('otRecordTitle')} theme={theme} />
 
       {/* Scrollable Content */}
@@ -222,41 +221,37 @@ const OTRecordScreen: React.FC = () => {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
-    gap: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
+    gap: 12,
   },
   summaryContainer: {
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    padding: 20,
+    padding: 12,
     shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
   createButton: {
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 10,
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderRadius: 8,
   },
   createButtonText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
   },
   statsRow: {
@@ -265,18 +260,17 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    padding: 16,
+    padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    gap: 6,
+    gap: 4,
   },
   statLabel: {
     fontSize: 14,
-    fontWeight: '500',
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '600',
   },
   toggleContainer: {
     paddingVertical: 0,
