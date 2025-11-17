@@ -181,14 +181,13 @@ export default function ICRequestScreen() {
 
   return (
     <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
+      style={{flex: 1, backgroundColor: theme.colors.background}}>
       <Header2 title={lang.t('icRequestTitle')} theme={theme} />
 
       <ScrollView
         contentContainerStyle={{
           padding: 16,
-          paddingBottom: 24,
-          gap: 16,
+          gap: 12,
         }}
         showsVerticalScrollIndicator={false}>
         <FilterBar

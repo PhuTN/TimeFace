@@ -58,14 +58,13 @@ const MonthTimesheetScreen: React.FC = () => {
 
   return (
     <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
+      style={{flex: 1, backgroundColor: theme.colors.background}}>
       <Header2 title={lang.t('monthTimesheetTitle')} theme={theme} />
 
       <ScrollView
         contentContainerStyle={{
           padding: 16,
-          paddingBottom: 24,
-          gap: 16,
+          gap: 12,
         }}
         showsVerticalScrollIndicator={false}>
         <FilterBar
@@ -77,18 +76,16 @@ const MonthTimesheetScreen: React.FC = () => {
         />
 
         {/* Month Timesheets List */}
-        <View style={{gap: 12}}>
-          {fakeMonthTimesheets.map(item => (
-            <MonthTimesheet
-              key={item.id}
-              month={item.month}
-              year={item.year}
-              workingDays={item.workingDays}
-              unpaidLeaveDays={item.unpaidLeaveDays}
-              monthlySalary={item.monthlySalary}
-            />
-          ))}
-        </View>
+        {fakeMonthTimesheets.map(item => (
+          <MonthTimesheet
+            key={item.id}
+            month={item.month}
+            year={item.year}
+            workingDays={item.workingDays}
+            unpaidLeaveDays={item.unpaidLeaveDays}
+            monthlySalary={item.monthlySalary}
+          />
+        ))}
       </ScrollView>
 
       {/* Filter Modal */}
