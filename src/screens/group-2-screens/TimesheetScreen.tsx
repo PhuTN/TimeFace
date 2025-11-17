@@ -137,13 +137,14 @@ export default function TimesheetScreen() {
 
   return (
     <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.background}}>
+      style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
       <Header2 title={lang.t('timesheetTitle')} theme={theme} />
 
       <ScrollView
         contentContainerStyle={{
           padding: 16,
-          gap: 12,
+          paddingBottom: 24,
+          gap: 16,
         }}
         showsVerticalScrollIndicator={false}>
         <FilterBar
@@ -155,7 +156,7 @@ export default function TimesheetScreen() {
         />
 
         {/* Timesheet List */}
-        <View style={{gap: 12, marginTop: 8}}>
+        <View style={{gap: 12}}>
           {mockTimesheets.map((timesheet, index) => (
             <Timesheet
               key={index}
