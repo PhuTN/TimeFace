@@ -1,7 +1,8 @@
+// src/screens/AuthScreen.tsx
+import React, {useMemo, useState} from 'react';
 import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import {useMemo, useState} from 'react';
 import {
   Alert,
   Image,
@@ -25,6 +26,11 @@ import Input from '../components/auth/Input';
 import RememberToggle from '../components/auth/RememberToggle';
 import SegmentedTabs from '../components/auth/SegmentedTabs';
 
+// 🔑 gọi API login (RN dùng AsyncStorage)
+import {login as loginApi} from '../features/auth/authService';
+import Toast from 'react-native-toast-message';
+import {authStorage} from '../services/authStorage';
+
 type TabKey = 'login' | 'signup';
 
 export default function AuthScreen() {
@@ -32,20 +38,21 @@ export default function AuthScreen() {
   const [tab, setTab] = useState<TabKey>('login');
 
   // login
-  const [loginEmail, setLoginEmail] = useState('Loisbecket@gmail.com');
-  const [loginPw, setLoginPw] = useState('********');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPw, setLoginPw] = useState('');
   const [remember, setRemember] = useState(false);
   const [showLoginPw, setShowLoginPw] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
-  // signup
+  // signup (demo UI)
   const [firstName, setFirstName] = useState('Lois');
   const [lastName, setLastName] = useState('Becket');
   const [signupEmail, setSignupEmail] = useState('Loisbecket@gmail.com');
   const [dob, setDob] = useState<Date>(new Date(2024, 2, 18));
   const [showDobPicker, setShowDobPicker] = useState(false);
   const [phone, setPhone] = useState('(454) 726-0592');
-  const [signupPw, setSignupPw] = useState('********');
-  const [signupPw2, setSignupPw2] = useState('********');
+  const [signupPw, setSignupPw] = useState('');
+  const [signupPw2, setSignupPw2] = useState('');
   const [showPw1, setShowPw1] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
 
@@ -58,9 +65,51 @@ export default function AuthScreen() {
   }, [dob]);
 
   function onPickDob(_: DateTimePickerEvent, selected?: Date) {
-    if (Platform.OS === 'android') setShowDobPicker(false);
-    if (selected) setDob(selected);
+    if (Platform.OS === 'android') {
+      setShowDobPicker(false);
+    }
+    if (selected) {
+      setDob(selected);
+    }
   }
+
+  // ✅ handler login
+  const handleLogin = async () => {
+    const email = loginEmail?.trim();
+    const pw = loginPw?.trim();
+
+    if (!email || !pw) {
+      return Toast.show({
+        type: 'error',
+        text1: 'Thiếu thông tin',
+        text2: 'Vui lòng nhập email và mật khẩu.',
+      });
+    }
+
+    try {
+      setLoginLoading(true);
+      const {user, token} = await loginApi(email, pw);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Đăng nhập thành công 🎉',
+        text2: `Chào mừng ${user.full_name || user.email}`,
+      });
+
+      // 🪣 Kiểm tra dữ liệu đã lưu trong authStorage
+      const stored = await authStorage.load();
+      console.log('🧠 authStorage:', stored, 'token:', token);
+    } catch (e: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Đăng nhập thất bại 😞',
+        text2: e?.message || 'Có lỗi xảy ra, thử lại sau.',
+      });
+      console.log('❌ Login error:', e);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -100,6 +149,9 @@ export default function AuthScreen() {
                 value={loginEmail}
                 onChangeText={setLoginEmail}
                 keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="your@email.com"
               />
 
               <FieldLabel>Password</FieldLabel>
@@ -107,6 +159,7 @@ export default function AuthScreen() {
                 value={loginPw}
                 onChangeText={setLoginPw}
                 secureTextEntry={!showLoginPw}
+                placeholder="Enter your password"
                 rightIcon={
                   <Pressable onPress={() => setShowLoginPw(s => !s)}>
                     <Icon
@@ -124,8 +177,9 @@ export default function AuthScreen() {
               </View>
 
               <GradientButton
-                text="Log In"
-                onPress={() => Alert.alert('Log In', `Email: ${loginEmail}`)}
+                text={loginLoading ? 'Logging in...' : 'Log In'}
+                disabled={loginLoading}
+                onPress={handleLogin}
               />
             </View>
           ) : (
@@ -147,6 +201,8 @@ export default function AuthScreen() {
                 value={signupEmail}
                 onChangeText={setSignupEmail}
                 keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
               />
 
               <FieldLabel style={{marginTop: 12}}>Birth of date</FieldLabel>
@@ -180,6 +236,7 @@ export default function AuthScreen() {
                 value={signupPw}
                 onChangeText={setSignupPw}
                 secureTextEntry={!showPw1}
+                placeholder="Create a password"
                 rightIcon={
                   <Pressable onPress={() => setShowPw1(s => !s)}>
                     <Icon
@@ -196,6 +253,7 @@ export default function AuthScreen() {
                 value={signupPw2}
                 onChangeText={setSignupPw2}
                 secureTextEntry={!showPw2}
+                placeholder="Re-enter password"
                 rightIcon={
                   <Pressable onPress={() => setShowPw2(s => !s)}>
                     <Icon
@@ -210,8 +268,9 @@ export default function AuthScreen() {
               <GradientButton
                 text="Register"
                 onPress={() => {
-                  if (signupPw !== signupPw2)
+                  if (signupPw !== signupPw2) {
                     return Alert.alert('Error', 'Passwords do not match');
+                  }
                   Alert.alert('Register', `${firstName} ${lastName}`);
                 }}
               />
@@ -219,6 +278,9 @@ export default function AuthScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Toast mount ở đây để dùng toàn màn hình này */}
+      <Toast />
     </SafeAreaView>
   );
 }
@@ -228,8 +290,6 @@ const styles = StyleSheet.create({
   scroll: {paddingHorizontal: 16},
   title: {
     fontSize: 32,
-    lineHeight: 38,
-    textAlign: 'center',
     fontWeight: '800',
     color: '#222',
     marginTop: 6,
