@@ -1,5 +1,7 @@
 // src/appconfig/AppConfig.ts
-import axios, {AxiosInstance, AxiosRequestConfig, AxiosResponse} from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { authStorage } from '../services/authStorage';
+
 
 export type AppConfigOptions = {
   apiUrl: string;
@@ -12,6 +14,7 @@ export type AppConfigOptions = {
   responseLogger?: (resOrErr: any) => void; // override logger
 
   // HTTP
+  /** Nếu set, sẽ ưu tiên token này; nếu không, interceptor sẽ lấy từ AsyncStorage */
   authToken?: string | null;
   httpTimeout?: number; // mặc định 15000ms
   defaultHeaders?: Record<string, string>; // header mặc định cho mọi request
@@ -29,7 +32,7 @@ export type AppConfigOptions = {
   // Chuẩn hoá lỗi trả ra
   errorMapper?: (
     error: any,
-  ) => Error & {status?: number; code?: string; data?: any};
+  ) => Error & { status?: number; code?: string; data?: any };
 };
 
 function normalizeBaseUrl(url: string) {
@@ -43,19 +46,22 @@ class AppConfig {
 
   private constructor() {
     this.cfg = {
-      apiUrl: 'https://photel.io.vn/',
+      apiUrl: 'https://photel.io.vn/api/', // đổi theo env của bạn
       appName: 'GOKUUNE',
       version: '1.0.0',
       debug: true,
       authToken: null,
       httpTimeout: 15000,
-      defaultHeaders: {'Content-Type': 'application/json'},
+      defaultHeaders: { 'Content-Type': 'application/json' },
       axiosConfig: {},
       interceptors: {},
       errorMapper: (err: any) => {
         // mapping mặc định: giữ nguyên data/status/code để FE dùng
         const e = new Error(
-          err?.response?.data?.message || err?.message || 'Request failed',
+          err?.response?.data?.message ||
+            err?.response?.data?.error ||
+            err?.message ||
+            'Request failed',
         ) as any;
         e.status = err?.response?.status;
         e.data = err?.response?.data;
@@ -63,22 +69,16 @@ class AppConfig {
         return e;
       },
       requestLogger: req => {
-        if (!this.cfg.debug) {return;}
-        console.log(
-          '[API] =>',
-          req.method?.toUpperCase(),
-          req.baseURL + (req.url || ''),
-          req.data || req.params,
-        );
+        if (!this.cfg.debug) return;
+        const full = (req.baseURL || '') + (req.url || '');
+        const payload = req.data ?? req.params ?? undefined;
+        console.log('[API] =>', req.method?.toUpperCase(), full, payload || '');
       },
       responseLogger: resOrErr => {
-        if (!this.cfg.debug) {return;}
-        // khi là error (axios ném) sẽ chạy ở responseError
+        if (!this.cfg.debug) return;
         if (resOrErr?.config) {
-          // là response success
           console.log('[API] <=', resOrErr.status, resOrErr.config?.url);
         } else {
-          // fallback
           console.log('[API]', resOrErr);
         }
       },
@@ -86,7 +86,7 @@ class AppConfig {
   }
 
   static getInstance(): AppConfig {
-    if (!AppConfig.instance) {AppConfig.instance = new AppConfig();}
+    if (!AppConfig.instance) AppConfig.instance = new AppConfig();
     return AppConfig.instance;
   }
 
@@ -96,13 +96,19 @@ class AppConfig {
 
   setConfig(
     newConfig: Partial<AppConfigOptions>,
-    opts?: {rebuildAxios?: boolean},
+    opts?: { rebuildAxios?: boolean },
   ) {
-    this.cfg = {...this.cfg, ...newConfig};
+    this.cfg = { ...this.cfg, ...newConfig };
     // mặc định: nếu đổi config quan trọng, rebuild axios để nhận cấu hình mới
     if (opts?.rebuildAxios ?? true) {
       this.rebuildAxios();
     }
+  }
+
+  /** set nhanh token runtime (ưu tiên hơn AsyncStorage nếu có) */
+  setAuthToken(token: string | null, opts?: { rebuildAxios?: boolean }) {
+    this.cfg.authToken = token;
+    if (opts?.rebuildAxios) this.rebuildAxios();
   }
 
   get<T extends keyof AppConfigOptions>(k: T): AppConfigOptions[T] {
@@ -145,24 +151,37 @@ class AppConfig {
       ...(this.cfg.axiosConfig || {}),
     });
 
-    // Request interceptor (attach token + logger + custom hooks)
-    inst.interceptors.request.use(async req => {
-      const token = this.cfg.authToken;
-      if (token) {
-        req.headers = req.headers || {};
-        (req.headers as any).Authorization = `Bearer ${token}`;
-      }
-      // logger mặc định
-      this.cfg.requestLogger?.({...req, baseURL});
+    // ===== Request interceptor (attach token + logger + custom hooks)
+    inst.interceptors.request.use(
+      async req => {
+        // Ưu tiên token cấu hình tay; nếu không có thì lấy từ AsyncStorage (React Native)
+        let token = this.cfg.authToken ?? null;
+        if (!token) {
+          try {
+            token = await authStorage.getToken();
+          } catch {
+            token = null;
+          }
+        }
 
-      // custom request interceptors
-      for (const fn of this.cfg.interceptors?.request || []) {
-        req = await fn(req);
-      }
-      return req;
-    });
+        if (token) {
+          req.headers = req.headers || {};
+          (req.headers as any).Authorization = `Bearer ${token}`;
+        }
 
-    // Response interceptors (success + error)
+        // logger mặc định
+        this.cfg.requestLogger?.({ ...req, baseURL });
+
+        // custom request interceptors
+        for (const fn of this.cfg.interceptors?.request || []) {
+          req = await fn(req);
+        }
+        return req;
+      },
+      error => Promise.reject(error),
+    );
+
+    // ===== Response interceptors (success + error)
     inst.interceptors.response.use(
       async res => {
         this.cfg.responseLogger?.(res);
@@ -177,7 +196,7 @@ class AppConfig {
         for (const fn of this.cfg.interceptors?.responseError || []) {
           try {
             await fn(err);
-          } catch (_) {
+          } catch {
             /* ignore */
           }
         }
