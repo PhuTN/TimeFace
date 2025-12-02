@@ -1,18 +1,23 @@
 import React from 'react';
-import {View, Text, Button, StyleSheet, ScrollView} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  Switch,
+  TouchableOpacity,
+} from 'react-native';
 import {useUIFactory} from '../ui/factory/useUIFactory';
-import FilterChip from '../components/other-group-2-stuff/FilterChip';
-import Chip from '../components/common/Chip';
-import OTRequest from '../components/list_items/OTRequest';
-import Attendance from '../components/list_items/Attendance';
 import {setUIState} from '../ui/factory/selector';
-import FeatureItem from '../components/list_items/FeatureItem';
-import EmployeeListItem from '../components/list_items/EmployeeItem';
-import DepartmentEmployee from '../components/list_items/DepartmentEmployee';
-import ChangeInfoRequest from '../components/list_items/ChangeInfoRequest';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../navigation/AppNavigator';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const CommonScreen2: React.FC = () => {
   const {loading, lang, theme} = useUIFactory();
+  const navigation = useNavigation<NavigationProp>();
 
   if (loading || !theme || !lang) {
     return (
@@ -22,155 +27,162 @@ const CommonScreen2: React.FC = () => {
     );
   }
 
+  const isDark = theme.name === 'dark';
+  const isEnglish = lang.code === 'en';
+
+  const handleToggleTheme = () => {
+    setUIState({theme: isDark ? 'light' : 'dark'});
+  };
+
+  const handleToggleLanguage = () => {
+    setUIState({lang: isEnglish ? 'vi' : 'en'});
+  };
+
   return (
-    <>
-      <ScrollView style={styles.container}>
-        {/* Đổi theme */}
-        <View style={{height: 40}} />
-        <Button
-          title={lang.t('theme.dark')}
-          onPress={() => setUIState({theme: 'dark'})}
-        />
-        <Button
-          title={lang.t('theme.light')}
-          onPress={() => setUIState({theme: 'light'})}
-        />
-
-        <View style={{height: theme.spacing(2)}} />
-
-        {/* Đổi ngôn ngữ */}
-        <Button title="Tiếng Việt" onPress={() => setUIState({lang: 'vi'})} />
-        <Button title="English" onPress={() => setUIState({lang: 'en'})} />
-
-        <View style={{paddingHorizontal: 16}}>
-          <FilterChip
-            mainText="Example Filter"
-            subText="Sub text here"
-            onRemove={() => console.log('Remove')}
-            theme={theme}
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: theme.colors.background}]}>
+      <View style={{height: 32}} />
+      {/* Theme and Language Toggle Buttons */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-around',
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          backgroundColor: theme.colors.background,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.colors.borderLight,
+        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+          <Text style={{color: theme.colors.text, fontSize: 14}}>
+            {isDark ? `🌙 ${lang.t('darkMode')}` : `☀️ ${lang.t('lightMode')}`}
+          </Text>
+          <Switch
+            value={isDark}
+            onValueChange={handleToggleTheme}
+            trackColor={{false: '#767577', true: theme.colors.primary}}
+            thumbColor={isDark ? theme.colors.primary : '#f4f3f4'}
           />
-          <Chip text="Example Chip" />
-          <OTRequest
-            avatarSource={require('../assets/images/delete.png')} // placeholder
-            name="John Doe"
-            position="Developer"
-            status="pending"
-            code="D001"
-            date="15/05/2025"
-            time="17h - 19h"
-            createdAt="12/05/2025"
-          />
-          <OTRequest
-            avatarSource={require('../assets/images/delete.png')} // placeholder
-            name="John Doe"
-            position="Developer"
-            status="rejected"
-            code="D001"
-            date="15/05/2025"
-            time="17h - 19h"
-            createdAt="12/05/2025"
-          />
-          <OTRequest
-            avatarSource={require('../assets/images/delete.png')} // placeholder
-            name="John Doe"
-            position="Developer"
-            status="approved"
-            code="D001"
-            date="15/05/2025"
-            time="17h - 19h"
-            createdAt="12/05/2025"
-          />
-          <Attendance
-            avatarSource={require('../assets/images/delete.png')} // placeholder
-            name="Jane Smith"
-            position="Designer"
-            isLate={true}
-            lateMinutes={120}
-            latePercentage={25}
-            onCall={() => console.log('Call Jane')}
-            onMessage={() => console.log('Message Jane')}
-            onMail={() => console.log('Mail Jane')}
-          />
-          <Attendance
-            avatarSource={require('../assets/images/delete.png')} // placeholder
-            name="Bob Johnson"
-            position="Manager"
-            isLate={false}
-            leaveReason="Bị cảm sốt"
-            onCall={() => console.log('Call Bob')}
-            onMessage={() => console.log('Message Bob')}
-            onMail={() => console.log('Mail Bob')}
-          />
-          <EmployeeListItem
-            avatarSource={require('../assets/images/delete.png')}
-            name="John Doe"
-            position="Developer"
-            isSelected={true}
-            onToggleSelect={() => console.log('Toggle John')}
-          />
-          <EmployeeListItem
-            avatarSource={require('../assets/images/delete.png')}
-            name="Jane Smith"
-            position="Designer"
-            isSelected={false}
-            onToggleSelect={() => console.log('Toggle Jane')}
-          />
-          <EmployeeListItem
-            avatarSource={require('../assets/images/delete.png')}
-            name="Bob Johnson"
-            position="Manager"
-            isSelected={true}
-            onToggleSelect={() => console.log('Toggle Bob')}
-          />
-          <DepartmentEmployee
-            avatarSource={require('../assets/images/delete.png')}
-            name="Alice Cooper"
-            position="HR Specialist"
-          />
-          <DepartmentEmployee
-            avatarSource={require('../assets/images/delete.png')}
-            name="Charlie Brown"
-            position="Accountant"
-          />
-          <DepartmentEmployee
-            avatarSource={require('../assets/images/delete.png')}
-            name="Diana Prince"
-            position="Team Lead"
-          />
-          <ChangeInfoRequest
-            avatarSource={require('../assets/images/delete.png')}
-            name="John Doe"
-            position="Developer"
-            status="pending"
-            date="12/05/2025"
-          />
-          <ChangeInfoRequest
-            avatarSource={require('../assets/images/delete.png')}
-            name="Jane Smith"
-            position="Designer"
-            status="approved"
-            date="15/05/2025"
-          />
-          <ChangeInfoRequest
-            avatarSource={require('../assets/images/delete.png')}
-            name="Bob Johnson"
-            position="Manager"
-            status="rejected"
-            date="10/05/2025"
-          />
-          <FeatureItem text="Overtime" color="#FFAF2A" />
-          <FeatureItem text="Nghỉ phép" color="#0890FE" />
-          <FeatureItem text="Lịch làm việc" color="#E91B1B" />
-          <FeatureItem text="Bảng công cá nhân" color="#3629B7" />
         </View>
-      </ScrollView>
-    </>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+          <Text style={{color: theme.colors.text, fontSize: 14}}>
+            {isEnglish ? '🇺🇸 EN' : '🇻🇳 VI'}
+          </Text>
+          <Switch
+            value={isEnglish}
+            onValueChange={handleToggleLanguage}
+            trackColor={{false: '#767577', true: theme.colors.primary}}
+            thumbColor={isEnglish ? theme.colors.primary : '#f4f3f4'}
+          />
+        </View>
+      </View>
+
+      {/* Navigation Buttons */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('ICRequestScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('icRequestTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('LeaveRequestScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('leaveRequestTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('OTRequestScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('otRequestTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('TimesheetScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('timesheetTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('MonthTimesheetScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('monthTimesheetTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('DailyRecordScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('dailyRecordTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('NotificationScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('notificationTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('OTRecordScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('otRecordTitle')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, {backgroundColor: theme.colors.primary}]}
+          onPress={() => navigation.navigate('LeaveRecordScreen')}
+          activeOpacity={0.8}>
+          <Text style={styles.buttonText}>{lang.t('leaveRecordTitle')}</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  buttonContainer: {
+    flex: 1,
+    padding: 16,
+    gap: 16,
+    justifyContent: 'center',
+  },
+  navButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });
 

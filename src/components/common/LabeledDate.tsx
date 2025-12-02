@@ -10,7 +10,13 @@ type Props = {
   placeholder?: string;
 };
 
-const LabeledDate: React.FC<Props> = ({label, date, onChange, theme, placeholder}) => {
+const LabeledDate: React.FC<Props> = ({
+  label,
+  date,
+  onChange,
+  theme,
+  placeholder,
+}) => {
   const [show, setShow] = useState(false);
   const S = themedStyles(theme);
 
@@ -34,7 +40,9 @@ const LabeledDate: React.FC<Props> = ({label, date, onChange, theme, placeholder
           style={[
             S.input,
             {
-              color: date ? theme.colors.text : theme.colors.mutedText ?? '#8E94A4',
+              color: date
+                ? theme.colors.text
+                : theme.colors.mutedText ?? '#8E94A4',
             },
           ]}>
           {displayValue}
@@ -49,7 +57,9 @@ const LabeledDate: React.FC<Props> = ({label, date, onChange, theme, placeholder
           mode="date"
           onChange={(_, d) => {
             setShow(Platform.OS === 'ios');
-            if (d) {onChange(d);}
+            if (d) {
+              onChange(d);
+            }
           }}
         />
       )}
@@ -67,7 +77,6 @@ const themedStyles = (theme: any) =>
       backgroundColor: theme.colors.background,
       borderRadius: 10,
       paddingHorizontal: 14,
-      paddingVertical: 14,
       minHeight: 48,
       justifyContent: 'center',
     },
