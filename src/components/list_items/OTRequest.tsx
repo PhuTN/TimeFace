@@ -1,6 +1,6 @@
 import React from 'react';
-import {View, Text, Image} from 'react-native';
-//import type {Theme} from '../../ui/theme/theme';
+import {View, Text, Image, TouchableOpacity} from 'react-native';
+import type {Theme} from '../../ui/theme/theme';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 import Chip from '../common/Chip';
 
@@ -15,6 +15,7 @@ interface OTRequestProps {
   date: string;
   time: string;
   createdAt: string;
+  onPress?: () => void;
 }
 
 const OTRequest: React.FC<OTRequestProps> = ({
@@ -26,6 +27,7 @@ const OTRequest: React.FC<OTRequestProps> = ({
   date,
   time,
   createdAt,
+  onPress,
 }) => {
   const {loading, theme, lang} = useUIFactory();
   if (loading || !theme || !lang) {
@@ -33,79 +35,82 @@ const OTRequest: React.FC<OTRequestProps> = ({
   }
 
   return (
-    <View
-      style={{
-        borderColor: theme.colors.borderLight,
-        borderWidth: 1,
-        borderRadius: 12,
-        backgroundColor: theme.colors.background,
-        paddingHorizontal: 12,
-      }}>
-      {/* First row */}
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingVertical: 8,
+          borderColor: theme.colors.borderLight,
+          borderWidth: 1,
+          borderRadius: 12,
+          backgroundColor: theme.colors.background,
+          paddingHorizontal: 12,
         }}>
-        <Image
-          source={avatarSource}
+        {/* First row */}
+        <View
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            marginRight: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: 8,
+          }}>
+          <Image
+            source={avatarSource}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              marginRight: 12,
+            }}
+          />
+          <View style={{flex: 1}}>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: 500,
+                color: theme.colors.text,
+              }}>
+              {name}
+            </Text>
+            <Text style={{fontSize: 14, color: theme.colors.filterChipText}}>
+              {position}
+            </Text>
+          </View>
+          <View
+            style={{flexDirection: 'column', gap: 4, alignItems: 'flex-end'}}>
+            <Chip status={status} />
+            <Chip text={lang!.t('requestCode') + ': ' + code} />
+          </View>
+        </View>
+
+        {/* Divider */}
+        <View
+          style={{
+            height: 1,
+            backgroundColor: theme.colors.borderLight,
+            marginHorizontal: -12,
           }}
         />
-        <View style={{flex: 1}}>
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: 500,
-              color: theme.colors.text,
-            }}>
-            {name}
-          </Text>
-          <Text style={{fontSize: 14, color: theme.colors.filterChipText}}>
-            {position}
-          </Text>
-        </View>
-        <View style={{flexDirection: 'column', gap: 4, alignItems: 'flex-end'}}>
-          <Chip status={status} />
-          <Chip text={lang!.t('requestCode') + ': ' + code} />
+
+        {/* Date row */}
+        <View
+          style={{
+            marginVertical: 10,
+            paddingHorizontal: 4,
+            gap: 2,
+          }}>
+          <View>
+            <Text style={{fontSize: 14, color: theme.colors.filterChipText}}>
+              {lang!.t('createdAt')}: {createdAt}
+            </Text>
+          </View>
+
+          {/* Time row */}
+          <View>
+            <Text style={{fontSize: 14, color: theme.colors.filterChipText}}>
+              {lang!.t('time')}: {time} {lang!.t('date')} {date}
+            </Text>
+          </View>
         </View>
       </View>
-
-      {/* Divider */}
-      <View
-        style={{
-          height: 1,
-          backgroundColor: theme.colors.borderLight,
-          marginHorizontal: -12,
-        }}
-      />
-
-      {/* Date row */}
-      <View
-        style={{
-          marginVertical: 10,
-          paddingHorizontal: 4,
-          gap: 2,
-        }}>
-        <View>
-          <Text style={{fontSize: 14, color: theme.colors.filterChipText}}>
-            {lang!.t('createdAt')}: {createdAt}
-          </Text>
-        </View>
-
-        {/* Time row */}
-        <View>
-          <Text style={{fontSize: 14, color: theme.colors.filterChipText}}>
-            {lang!.t('time')}: {time} {lang!.t('date')} {date}
-          </Text>
-        </View>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

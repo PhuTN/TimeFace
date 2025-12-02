@@ -1,4 +1,3 @@
-import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
@@ -63,7 +62,7 @@ export type RootStackParamList = {
   GroupChat: undefined;
   NotificationSender: undefined;
   SubscriptionPlans: undefined;
-   SubscriptionBlocked: undefined; // 👈 thêm dòng này
+  SubscriptionBlocked: undefined; // 👈 thêm dòng này
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -110,10 +109,10 @@ const AppNavigator = ({initialRouteName}: AppNavigatorProps) => {
           component={EmployeeFaceDetectionScreen}
         />
         <Stack.Screen
-    name="SubscriptionBlocked"
-    component={SubscriptionBlockedScreen}
-    options={{ title: 'Thông báo' }}
-  />
+          name="SubscriptionBlocked"
+          component={SubscriptionBlockedScreen}
+          options={{title: 'Thông báo'}}
+        />
         <Stack.Screen name="Management" component={ManagementScreen} />
         <Stack.Screen name="Report" component={ReportScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />
