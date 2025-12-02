@@ -1,33 +1,37 @@
 import React from 'react';
-import {View, Text, Image} from 'react-native';
-//import type {Theme} from '../../ui/theme/theme';
+import {View, Text, Image, TouchableOpacity} from 'react-native';
+import type {Theme} from '../../ui/theme/theme';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 import Chip from '../common/Chip';
 
 type RequestStatus = 'approved' | 'rejected' | 'pending';
 
-interface ChangeInfoRequestProps {
+interface ICRequestProps {
   avatarSource: any;
   name: string;
   position: string;
   status: RequestStatus;
   date: string;
+  onPress?: () => void;
 }
 
-const ChangeInfoRequest: React.FC<ChangeInfoRequestProps> = ({
+const ChangeInfoRequest: React.FC<ICRequestProps> = ({
   avatarSource,
   name,
   position,
   status,
   date,
+  onPress,
 }) => {
-  const {loading, theme} = useUIFactory();
-  if (loading || !theme) {
+  const {loading, theme, lang} = useUIFactory();
+  if (loading || !theme || !lang) {
     return null;
   }
 
   return (
-    <View
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
       style={{
         borderColor: theme.colors.borderLight,
         borderWidth: 1,
@@ -85,10 +89,10 @@ const ChangeInfoRequest: React.FC<ChangeInfoRequestProps> = ({
           paddingHorizontal: 4,
         }}>
         <Text style={{fontSize: 14, color: theme.colors.filterChipText}}>
-          Ngày thay đổi: {date}
+          {lang.t('changeDate')} {date}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
