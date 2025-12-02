@@ -20,6 +20,9 @@ export type AppConfigOptions = {
   defaultHeaders?: Record<string, string>; // header mặc định cho mọi request
   axiosConfig?: Partial<AxiosRequestConfig>; // tuỳ biến thêm
 
+    /** Chọn implementation cho IHttpClient: axios | fetch | mock */
+  httpClientImpl?: 'axios' | 'fetch' | 'mock';
+
   // Interceptors hook (nâng cao)
   interceptors?: {
     request?: Array<(req: any) => any | Promise<any>>;
@@ -53,6 +56,7 @@ class AppConfig {
       authToken: null,
       httpTimeout: 15000,
       defaultHeaders: { 'Content-Type': 'application/json' },
+      httpClientImpl: 'axios',
       axiosConfig: {},
       interceptors: {},
       errorMapper: (err: any) => {
