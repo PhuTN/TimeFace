@@ -32,7 +32,7 @@ const HomeScreen = ({ route, navigation }: Props) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Header
-        title="ĐƠN XIN OT"
+        title="TRANG CHỦ"
         showBack={true}
         onBackPress={() => {
           /* navigation.goBack() nếu muốn */
@@ -43,7 +43,7 @@ const HomeScreen = ({ route, navigation }: Props) => {
         contentContainerStyle={{ padding: theme.spacing(2), flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={{ color: theme.colors.text, fontSize: 20 }}>
+        {/* <Text style={{ color: theme.colors.text, fontSize: 20 }}>
           {lang.t('hello')}
         </Text>
         <View style={{ height: theme.spacing(2) }} />
@@ -70,7 +70,7 @@ const HomeScreen = ({ route, navigation }: Props) => {
         <View style={{ height: theme.spacing(2) }} />
         <Button title="Employee Attendance" onPress={() => navigation.navigate('EmployeeAttendance')} />
         <View style={{ height: theme.spacing(2) }} />
-        <Button title="Empolyee Face Detection" onPress={() => navigation.navigate('EmployeeFaceDetection')} />
+        <Button title="Empolyee Face Detection" onPress={() => navigation.navigate('EmployeeFaceDetection')} /> */}
       </ScrollView>
 
       <Footer

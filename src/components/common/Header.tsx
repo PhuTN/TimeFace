@@ -20,7 +20,7 @@ type Props = {
   pageBgColor?: string;
 };
 
-const HEADER_HEIGHT = 250;
+const HEADER_HEIGHT = 100;
 const SIDE_WIDTH = 100;
 const BACK_SIZE = 24;
 
@@ -106,8 +106,8 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     height: HEADER_HEIGHT,
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22,
+    // borderBottomLeftRadius: 22,
+    // borderBottomRightRadius: 22,
     overflow: 'hidden', // clips background to rounded corners
   },
   imageClip: {
