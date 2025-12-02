@@ -38,7 +38,8 @@ export default function HeaderBar({
 const styles = StyleSheet.create({
   headerBar: {
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 0,
+    height:100,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
