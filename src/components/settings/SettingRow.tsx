@@ -21,6 +21,9 @@ type RowProps = {
   labelStyle?: TextStyle;
 };
 
+const BLUE = '#3C9CDC';
+const BLUE_LIGHT = '#DBEEFF';
+
 export default function SettingRow({
   icon,
   label,
@@ -31,13 +34,14 @@ export default function SettingRow({
 }: RowProps) {
   const {theme} = useUIFactory();
   const dark = theme?.name === 'dark';
+
   const contentRight = switchProps ? (
     <Switch
       value={switchProps.value}
       onValueChange={switchProps.onValueChange}
-      trackColor={{false: '#D9D5FF', true: '#7C6AF2'}}
-      ios_backgroundColor="#D9D5FF"
-      thumbColor={switchProps.value ? '#FFFFFF' : '#FFFFFF'}
+      trackColor={{false: BLUE_LIGHT, true: BLUE}}
+      ios_backgroundColor={BLUE_LIGHT}
+      thumbColor="#FFFFFF"
     />
   ) : (
     right
@@ -49,7 +53,14 @@ export default function SettingRow({
       style={({pressed}) => [styles.row, pressed && styles.rowPressed]}>
       <View style={styles.left}>
         {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
-        <Text style={[styles.label, {color: dark ? '#E5E7EB' : '#111827'}, labelStyle]}>{label}</Text>
+        <Text
+          style={[
+            styles.label,
+            {color: dark ? '#E5E7EB' : '#111827'},
+            labelStyle,
+          ]}>
+          {label}
+        </Text>
       </View>
       {contentRight ? <View style={styles.right}>{contentRight}</View> : null}
     </Pressable>
@@ -67,5 +78,10 @@ const styles = StyleSheet.create({
   left: {flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1},
   iconWrap: {width: 22, alignItems: 'center'},
   label: {fontSize: 16, color: '#111827', fontWeight: '500'},
-  right: {alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6},
+  right: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
 });

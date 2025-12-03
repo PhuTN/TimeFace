@@ -1,6 +1,6 @@
 import React, {useMemo, useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Platform} from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+import DatePicker from 'react-native-date-picker';
 
 type Props = {
   label: string;
@@ -17,7 +17,7 @@ const LabeledDate: React.FC<Props> = ({
   theme,
   placeholder,
 }) => {
-  const [show, setShow] = useState(false);
+  const [open, setOpen] = useState(false);
   const S = themedStyles(theme);
 
   const format = useMemo(() => {
@@ -32,9 +32,10 @@ const LabeledDate: React.FC<Props> = ({
   return (
     <View style={S.field}>
       <Text style={S.label}>{label}</Text>
+
       <TouchableOpacity
         style={[S.inputBox, S.selectBox]}
-        onPress={() => setShow(true)}
+        onPress={() => setOpen(true)}
         activeOpacity={0.7}>
         <Text
           style={[
@@ -50,19 +51,17 @@ const LabeledDate: React.FC<Props> = ({
         <Text style={S.calendarIcon}>📅</Text>
       </TouchableOpacity>
 
-      {show && (
-        <DateTimePicker
-          value={date ?? new Date()}
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          mode="date"
-          onChange={(_, d) => {
-            setShow(Platform.OS === 'ios');
-            if (d) {
-              onChange(d);
-            }
-          }}
-        />
-      )}
+      <DatePicker
+        modal
+        mode="date"
+        open={open}
+        date={date ?? new Date()}
+        onConfirm={(d) => {
+          setOpen(false);
+          onChange(d);
+        }}
+        onCancel={() => setOpen(false)}
+      />
     </View>
   );
 };

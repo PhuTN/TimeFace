@@ -2,9 +2,13 @@ import {ReactNode} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 
+const BLUE_BG = '#EAF6FF';      // nền xanh nhạt
+const BLUE_BORDER = '#D4E8FF';  // viền xanh nhạt hơn
+
 export default function SettingSection({children}: {children: ReactNode}) {
   const {theme} = useUIFactory();
   const dark = theme?.name === 'dark';
+
   return (
     <View
       style={[
@@ -24,7 +28,7 @@ export default function SettingSection({children}: {children: ReactNode}) {
 
 const styles = StyleSheet.create({
   box: {
-    backgroundColor: '#F5F2FF',
+    backgroundColor: BLUE_BG,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -34,6 +38,6 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 4},
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#EEE9FF',
+    borderColor: BLUE_BORDER,
   },
 });

@@ -20,7 +20,7 @@ type Props = {
   pageBgColor?: string;
 };
 
-const HEADER_HEIGHT = 100;
+const HEADER_HEIGHT = 70;
 const SIDE_WIDTH = 100;
 const BACK_SIZE = 24;
 

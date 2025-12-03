@@ -1,7 +1,7 @@
 // src/api/apihandle.ts
-import {http} from './http';
-import {ApiCommand} from './core/ApiCommand';
-import type {Endpoint} from './core/ApiEndpoint';
+import { http } from './http';
+import { ApiCommand } from './core/ApiCommand';
+import type { Endpoint } from './core/ApiEndpoint';
 
 type CallStatus = {
   isError: boolean;
@@ -11,16 +11,37 @@ type CallStatus = {
 };
 
 class ApiHandle {
-  // ⬇️ đổi kiểu tham số sang Endpoint (readonly tuple)
   callApi(endpoint: Endpoint, payload?: any) {
-    const [method, path] = endpoint; // OK với readonly
+    const [method, path] = endpoint;
+
+    console.log(
+      `%c[API CALL] → ${method} ${path}`,
+      'color:#0af; font-weight:bold;',
+      '\nPayload:',
+      payload ?? '(none)'
+    );
 
     return {
       response: async (cb: (status: CallStatus, res?: any) => void) => {
         try {
           const res = await ApiCommand.run(http, method, path, payload);
-          cb({isError: false}, res);
+
+          console.log(
+            `%c[API SUCCESS] ← ${method} ${path}`,
+            'color:#0a0; font-weight:bold;',
+            '\nResponse:',
+            res,
+          );
+
+          cb({ isError: false }, res);
         } catch (e: any) {
+          console.log(
+            `%c[API ERROR] ← ${method} ${path}`,
+            'color:#f00; font-weight:bold;',
+            '\nError:',
+            e,
+          );
+
           cb(
             {
               isError: true,
@@ -33,11 +54,26 @@ class ApiHandle {
         }
       },
 
-      asPromise: async (): Promise<{status: CallStatus; res?: any}> => {
+      asPromise: async (): Promise<{ status: CallStatus; res?: any }> => {
         try {
           const res = await ApiCommand.run(http, method, path, payload);
-          return {status: {isError: false}, res};
+
+          console.log(
+            `%c[API SUCCESS] ← ${method} ${path}`,
+            'color:#0a0; font-weight:bold;',
+            '\nResponse:',
+            res,
+          );
+
+          return { status: { isError: false }, res };
         } catch (e: any) {
+          console.log(
+            `%c[API ERROR] ← ${method} ${path}`,
+            'color:#f00; font-weight:bold;',
+            '\nError:',
+            e,
+          );
+
           return {
             status: {
               isError: true,
