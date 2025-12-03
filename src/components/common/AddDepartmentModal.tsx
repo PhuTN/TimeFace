@@ -7,8 +7,9 @@ import { useUIFactory } from "../../ui/factory/useUIFactory";
 import type { Option } from "../../types/common";
 import AddEmployeeIntoDepartmentFilter, { EmployeeFilterInDeptValues } from "./AddEmployeeIntoDepartmentFilter";
 import FilterIcon from "../../assets/icons/filter_icon.svg"
-import FilterChip from "../other-group-2-stuff/FilterChip.tsx";
+
 import { Department, Employee, EMPLOYEES as EMP_FAKE, DEPARTMENTS } from "../../fake_data/Dien/fake_data.tsx";
+import FilterChip from "./FilterChip.tsx";
 
 export type AddDepartmentModal = {
     name: string;

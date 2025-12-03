@@ -12,7 +12,8 @@ import AddButton from "../components/common/AddButton";
 import AddDepartmentModal from "../components/common/AddDepartmentModal";
 import Chip from "../components/common/Chip.tsx";
 import HeaderBar from "../components/common/HeaderBar.tsx";
-import FilterChip from "../components/other-group-2-stuff/FilterChip.tsx";
+import FilterChip from "../components/common/FilterChip.tsx";
+
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DepartmentManagement'>;
 

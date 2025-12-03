@@ -1,4 +1,3 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import {useState} from 'react';
 import {
   Platform,
@@ -12,6 +11,8 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Feather from 'react-native-vector-icons/Feather';
+
+import DatePicker from 'react-native-date-picker';   // ⭐ NEW
 
 import EmployeeList, {Employee} from '../components/attendance/EmployeeList';
 import StatsCards from '../components/attendance/StatsCards';
@@ -27,14 +28,6 @@ function fmt(d: Date) {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-// const COLORS = {
-//   ontime: '#00CFE8', // cyan
-//   withPermit: '#B28DFF', // tím
-//   noPermit: '#F04BA0', // hồng
-//   late: '#FFA51F', // cam
-//   leaveEarly: '#FF4D61', // đỏ (nếu cần thêm)
-// };
-
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<number>(2);
@@ -42,14 +35,11 @@ export default function ReportScreen() {
     'onTime' | 'late' | 'leaveEarly' | 'withPermit' | 'withoutPermit'
   >('onTime');
 
-  // date state + picker
-  const [date, setDate] = useState<Date>(new Date(2025, 8, 20)); // 20/09/2025
-  const [showPicker, setShowPicker] = useState(false);
-  const onChangeDate = (_: any, selected?: Date) => {
-    if (Platform.OS === 'android') setShowPicker(false);
-    if (selected) setDate(selected);
-  };
+  // 📅 Date state
+  const [date, setDate] = useState<Date>(new Date(2025, 8, 20));
+  const [openPicker, setOpenPicker] = useState(false);
 
+  // Pie data
   const pie: Slice[] = [
     {name: 'Đúng giờ', value: 67, color: '#00D4FF'},
     {name: 'Đi trễ', value: 27, color: '#FF9500'},
@@ -85,8 +75,7 @@ export default function ReportScreen() {
     },
   ];
 
-  // ---- Fake datasets per selected stat ----
-  const employeesBy: Record<'onTime'|'late'|'leaveEarly'|'withPermit'|'withoutPermit', Employee[]> = {
+  const employeesBy = {
     onTime: [
       { id: 'ot1', name: 'Keneth Conroy', role: 'UI UX Designer', avatar: {uri: 'https://i.pravatar.cc/100?img=12'}, lateCount: 0, latePercent: 0, notePrefix: 'Số phút đi trễ:' },
       { id: 'ot2', name: 'Bill Gaston', role: 'Full Stack Engineer', avatar: {uri: 'https://i.pravatar.cc/100?img=65'}, lateCount: 0, latePercent: 0, notePrefix: 'Số phút đi trễ:' },
@@ -108,6 +97,7 @@ export default function ReportScreen() {
       { id: 'wop1', name: 'John Doe', role: 'Intern', avatar: {uri: 'https://i.pravatar.cc/100?img=11'}, status: 'Vắng không phép' },
     ],
   };
+
   const listTitleBy = {
     onTime: 'Danh sách nhân viên đúng giờ',
     late: 'Danh sách nhân viên đi trễ',
@@ -115,6 +105,7 @@ export default function ReportScreen() {
     withPermit: 'Danh sách nhân viên có phép',
     withoutPermit: 'Danh sách nhân viên không phép',
   } as const;
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F5F7FA" />
@@ -125,7 +116,8 @@ export default function ReportScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        {/* ---------- Thống kê ngày + lịch ---------- */}
+        
+        {/* ---------- Date Row ---------- */}
         <View style={styles.dateRow}>
           <Text style={styles.dateLabel}>Thống kê ngày</Text>
 
@@ -135,21 +127,27 @@ export default function ReportScreen() {
 
           <TouchableOpacity
             style={styles.calendarBtn}
-            onPress={() => setShowPicker(true)}>
+            onPress={() => setOpenPicker(true)}>
             <Feather name="calendar" size={16} color="#6B7EFF" />
           </TouchableOpacity>
         </View>
+
         <Text style={styles.groupNote}>Nhóm GS - 10 thành viên</Text>
 
-        {showPicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'inline' : 'default'}
-            onChange={onChangeDate}
-          />
-        )}
+        {/* ❤️ NEW DATE PICKER */}
+        <DatePicker
+          modal
+          mode="date"
+          open={openPicker}
+          date={date}
+          onConfirm={(d) => {
+            setOpenPicker(false);
+            setDate(d);
+          }}
+          onCancel={() => setOpenPicker(false)}
+        />
 
+        {/* -------- Stats Cards -------- */}
         <StatsCards
           selectedKey={selectedStat}
           onSelect={setSelectedStat}
@@ -162,6 +160,7 @@ export default function ReportScreen() {
           withoutPermit={employeesBy.withoutPermit.length}
         />
 
+        {/* -------- Pie Chart -------- */}
         <View style={[styles.chartCard, styles.cardShadow]}>
           <View style={{alignItems: 'center', marginBottom: 8}}>
             <PieWithLabels data={pie} />
@@ -185,20 +184,13 @@ export default function ReportScreen() {
           </View>
         </View>
 
+        {/* -------- Employees List -------- */}
         <EmployeeList
           title={listTitleBy[selectedStat]}
           employees={employeesBy[selectedStat]}
         />
 
-        {/* <View style={[styles.bottomChartSection, styles.cardShadow]}>
-          <View style={styles.bottomHeader}>
-            <Text style={styles.chartTitle}>Biểu đồ thống kê</Text>
-            <View style={styles.chip}>
-              <Text style={styles.chipText}>Weekly ▾</Text>
-            </View>
-          </View>
-          <WeeklyLineChart />
-        </View> */}
+        {/* -------- Bottom Chart -------- */}
         <View style={[styles.bottomChartSection, styles.cardShadow]}>
           <View style={styles.bottomHeader}>
             <Text style={styles.chartTitle}>Biểu đồ thống kê</Text>
@@ -208,10 +200,7 @@ export default function ReportScreen() {
         </View>
       </ScrollView>
 
-      <Footer
-        activeIndex={activeTab}
-        onPress={(i: number) => setActiveTab(i)}
-      />
+      <Footer activeIndex={activeTab} onPress={(i: number) => setActiveTab(i)} />
     </SafeAreaView>
   );
 }
@@ -222,7 +211,6 @@ const styles = StyleSheet.create({
   scrollView: {flex: 1},
   scrollContent: {paddingHorizontal: 16, paddingBottom: 24},
 
-  // date header like hình 2
   dateRow: {flexDirection: 'row', alignItems: 'center', marginTop: 8},
   dateLabel: {
     fontSize: 14,
@@ -290,13 +278,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   chartTitle: {fontSize: 16, fontWeight: '700', color: '#1A1A1A'},
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: '#F5F7FA',
-  },
-  chipText: {fontSize: 12, fontWeight: '600', color: '#1A1A1A'},
 
   cardShadow: {
     shadowColor: '#000',

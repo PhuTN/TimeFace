@@ -20,7 +20,7 @@ const ToggleButton_Notification = ({value, onToggle}: ToggleButtonProps) => {
 
   const translateX = circleAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [4, 32], // vị trí trái -> phải
+    outputRange: [4, 32], // trái → phải
   });
 
   return (
@@ -28,16 +28,17 @@ const ToggleButton_Notification = ({value, onToggle}: ToggleButtonProps) => {
       style={styles.wrapper}
       onPress={onToggle}
       activeOpacity={0.8}>
+      
       {value ? (
         <LinearGradient
-          colors={['#6B50F6', '#CC8FED']}
+          colors={['#3C9CDC', '#6EC8FF']}  // 🌊 xanh dương gradient
           start={{x: 0, y: 0}}
           end={{x: 1, y: 1}}
           style={styles.gradientContainer}>
           <Animated.View style={[styles.circle, {transform: [{translateX}]}]} />
         </LinearGradient>
       ) : (
-        <View style={styles.grayBackground}>
+        <View style={styles.blueOffBackground}>  {/* nền xanh nhạt */}
           <Animated.View style={[styles.circle, {transform: [{translateX}]}]} />
         </View>
       )}
@@ -56,10 +57,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
   },
-  grayBackground: {
+  blueOffBackground: {
     flex: 1,
     borderRadius: 16,
-    backgroundColor: '#ccc',
+    backgroundColor: '#DBEEFF', // xanh nhạt thay vì xám
     justifyContent: 'center',
   },
   circle: {

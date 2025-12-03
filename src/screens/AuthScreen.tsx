@@ -1,8 +1,5 @@
 // src/screens/AuthScreen.tsx
 import React, {useMemo, useState} from 'react';
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
 import {
   Alert,
   Image,
@@ -18,6 +15,7 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import DatePicker from 'react-native-date-picker';
 
 import FieldLabel from '../components/auth/FieldLabel';
 import GradientButton from '../components/auth/GradientButton';
@@ -26,7 +24,6 @@ import Input from '../components/auth/Input';
 import RememberToggle from '../components/auth/RememberToggle';
 import SegmentedTabs from '../components/auth/SegmentedTabs';
 
-// 🔑 gọi API login (RN dùng AsyncStorage)
 import {login as loginApi} from '../features/auth/authService';
 import Toast from 'react-native-toast-message';
 import {authStorage} from '../services/authStorage';
@@ -44,12 +41,12 @@ export default function AuthScreen() {
   const [showLoginPw, setShowLoginPw] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // signup (demo UI)
+  // signup
   const [firstName, setFirstName] = useState('Lois');
   const [lastName, setLastName] = useState('Becket');
   const [signupEmail, setSignupEmail] = useState('Loisbecket@gmail.com');
   const [dob, setDob] = useState<Date>(new Date(2024, 2, 18));
-  const [showDobPicker, setShowDobPicker] = useState(false);
+  const [openDobPicker, setOpenDobPicker] = useState(false); // NEW
   const [phone, setPhone] = useState('(454) 726-0592');
   const [signupPw, setSignupPw] = useState('');
   const [signupPw2, setSignupPw2] = useState('');
@@ -64,19 +61,10 @@ export default function AuthScreen() {
     return `${dd}/${mm}/${yyyy}`;
   }, [dob]);
 
-  function onPickDob(_: DateTimePickerEvent, selected?: Date) {
-    if (Platform.OS === 'android') {
-      setShowDobPicker(false);
-    }
-    if (selected) {
-      setDob(selected);
-    }
-  }
-
-  // ✅ handler login
+  // login handler
   const handleLogin = async () => {
-    const email = loginEmail?.trim();
-    const pw = loginPw?.trim();
+    const email = loginEmail.trim();
+    const pw = loginPw.trim();
 
     if (!email || !pw) {
       return Toast.show({
@@ -96,7 +84,6 @@ export default function AuthScreen() {
         text2: `Chào mừng ${user.full_name || user.email}`,
       });
 
-      // 🪣 Kiểm tra dữ liệu đã lưu trong authStorage
       const stored = await authStorage.load();
       console.log('🧠 authStorage:', stored, 'token:', token);
     } catch (e: any) {
@@ -105,7 +92,6 @@ export default function AuthScreen() {
         text1: 'Đăng nhập thất bại 😞',
         text2: e?.message || 'Có lỗi xảy ra, thử lại sau.',
       });
-      console.log('❌ Login error:', e);
     } finally {
       setLoginLoading(false);
     }
@@ -116,7 +102,7 @@ export default function AuthScreen() {
       <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         style={{flex: 1}}
-        behavior={Platform.select({ios: 'padding', android: undefined})}>
+        behavior={Platform.select({ios: 'padding'})}>
         <ScrollView
           contentContainerStyle={[
             styles.scroll,
@@ -128,7 +114,7 @@ export default function AuthScreen() {
           <View style={{alignItems: 'center', marginTop: 6}}>
             <Image
               source={require('../assets/Auth/LoginIcon.png')}
-              style={{width: 44, height: 44, resizeMode: 'contain'}}
+              style={{width: 44, height: 44}}
             />
             <Text style={styles.title}>FCI</Text>
           </View>
@@ -150,7 +136,6 @@ export default function AuthScreen() {
                 onChangeText={setLoginEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoCorrect={false}
                 placeholder="your@email.com"
               />
 
@@ -184,6 +169,7 @@ export default function AuthScreen() {
             </View>
           ) : (
             <View>
+              {/* NAME ROW */}
               <View style={styles.rowGap}>
                 <View style={{flex: 1}}>
                   <FieldLabel>First Name</FieldLabel>
@@ -201,28 +187,32 @@ export default function AuthScreen() {
                 value={signupEmail}
                 onChangeText={setSignupEmail}
                 keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
               />
 
+              {/* BIRTH OF DATE */}
               <FieldLabel style={{marginTop: 12}}>Birth of date</FieldLabel>
               <Input
                 value={dobDisplay}
                 editable={false}
                 rightIcon={
-                  <Pressable onPress={() => setShowDobPicker(true)}>
+                  <Pressable onPress={() => setOpenDobPicker(true)}>
                     <Icon name="calendar-outline" size={20} color="#9AA2B1" />
                   </Pressable>
                 }
               />
-              {showDobPicker && (
-                <DateTimePicker
-                  mode="date"
-                  value={dob}
-                  onChange={onPickDob}
-                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                />
-              )}
+
+              {/* DatePicker Modal */}
+              <DatePicker
+                modal
+                open={openDobPicker}
+                date={dob}
+                mode="date"
+                onConfirm={date => {
+                  setOpenDobPicker(false);
+                  setDob(date);
+                }}
+                onCancel={() => setOpenDobPicker(false)}
+              />
 
               <FieldLabel style={{marginTop: 12}}>Phone Number</FieldLabel>
               <Input
@@ -236,7 +226,6 @@ export default function AuthScreen() {
                 value={signupPw}
                 onChangeText={setSignupPw}
                 secureTextEntry={!showPw1}
-                placeholder="Create a password"
                 rightIcon={
                   <Pressable onPress={() => setShowPw1(s => !s)}>
                     <Icon
@@ -253,7 +242,6 @@ export default function AuthScreen() {
                 value={signupPw2}
                 onChangeText={setSignupPw2}
                 secureTextEntry={!showPw2}
-                placeholder="Re-enter password"
                 rightIcon={
                   <Pressable onPress={() => setShowPw2(s => !s)}>
                     <Icon
@@ -279,7 +267,6 @@ export default function AuthScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Toast mount ở đây để dùng toàn màn hình này */}
       <Toast />
     </SafeAreaView>
   );
@@ -299,7 +286,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 10,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
   },
   forgot: {fontSize: 13, color: '#4C74E6', fontWeight: '700'},

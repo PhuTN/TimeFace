@@ -27,7 +27,7 @@ const ToggleButton_Language = ({
 
   const translateX = circleAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [4, 32], // vị trí trái -> phải (dựa theo width 60, circle 24, padding)
+    outputRange: [4, 32], // trái → phải
   });
 
   return (
@@ -36,19 +36,13 @@ const ToggleButton_Language = ({
       onPress={onToggle}
       activeOpacity={0.8}>
       <LinearGradient
-        colors={['#6B50F6', '#CC8FED']}
+        colors={['#3C9CDC', '#6EC8FF']}
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         style={styles.gradientContainer}>
-        {/* Hiển thị title trái nếu value === false */}
-        {!value && (
-          <Text style={[styles.title, styles.titleLeft]}>{titleLeft}</Text>
-        )}
 
-        {/* Hiển thị title phải nếu value === true */}
-        {value && (
-          <Text style={[styles.title, styles.titleRight]}>{titleRight}</Text>
-        )}
+        {!value && <Text style={[styles.title, styles.titleLeft]}>{titleLeft}</Text>}
+        {value && <Text style={[styles.title, styles.titleRight]}>{titleRight}</Text>}
 
         <Animated.View style={[styles.circle, {transform: [{translateX}]}]} />
       </LinearGradient>
@@ -69,16 +63,12 @@ const styles = StyleSheet.create({
   },
   title: {
     position: 'absolute',
-    color: '#FFCF26',
+    color: '#FFFFFF',   // đổi vàng → trắng
     fontWeight: 'bold',
     fontSize: 12,
   },
-  titleLeft: {
-    left: 8,
-  },
-  titleRight: {
-    right: 8,
-  },
+  titleLeft: { left: 8 },
+  titleRight: { right: 8 },
   circle: {
     width: 24,
     height: 24,

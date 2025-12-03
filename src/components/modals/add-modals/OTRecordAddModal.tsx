@@ -1,3 +1,4 @@
+// src/screens/.../OTRecordAddModal.tsx
 import React, {useState} from 'react';
 import {
   View,
@@ -8,7 +9,8 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+
+import DatePicker from 'react-native-date-picker';   // ⭐ NEW
 import BottomSheetModal from '../../common/BottomSheetModal';
 import LabeledDate from '../../common/LabeledDate';
 import LabeledTextInput from '../../common/LabeledTextInput';
@@ -31,13 +33,16 @@ const OTRecordAddModal: React.FC<Props> = ({visible, onClose, onAdd}) => {
   const [startTime, setStartTime] = useState(new Date());
   const [hours, setHours] = useState('');
   const [reason, setReason] = useState('');
-  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  // mở/đóng time picker
+  const [openTimePicker, setOpenTimePicker] = useState(false);
 
   if (!theme || !lang) return null;
 
   const handleAdd = () => {
     onAdd({date, startTime, hours, reason});
-    // Reset form
+
+    // Reset
     setDate(new Date());
     setStartTime(new Date());
     setHours('');
@@ -95,6 +100,7 @@ const OTRecordAddModal: React.FC<Props> = ({visible, onClose, onAdd}) => {
             <Text style={[styles.label, {color: theme.colors.text}]}>
               {lang.t('startAt')}
             </Text>
+
             <TouchableOpacity
               style={[
                 styles.inputBox,
@@ -103,7 +109,7 @@ const OTRecordAddModal: React.FC<Props> = ({visible, onClose, onAdd}) => {
                   backgroundColor: theme.colors.background,
                 },
               ]}
-              onPress={() => setShowTimePicker(true)}
+              onPress={() => setOpenTimePicker(true)}
               activeOpacity={0.7}>
               <Text style={[styles.input, {color: theme.colors.text}]}>
                 {formatTime(startTime)}
@@ -111,17 +117,18 @@ const OTRecordAddModal: React.FC<Props> = ({visible, onClose, onAdd}) => {
               <Text style={styles.clockIcon}>🕐</Text>
             </TouchableOpacity>
 
-            {showTimePicker && (
-              <DateTimePicker
-                value={startTime}
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(_, time) => {
-                  setShowTimePicker(Platform.OS === 'ios');
-                  if (time) setStartTime(time);
-                }}
-              />
-            )}
+            {/* Modal Time Picker */}
+            <DatePicker
+              modal
+              open={openTimePicker}
+              date={startTime}
+              mode="time"
+              onConfirm={time => {
+                setOpenTimePicker(false);
+                setStartTime(time);
+              }}
+              onCancel={() => setOpenTimePicker(false)}
+            />
           </View>
 
           {/* Hours Input */}
@@ -133,11 +140,12 @@ const OTRecordAddModal: React.FC<Props> = ({visible, onClose, onAdd}) => {
             theme={theme}
           />
 
-          {/* Reason Text Area */}
+          {/* Reason */}
           <View style={styles.field}>
             <Text style={[styles.label, {color: theme.colors.text}]}>
               {lang.t('otReason')}
             </Text>
+
             <View
               style={[
                 styles.textAreaBox,
@@ -160,7 +168,7 @@ const OTRecordAddModal: React.FC<Props> = ({visible, onClose, onAdd}) => {
           </View>
         </ScrollView>
 
-        {/* Action Buttons */}
+        {/* Footer Buttons */}
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={[
@@ -168,8 +176,7 @@ const OTRecordAddModal: React.FC<Props> = ({visible, onClose, onAdd}) => {
               styles.cancelButton,
               {borderColor: theme.colors.border},
             ]}
-            onPress={onClose}
-            activeOpacity={0.7}>
+            onPress={onClose}>
             <Text style={[styles.buttonText, {color: theme.colors.text}]}>
               {lang.t('exit')}
             </Text>
@@ -181,8 +188,7 @@ const OTRecordAddModal: React.FC<Props> = ({visible, onClose, onAdd}) => {
               styles.addButton,
               {backgroundColor: theme.colors.primary},
             ]}
-            onPress={handleAdd}
-            activeOpacity={0.7}>
+            onPress={handleAdd}>
             <Text style={[styles.buttonText, styles.addButtonText]}>
               {lang.t('add')}
             </Text>
@@ -210,22 +216,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  scrollView: {
-    maxHeight: 450,
-  },
+  scrollView: {maxHeight: 450},
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 12,
     gap: 16,
   },
-  field: {
-    width: '100%',
-  },
-  label: {
-    fontSize: 13,
-    marginBottom: 6,
-  },
+  field: {width: '100%'},
+  label: {fontSize: 13, marginBottom: 6},
   inputBox: {
     borderWidth: 2,
     borderRadius: 14,
@@ -235,12 +234,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  input: {
-    fontSize: 16,
-  },
-  clockIcon: {
-    fontSize: 16,
-  },
+  input: {fontSize: 16},
+  clockIcon: {fontSize: 16},
   textAreaBox: {
     borderWidth: 2,
     borderRadius: 14,
@@ -248,10 +243,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 100,
   },
-  textArea: {
-    fontSize: 16,
-    minHeight: 76,
-  },
+  textArea: {fontSize: 16, minHeight: 76},
   buttonRow: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -265,19 +257,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelButton: {
-    borderWidth: 2,
-  },
-  addButton: {
-    // backgroundColor set via theme.colors.primary
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-  },
+  cancelButton: {borderWidth: 2},
+  addButton: {},
+  buttonText: {fontSize: 16, fontWeight: '600'},
+  addButtonText: {color: '#FFFFFF'},
 });
 
 export default OTRecordAddModal;

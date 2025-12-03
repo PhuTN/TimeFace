@@ -4,6 +4,7 @@ import { http } from '../../api/http';
 import { authStorage } from '../../services/authStorage';
 import type { ApiResponse, AuthUser, LoginData } from '../../types/api';
 import AppConfig from '../../appconfig/AppConfig';
+import { navigationRef } from '../../navigation/NavigationService';
 
 export async function login(email: string, password: string) {
   console.log('[authService] 🔑 Login called with:', { email });
@@ -41,11 +42,21 @@ export async function login(email: string, password: string) {
 
 export async function logout() {
   console.log('[authService] 🚪 Logging out...');
+
   await authStorage.clear();
   AppConfig.getInstance().setAuthToken(null, { rebuildAxios: true });
-  console.log('[authService] ✅ Auth cleared and token removed');
-  // navigate('Login'); // Optional
+
+  console.log('[authService] ⛔ Redirecting to Login...');
+
+  // Điều hướng cứng về màn Login (reset stack)
+  if (navigationRef.isReady()) {
+    navigationRef.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  }
 }
+
 
 export async function getSession() {
   console.log('[authService] 🔍 Loading session from storage...');
