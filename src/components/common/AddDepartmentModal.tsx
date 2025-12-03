@@ -8,6 +8,7 @@ import type { Option } from "../../types/common";
 import AddEmployeeIntoDepartmentFilter, { EmployeeFilterInDeptValues } from "./AddEmployeeIntoDepartmentFilter";
 import FilterIcon from "../../assets/icons/filter_icon.svg"
 
+
 import { Department, Employee, EMPLOYEES as EMP_FAKE, DEPARTMENTS } from "../../fake_data/Dien/fake_data.tsx";
 import FilterChip from "./FilterChip.tsx";
 

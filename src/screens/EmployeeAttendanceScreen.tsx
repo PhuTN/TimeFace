@@ -16,6 +16,7 @@ import HeaderBar from "../components/common/HeaderBar.tsx";
 import Footer from "../components/common/Footer";
 import GradientButton from "../components/common/GradientButton";
 
+import FilterChip from "../components/common/FilterChip.tsx";
 import EmployeeAttendanceFilterModal, {
     AttendanceFilterValues,
 } from "../components/common/EmployeeAttendanceFilterModal";
@@ -23,7 +24,7 @@ import FilterIcon from "../assets/icons/filter_icon.svg";
 import CalendarIcon from "../assets/icons/calendar_icon.svg";
 import ClockIcon from "../assets/icons/clock_icon.svg";
 import { RootStackParamList } from "../navigation/AppNavigator";
-import FilterChip from "../components/common/FilterChip.tsx";
+
 
 type AttendanceEntry = {
     id: string;
