@@ -15,7 +15,7 @@ import { useUIFactory } from "../ui/factory/useUIFactory";
 import HeaderBar from "../components/common/HeaderBar.tsx";
 import Footer from "../components/common/Footer";
 import GradientButton from "../components/common/GradientButton";
-import FilterChip from "../components/other-group-2-stuff/FilterChip.tsx";
+import FilterChip from "../components/common/FilterChip.tsx";
 import EmployeeAttendanceFilterModal, {
     AttendanceFilterValues,
 } from "../components/common/EmployeeAttendanceFilterModal";

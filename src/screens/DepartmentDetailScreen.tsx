@@ -15,7 +15,7 @@ import FilterIcon from "../assets/icons/filter_icon.svg";
 import EmployeeFilterInDepartment, { EmployeeFilterInDeptValues } from
     "../components/common/EmployeeFilterInDepartment";
 import HeaderBar from "../components/common/HeaderBar.tsx";
-import FilterChip from "../components/other-group-2-stuff/FilterChip.tsx";
+import FilterChip from "../components/common/FilterChip.tsx";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DepartmentDetail'>;
 

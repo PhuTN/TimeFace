@@ -20,7 +20,7 @@ import EmployeeFilter, { EmployeeFilterValues, EmpSortValue } from "../component
 import { Employee, EMPLOYEES, DEPARTMENTS, PasswordChangeStatus } from "../fake_data/Dien/fake_data.tsx";
 import AddEmployeeModal from "../components/common/AddEmployeeModal";
 import Chip from "../components/common/Chip.tsx";
-import FilterChip from "../components/other-group-2-stuff/FilterChip.tsx";
+import FilterChip from "../components/common/FilterChip.tsx";
 
 type Props = any; // hoặc: NativeStackScreenProps<RootStackParamList, 'EmployeeManagement'>
 
