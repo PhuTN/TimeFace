@@ -344,4 +344,8 @@ export const Lang = {
   leaveCount: ['Số ngày nghỉ', 'Leave Count'],
   attendanceRate: ['Tỷ lệ chấm công', 'Attendance Rate'],
   times: ['lần', 'times'],
+  personal_timesheet: ['Bảng công cá nhân', 'Personal Timesheet'],
+  overtime_feature: ['Overtime', 'Overtime'],
+  leave_request_feature: ['Nghỉ phép', 'Leave Request'],
+  work_schedule: ['Lịch làm việc', 'Work Schedule'],
 } as const;
