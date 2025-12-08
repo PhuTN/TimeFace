@@ -1,121 +1,72 @@
 // App.tsx
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, View } from 'react-native';
+import {
+  ActivityIndicator,
+  View,
+  Linking,
+} from 'react-native';
+
 import Toast from 'react-native-toast-message';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AppNavigator from './src/navigation/AppNavigator';
 import { rehydrateAuth } from './src/bootstrap/rehydrateAuth';
-import { navigationRef } from './src/navigation/NavigationService';
 import { apiHandle } from './src/api/apihandle';
 import { User } from './src/api/endpoint/User';
 import { authStorage } from './src/services/authStorage';
 
-export default function App() {
-  const [ready, setReady] = useState(false);
-  const [initialRoute, setInitialRoute] =
-    useState<keyof import('./src/navigation/AppNavigator').RootStackParamList>(
-      'Login',
-    );
+import {
+  AppReloadProvider,
+  useAppReload,
+} from './src/context/AppReloadContext';
 
-  // ===== 1. Rehydrate token + luôn GET /users/me mỗi lần mở app =====
+// ======================= ROOT APP =======================
+function RootApp({
+  initialRoute,
+  reloadKey,
+}: {
+  initialRoute: string;
+  reloadKey: number;
+}) {
+  const [ready, setReady] = useState(false);
+
   useEffect(() => {
     (async () => {
-      const session = await rehydrateAuth(); // gắn token vào axios nếu còn hạn
-
-      let userFromSession = session?.user ?? null;
+      const session = await rehydrateAuth();
+      let user = session?.user ?? null;
 
       if (session?.token) {
         try {
-          // 👉 gọi luôn /users/me để sync user mới nhất từ backend
-          const { status, res } = await apiHandle
-            .callApi(User.GetMe)
-            .asPromise();
-          console.log("USERRUSERR",res)
+          const { status, res } = await apiHandle.callApi(User.GetMe).asPromise();
           if (!status.isError && res?.success && res.data?.user) {
-            userFromSession = res.data.user;
-
-            // lưu lại vào authStorage để những nơi khác dùng cũng có user mới
-            await authStorage.save({
-              token: session.token,
-              user: userFromSession,
-            });
+            user = res.data.user;
+            await authStorage.save({ token: session.token, user });
           }
-        } catch (e) {
-          console.log('GetMe on app start error:', e);
-        }
-      }
-
-      if (session?.token && userFromSession) {
-        const user = userFromSession;
-        const role = user.role;
-        const subscriptionStatus = user.subscription_status || 'unactive';
-
-        console.log('Session after getMe:', { token: session.token, user });
-
-        // ===== Điều hướng theo role + subscription_status =====
-        if (role === 'admin') {
-          if (subscriptionStatus !== 'active') {
-            setInitialRoute('SubscriptionPlans');
-          } else {
-            setInitialRoute('Home');
-          }
-        } else if (role === 'user') {
-          if (subscriptionStatus !== 'active') {
-            setInitialRoute('SubscriptionBlocked');
-          } else {
-            setInitialRoute('Home');
-          }
-        } else {
-          // sys_admin hoặc role khác
-          setInitialRoute('Home');
-        }
-      } else {
-        // Không có token / user → Login
-        setInitialRoute('Login');
+        } catch {}
       }
 
       setReady(true);
     })();
-  }, []);
+  }, [reloadKey]); // 🔥 reload toàn app khi reloadKey đổi
 
-  // ===== 2. Handle deep link Stripe: timeface://stripe-success, timeface://stripe-cancel =====
+  // Deep link stripe
   useEffect(() => {
     const handleStripeDeepLink = async (url: string) => {
       try {
         if (url.startsWith('timeface://stripe-success')) {
-          // Sau khi thanh toán xong, GET /users/me để lấy subscription_status mới
-          try {
-            const { status, res } = await apiHandle
-              .callApi(User.GetMe)
-              .asPromise();
-
-            if (!status.isError && res?.success && res.data?.user) {
-              const user = res.data.user;
-              console.log('🎉 Subscription updated, user:', user);
-
-              // update lại storage
-              const stored = await authStorage.load();
-              await authStorage.save({
-                token: stored?.token || null,
-                user,
-              });
-            }
-          } catch (e) {
-            console.log('GetMe after stripe error:', e);
-          }
-
-          // reset về Home
-          if (navigationRef.isReady()) {
-            navigationRef.reset({
-              index: 0,
-              routes: [{ name: 'Home' as never }],
+          const { res } = await apiHandle.callApi(User.GetMe).asPromise();
+          if (res?.success && res.data?.user) {
+            const stored = await authStorage.load();
+            await authStorage.save({
+              token: stored?.token || null,
+              user: res.data.user,
             });
           }
 
           Toast.show({
             type: 'success',
             text1: 'Thanh toán thành công',
-            text2: 'Gói dịch vụ của bạn đã được kích hoạt.',
+            text2: 'Gói dịch vụ đã được kích hoạt.',
           });
         }
 
@@ -123,50 +74,107 @@ export default function App() {
           Toast.show({
             type: 'info',
             text1: 'Thanh toán bị hủy',
-            text2: 'Bạn có thể chọn gói khác hoặc thử lại sau.',
+            text2: 'Bạn có thể thử lại sau.',
           });
         }
-      } catch (e) {
-        console.log('Deep link handle error:', e);
-      }
+      } catch {}
     };
 
-    const onUrl = (event: { url: string }) => {
-      handleStripeDeepLink(event.url);
-    };
-
-    // app đang mở mà nhận được link
-    const sub = Linking.addEventListener('url', onUrl);
-
-    // app được mở từ trạng thái tắt hẳn bằng link
-    (async () => {
-      const initUrl = await Linking.getInitialURL();
-      if (initUrl) {
-        handleStripeDeepLink(initUrl);
-      }
-    })();
-
-    return () => {
-      sub.remove();
-    };
+    const sub = Linking.addEventListener('url', e => handleStripeDeepLink(e.url));
+    return () => sub.remove();
   }, []);
 
-  // ===== 3. Loading state =====
   if (!ready) {
     return (
-      <View
-        style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-      >
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />
       </View>
     );
   }
 
-  // ===== 4. App =====
+  return <AppNavigator initialRouteName={initialRoute} />;
+}
+
+
+
+// ======================= APP MAIN =======================
+function AppContent() {
+  const [initialRoute, setInitialRoute] =
+    useState<keyof import('./src/navigation/AppNavigator').RootStackParamList>('Login');
+
+  const [checking, setChecking] = useState(true);
+
+  const { reloadKey } = useAppReload(); // 🔥 CHỈ DÙNG reloadKey
+
+  useEffect(() => {
+    (async () => {
+      const session = await rehydrateAuth();
+      let user = session?.user ?? null;
+
+      if (session?.token) {
+        try {
+          const { res } = await apiHandle.callApi(User.GetMe).asPromise();
+          if (res?.success && res.data?.user) {
+            user = res.data.user;
+            await authStorage.save({ token: session.token, user });
+          }
+        } catch {}
+      }
+
+      if (session?.token && user) {
+        const role = user.role;
+        const subscriptionStatus = user.subscription_status || 'unactive';
+
+        if (role === 'admin') {
+          setInitialRoute(
+            subscriptionStatus !== 'active'
+              ? 'SubscriptionPlans'
+              : 'Home'
+          );
+        } else if (role === 'user') {
+          setInitialRoute(
+            subscriptionStatus !== 'active'
+              ? 'SubscriptionBlocked'
+              : 'Home'
+          );
+        } else {
+          setInitialRoute('Home');
+        }
+      } else {
+        setInitialRoute('Login');
+      }
+
+      setChecking(false);
+    })();
+  }, []);
+
+  if (checking) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  // ❗ Không có ScrollView nữa → RootApp sẽ remount đúng khi reloadKey đổi
+  return (
+    <RootApp initialRoute={initialRoute} reloadKey={reloadKey} />
+  );
+}
+
+
+
+// ======================= WRAPPER =======================
+export default function App() {
   return (
     <>
-      <AppNavigator initialRouteName={initialRoute} />
-      <Toast />
+      <SafeAreaProvider>
+        <AppReloadProvider>
+          <AppContent />
+        </AppReloadProvider>
+      </SafeAreaProvider>
+
+      <Toast topOffset={40} />
     </>
   );
 }

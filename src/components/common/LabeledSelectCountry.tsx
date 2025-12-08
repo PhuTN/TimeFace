@@ -44,6 +44,10 @@ export default function LabeledSelectCountry({
       options={selectOptions}
       onSelect={onChange}
       theme={theme}
+
+      // ⭐ ONLY ADD SEARCH — everything else kept exactly the same
+      searchable
+      searchPlaceholder="Search country..."
     />
   );
 }

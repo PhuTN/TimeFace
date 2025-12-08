@@ -31,8 +31,8 @@ const FeatureItem: React.FC<FeatureItemProps> = ({text, color, icon, onPress}) =
           shadowRadius: 4,
           shadowOffset: {width: 0, height: 1},
           elevation: 2,
-          width: 100,
-          height: 100,
+          width:110,
+          height:120,
         }}>
       <View
         style={{

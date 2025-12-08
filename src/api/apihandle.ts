@@ -1,7 +1,7 @@
-// src/api/apihandle.ts
-import { http } from './http';
-import { ApiCommand } from './core/ApiCommand';
-import type { Endpoint } from './core/ApiEndpoint';
+import {http} from './http';
+import {ApiCommand} from './core/ApiCommand';
+import type {Endpoint} from './core/ApiEndpoint';
+import Toast from 'react-native-toast-message';
 
 type CallStatus = {
   isError: boolean;
@@ -18,7 +18,7 @@ class ApiHandle {
       `%c[API CALL] → ${method} ${path}`,
       'color:#0af; font-weight:bold;',
       '\nPayload:',
-      payload ?? '(none)'
+      payload ?? '(none)',
     );
 
     return {
@@ -33,7 +33,7 @@ class ApiHandle {
             res,
           );
 
-          cb({ isError: false }, res);
+          cb({isError: false}, res);
         } catch (e: any) {
           console.log(
             `%c[API ERROR] ← ${method} ${path}`,
@@ -42,10 +42,23 @@ class ApiHandle {
             e,
           );
 
+          // ⭐ AUTO TOAST ERROR
+          const msg =
+            e?.data?.message ||
+            e?.data?.error ||
+            e?.message ||
+            'Đã xảy ra lỗi từ máy chủ';
+
+          Toast.show({
+            type: 'error',
+            text1: 'Lỗi API',
+            text2: msg,
+          });
+
           cb(
             {
               isError: true,
-              errorMessage: e?.message,
+              errorMessage: msg,
               errorCode: e?.code,
               httpStatus: e?.status,
             },
@@ -54,7 +67,7 @@ class ApiHandle {
         }
       },
 
-      asPromise: async (): Promise<{ status: CallStatus; res?: any }> => {
+      asPromise: async (): Promise<{status: CallStatus; res?: any}> => {
         try {
           const res = await ApiCommand.run(http, method, path, payload);
 
@@ -65,7 +78,7 @@ class ApiHandle {
             res,
           );
 
-          return { status: { isError: false }, res };
+          return {status: {isError: false}, res};
         } catch (e: any) {
           console.log(
             `%c[API ERROR] ← ${method} ${path}`,
@@ -74,10 +87,19 @@ class ApiHandle {
             e,
           );
 
+          // ⭐ AUTO TOAST ERROR
+          const msg = e || 'Đã xảy ra lỗi từ máy chủ';
+
+          Toast.show({
+            type: 'error',
+            text1: 'Lỗi API',
+            text2: msg,
+          });
+
           return {
             status: {
               isError: true,
-              errorMessage: e?.message,
+              errorMessage: msg,
               errorCode: e?.code,
               httpStatus: e?.status,
             },
