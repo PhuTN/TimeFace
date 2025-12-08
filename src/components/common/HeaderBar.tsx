@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
+import { authStorage } from '../../services/authStorage';
 
 type Props = {
   title: string;
   onBack?: () => void;
-  avatarUri?: string;
   extra?: React.ReactNode;
   topInset?: number;
-  isShowBackButton?: boolean;   // ⭐ thêm thuộc tính
+  isShowBackButton?: boolean;
+  isShowAvatar?: boolean;     // ⭐ thêm prop
 };
 
 const HEADER_HEIGHT = 70;
@@ -17,49 +18,66 @@ const HEADER_HEIGHT = 70;
 export default function HeaderBar({
   title,
   onBack,
-  avatarUri,
   extra,
   topInset = 0,
-  isShowBackButton = true,      // ⭐ mặc định có nút back
+  isShowBackButton = true,
+  isShowAvatar = true,        // ⭐ mặc định là hiện avatar
 }: Props) {
 
   const navigation = useNavigation<any>();
+  const [avatar, setAvatar] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadAvatar = async () => {
+      const user = await authStorage.getUser();
+      setAvatar(user?.avatar ?? null);
+    };
+
+    loadAvatar();
+    const unsubscribe = navigation.addListener('focus', loadAvatar);
+    return unsubscribe;
+  }, [navigation]);
 
   const handleBack = () => {
     if (onBack) return onBack();
+    if (navigation.canGoBack()) return navigation.goBack();
+    navigation.navigate('Home');
+  };
 
-    try {
-      navigation.goBack();
-    } catch {
-      navigation.navigate('Home');
-    }
+  // ⭐ Bấm avatar → mở màn hình PersonalInformation
+  const goToProfile = () => {
+    navigation.navigate('PersonalInformation');
   };
 
   return (
     <>
-      {/* HEADER FIXED */}
       <View style={[styles.headerBar, { paddingTop: topInset + 6 }]}>
 
-        {/* ⭐ Chỉ hiện khi isShowBackButton === true */}
         {isShowBackButton ? (
           <TouchableOpacity style={styles.headerBtn} onPress={handleBack}>
             <Feather name="chevron-left" size={26} color="#5F6AF4" />
           </TouchableOpacity>
         ) : (
-          <View style={{ width: 38 }} />  // giữ layout cân bằng
+          <View style={{ width: 38 }} />
         )}
 
         <Text style={styles.headerTitle}>{title}</Text>
 
-        {extra ?? (
-          <Image
-            source={{ uri: avatarUri ?? 'https://i.pravatar.cc/100?img=7' }}
-            style={styles.headerAvatar}
-          />
+        {/* ⭐ Hiện avatar hay không */}
+        {isShowAvatar ? (
+          <TouchableOpacity onPress={goToProfile} activeOpacity={0.8}>
+            <Image
+              source={{
+                uri: avatar || 'https://cdn-icons-png.freepik.com/512/6858/6858504.png',
+              }}
+              style={styles.headerAvatar}
+            />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 34 }} />
         )}
       </View>
 
-      {/* Spacer chống che */}
       <View style={{ height: HEADER_HEIGHT + topInset }} />
     </>
   );
@@ -73,7 +91,7 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 999,
     paddingHorizontal: 16,
-    height: 70,
+    height: 80,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

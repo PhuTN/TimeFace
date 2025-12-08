@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import { useNavigation } from '@react-navigation/native';
 
 import { apiHandle } from '../api/apihandle';
 import { SubscriptionPlans } from '../api/endpoint/SubscriptionPlans';
 import { Stripe } from '../api/endpoint/Stripe';
+import { authStorage } from '../services/authStorage';
 
 type SubscriptionPlan = {
   _id: string;
@@ -29,10 +31,21 @@ type SubscriptionPlan = {
 
 export default function SubscriptionPlansScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
+
+  // 🔥 LOGOUT
+  const handleLogout = async () => {
+    await authStorage.clear();
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
 
   const loadPlans = useCallback(async () => {
     try {
@@ -48,7 +61,6 @@ export default function SubscriptionPlansScreen() {
 
       setPlans(res.data || []);
     } catch (e: any) {
-      console.log('❌ Load plans error:', e);
       Toast.show({
         type: 'error',
         text1: 'Lỗi tải gói dịch vụ',
@@ -73,14 +85,12 @@ export default function SubscriptionPlansScreen() {
     return `$${price}/tháng`;
   };
 
-  // 🧾 Gọi backend tạo Stripe Checkout Session
   const handleChoosePlan = async (plan: SubscriptionPlan) => {
     try {
       setProcessingPlanId(plan._id);
 
       const payload = {
         planCode: plan.code,
-        // deep link quay lại app sau khi thanh toán
         successUrl: 'timeface://stripe-success',
         cancelUrl: 'timeface://stripe-cancel',
       };
@@ -96,16 +106,10 @@ export default function SubscriptionPlansScreen() {
       }
 
       const checkoutUrl = res.data?.checkoutUrl;
-      console.log('🔗 Stripe checkoutUrl:', checkoutUrl);
+      if (!checkoutUrl) throw new Error('Không nhận được checkoutUrl từ server');
 
-      if (!checkoutUrl) {
-        throw new Error('Không nhận được checkoutUrl từ server');
-      }
-
-      // Mở thẳng trang thanh toán Stripe
       await Linking.openURL(checkoutUrl);
     } catch (e: any) {
-      console.log('❌ handleChoosePlan error:', e);
       Toast.show({
         type: 'error',
         text1: 'Lỗi khi tạo thanh toán',
@@ -129,7 +133,6 @@ export default function SubscriptionPlansScreen() {
       <View style={styles.cardWrapper}>
         <View style={styles.cardShadow}>
           <View style={styles.card}>
-            {/* Header */}
             <View style={styles.cardHeader}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.planName}>{item.name}</Text>
@@ -143,7 +146,6 @@ export default function SubscriptionPlansScreen() {
               </View>
             </View>
 
-            {/* Info */}
             <View style={styles.infoRow}>
               <View style={styles.dot} />
               <Text style={styles.maxEmployees}>{maxText}</Text>
@@ -156,19 +158,13 @@ export default function SubscriptionPlansScreen() {
             {isEnterprise && (
               <View style={styles.tagRow}>
                 <View style={styles.tagPremium}>
-                  <Text style={styles.tagPremiumText}>
-                    Gói cao cấp — Enterprise
-                  </Text>
+                  <Text style={styles.tagPremiumText}>Gói cao cấp — Enterprise</Text>
                 </View>
               </View>
             )}
 
-            {/* 🔘 Nút chọn gói / thanh toán */}
             <TouchableOpacity
-              style={[
-                styles.chooseBtn,
-                isProcessing && { opacity: 0.7 },
-              ]}
+              style={[styles.chooseBtn, isProcessing && { opacity: 0.7 }]}
               onPress={() => handleChoosePlan(item)}
               disabled={isProcessing}
             >
@@ -182,11 +178,20 @@ export default function SubscriptionPlansScreen() {
     );
   };
 
+  // 👇 Nút logout ở dưới danh sách
+  const renderFooter = () => (
+    <View style={{ marginTop: 24, marginBottom: 40 }}>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Đăng xuất</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   if (loading && !refreshing && plans.length === 0) {
     return (
       <SafeAreaView style={styles.safe}>
         <StatusBar barStyle="dark-content" />
-        <View className="center">
+        <View style={styles.center}>
           <ActivityIndicator size="large" />
           <Text style={{ marginTop: 8, color: '#4B5563' }}>
             Đang tải danh sách gói...
@@ -199,33 +204,26 @@ export default function SubscriptionPlansScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
+
       <View
         style={[
           styles.container,
-          { paddingTop: insets.top + 28, paddingBottom: insets.bottom || 16 },
+          { paddingTop: insets.top + 28 },
         ]}
       >
         <Text style={styles.title}>Danh sách gói dịch vụ</Text>
-        <Text style={styles.subtitle}>
-          Chọn gói phù hợp cho công ty của bạn.
-        </Text>
+        <Text style={styles.subtitle}>Chọn gói phù hợp cho công ty của bạn.</Text>
 
         <FlatList
           data={plans}
           keyExtractor={item => item._id}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 24, paddingTop: 24 }}
+          contentContainerStyle={{ paddingTop: 24 }}
           ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-          ListEmptyComponent={
-            !loading ? (
-              <View style={styles.center}>
-                <Text style={{ color: '#6B7280' }}>Không có gói nào.</Text>
-              </View>
-            ) : null
-          }
+          ListFooterComponent={renderFooter}  // 👈 Nút logout nằm dưới cùng
         />
       </View>
     </SafeAreaView>
@@ -346,5 +344,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // 👉 Logout ở dưới cùng FlatList
+  logoutBtn: {
+    backgroundColor: '#EF4444',
+    paddingVertical: 14,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

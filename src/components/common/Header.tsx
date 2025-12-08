@@ -1,5 +1,5 @@
 import {useNavigation} from '@react-navigation/native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Image,
   ImageBackground,
@@ -10,13 +10,14 @@ import {
   View,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { authStorage } from '../../services/authStorage';
 
 type Props = {
   title?: string;
   showBack?: boolean;
   onBackPress?: () => void;
   onAvatarPress?: () => void;
-  avatarSrc?: number;
+  avatarSrc?: number;     // vẫn giữ cho backward compatibility
   pageBgColor?: string;
 };
 
@@ -35,14 +36,30 @@ const Header: React.FC<Props> = ({
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
 
+  const [avatar, setAvatar] = useState<string | null>(null);
+
+  // 🔥 Load avatar từ authStorage
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', async () => {
+      const user = await authStorage.getUser();
+      setAvatar(user?.avatar || null);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   const handleBack = () => {
-    if (onBackPress) {return onBackPress();}
-    if (navigation?.canGoBack?.()) {navigation.goBack();}
+    if (onBackPress) return onBackPress();
+    if (navigation?.canGoBack?.()) navigation.goBack();
+  };
+
+  const handleAvatarPress = () => {
+    if (onAvatarPress) return onAvatarPress();
+    navigation.navigate('PersonalInformation');
   };
 
   return (
     <View style={{backgroundColor: pageBgColor}}>
-      {/* If you use a translucent status bar elsewhere, keep this for consistency */}
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -50,21 +67,20 @@ const Header: React.FC<Props> = ({
       />
 
       <View style={styles.container}>
-        {/* Full background but clipped by rounded container */}
         <ImageBackground
           source={require('../../assets/Header/Header.png')}
           style={StyleSheet.absoluteFill}
           imageStyle={styles.imageClip}
           resizeMode="cover"
-          //pointerEvents="none"
         />
 
-        {/* Single top row overlay */}
         <View
           style={[
             styles.topBar,
-            {paddingTop: Math.max(12, insets.top + 6)}, // push below punch-hole
+            {paddingTop: Math.max(12, insets.top + 6)},
           ]}>
+          
+          {/* BACK BUTTON */}
           <View style={styles.sideSlot}>
             {showBack && (
               <TouchableOpacity
@@ -81,21 +97,30 @@ const Header: React.FC<Props> = ({
             )}
           </View>
 
-          {/* Centered title stays truly centered because left and right sides have equal width */}
+          {/* TITLE */}
           <View style={styles.centerSlot}>
             <Text numberOfLines={1} style={styles.title}>
               {title}
             </Text>
           </View>
 
+          {/* AVATAR */}
           <View style={styles.sideSlot}>
             <TouchableOpacity
-              onPress={onAvatarPress}
+              onPress={handleAvatarPress}
               activeOpacity={0.8}
               style={styles.iconBtn}>
-              <Image source={avatarSrc} style={styles.avatar} />
+              <Image
+                source={
+                  avatar
+                    ? { uri: avatar }
+                    : avatarSrc
+                }
+                style={styles.avatar}
+              />
             </TouchableOpacity>
           </View>
+
         </View>
       </View>
     </View>
@@ -106,9 +131,7 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     height: HEADER_HEIGHT,
-    // borderBottomLeftRadius: 22,
-    // borderBottomRightRadius: 22,
-    overflow: 'hidden', // clips background to rounded corners
+    overflow: 'hidden',
   },
   imageClip: {
     borderBottomLeftRadius: 22,
@@ -123,8 +146,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  sideSlot: {width: SIDE_WIDTH, alignItems: 'center', justifyContent: 'center'},
-  centerSlot: {flex: 1, alignItems: 'center', justifyContent: 'center'},
+  sideSlot: {
+    width: SIDE_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerSlot: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   iconBtn: {
     width: 52,
     height: 52,
@@ -132,7 +159,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backIcon: {width: BACK_SIZE, height: BACK_SIZE},
+  backIcon: { width: BACK_SIZE, height: BACK_SIZE },
   title: {
     fontSize: 20,
     fontWeight: '800',

@@ -10,8 +10,7 @@ export type Department = {
 
 export enum PasswordChangeStatus {
   password_changed = "password_changed",
-  waiting_for_password_change = "waiting_for_password_change",
-  do_not_change = "do_not_change",
+  waiting_for_password_change = "waiting_for_password_change"
 }
 
 // Kiểu dữ liệu cho 1 nhân viên
@@ -19,12 +18,16 @@ export type Employee = {
   id: string;
   name: string;
   avatar: any; // require(...) ảnh cục bộ
+  employeeCode?: string; // ⭐ thêm vào đây
   passwordChangeStatus: PasswordChangeStatus;
   accountActive: boolean;
-  departmentId: Department["id"];
+  departmentId: string;
+  departmentName: string;
+  departmentCode: string;
   position: string;
   createdAt: string;
 };
+
 
 // Kiểu dữ liệu cho 1 user
 type User = {
@@ -131,7 +134,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e1",
     name: "Nguyễn Văn Nam",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.password_changed,
     accountActive: true,
     departmentId: "d1",
@@ -141,7 +144,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e2",
     name: "Phạm Thu Giang",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.waiting_for_password_change,
     accountActive: true,
     departmentId: "d1",
@@ -151,7 +154,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e3",
     name: "Lý Minh Hoàng",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.do_not_change,
     accountActive: false,
     departmentId: "d1",
@@ -163,7 +166,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e4",
     name: "Đặng Thị Lan",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.password_changed,
     accountActive: true,
     departmentId: "d2",
@@ -173,7 +176,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e5",
     name: "Ngô Văn Tùng",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.do_not_change,
     accountActive: true,
     departmentId: "d2",
@@ -183,7 +186,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e6",
     name: "Trịnh Hải Yến",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.waiting_for_password_change,
     accountActive: false,
     departmentId: "d2",
@@ -195,7 +198,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e7",
     name: "Vũ Quang Khải",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.waiting_for_password_change,
     accountActive: true,
     departmentId: "d3",
@@ -205,7 +208,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e8",
     name: "Lưu Thị Duyên",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.password_changed,
     accountActive: true,
     departmentId: "d3",
@@ -215,7 +218,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e9",
     name: "Trần Quốc Bảo",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.do_not_change,
     accountActive: false,
     departmentId: "d3",
@@ -227,7 +230,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e10",
     name: "Bùi Minh Cường",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.password_changed,
     accountActive: true,
     departmentId: "d4",
@@ -237,7 +240,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e11",
     name: "Huỳnh Ngọc Trâm",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.waiting_for_password_change,
     accountActive: true,
     departmentId: "d4",
@@ -247,7 +250,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e12",
     name: "Đoàn Văn Phúc",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.do_not_change,
     accountActive: false,
     departmentId: "d4",
@@ -259,7 +262,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e13",
     name: "Nguyễn Khánh Chi",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.password_changed,
     accountActive: true,
     departmentId: "d5",
@@ -269,7 +272,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e14",
     name: "Trần Gia Lộc",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.waiting_for_password_change,
     accountActive: true,
     departmentId: "d5",
@@ -279,7 +282,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e15",
     name: "Phan Thảo My",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.do_not_change,
     accountActive: false,
     departmentId: "d5",
@@ -291,7 +294,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e16",
     name: "Lê Thanh Bình",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.waiting_for_password_change,
     accountActive: true,
     departmentId: "d6",
@@ -301,7 +304,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e17",
     name: "Nguyễn Hữu Phát",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.password_changed,
     accountActive: true,
     departmentId: "d6",
@@ -311,7 +314,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e18",
     name: "Đặng Mỹ Ngọc",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.do_not_change,
     accountActive: false,
     departmentId: "d6",
@@ -323,7 +326,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e19",
     name: "Phùng Văn Hải",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.password_changed,
     accountActive: true,
     departmentId: "d7",
@@ -333,7 +336,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e20",
     name: "Nguyễn Hoài Phương",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.waiting_for_password_change,
     accountActive: true,
     departmentId: "d7",
@@ -343,7 +346,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e21",
     name: "Trần Thị Minh An",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.do_not_change,
     accountActive: false,
     departmentId: "d7",
@@ -355,7 +358,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e22",
     name: "Đỗ Quốc Thịnh",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.waiting_for_password_change,
     accountActive: true,
     departmentId: "d8",
@@ -365,7 +368,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e23",
     name: "Phạm Thiên Hương",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.password_changed,
     accountActive: true,
     departmentId: "d8",
@@ -375,7 +378,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e24",
     name: "Lai Tuấn Khang",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.do_not_change,
     accountActive: false,
     departmentId: "d8",
@@ -387,7 +390,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e25",
     name: "Ngô Thị Kim Yến",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.password_changed,
     accountActive: true,
     departmentId: "d9",
@@ -397,7 +400,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e26",
     name: "Hồ Quốc Duy",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.waiting_for_password_change,
     accountActive: true,
     departmentId: "d9",
@@ -407,7 +410,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e27",
     name: "Trương Minh Sơn",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.do_not_change,
     accountActive: false,
     departmentId: "d9",
@@ -419,7 +422,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e28",
     name: "La Mỹ Linh",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.password_changed,
     accountActive: true,
     departmentId: "d10",
@@ -429,7 +432,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e29",
     name: "Tạ Đình Khoa",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.waiting_for_password_change,
     accountActive: true,
     departmentId: "d10",
@@ -439,7 +442,7 @@ export const EMPLOYEES: Employee[] = [
   {
     id: "e30",
     name: "Chu Thảo Vy",
-    avatar: require("../../assets/images/meow.jpg"),
+    avatar: 'https://cdn-icons-png.flaticon.com/512/3541/3541871.png',
     passwordChangeStatus: PasswordChangeStatus.do_not_change,
     accountActive: false,
     departmentId: "d10",

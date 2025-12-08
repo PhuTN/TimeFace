@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { navigationRef } from '../../navigation/NavigationService';
+import { authStorage } from '../../services/authStorage';
 
 type Props = {
   activeIndex: number;
@@ -32,7 +33,6 @@ const CENTER_RADIUS = CENTER_SIZE / 2;
 export default function Footer({ activeIndex, onPress }: Props) {
   const insets = useSafeAreaInsets();
 
-  // ⭐ Animated values for each tab
   const scales = useRef([
     new Animated.Value(1),
     new Animated.Value(1),
@@ -42,7 +42,6 @@ export default function Footer({ activeIndex, onPress }: Props) {
   ]).current;
 
   useEffect(() => {
-    // animate selected tab
     scales.forEach((val, index) => {
       Animated.spring(val, {
         toValue: index === activeIndex ? 1.2 : 1,
@@ -52,23 +51,42 @@ export default function Footer({ activeIndex, onPress }: Props) {
     });
   }, [activeIndex]);
 
-  const handlePress = (index: number) => {
-    onPress(index);
+  const handlePress = async (index: number) => {
+  onPress(index);
 
-    if (!navigationRef.isReady()) return;
+  if (!navigationRef.isReady()) return;
 
-    switch (index) {
-      case 0:
-        navigationRef.navigate('Home');
-        break;
-      case 3:
-        navigationRef.navigate('Settings');
-        break;
-      default:
-        navigationRef.navigate('NotificationSender');
-        break;
-    }
-  };
+  // ⭐ Load user từ authStorage
+  const user = await authStorage.getUser();
+  const role = user?.role || 'user';
+
+  switch (index) {
+    case 0:
+      navigationRef.navigate('Home');
+      break;
+
+    case 1: 
+      // ⭐ Nếu admin → Management
+      if (role === 'admin') {
+        navigationRef.navigate('Management');
+      } else {
+        navigationRef.navigate('Features');
+      }
+      break;
+
+    case 3:
+      navigationRef.navigate('Settings');
+      break;
+
+    case 2:
+      navigationRef.navigate('NotificationSender');
+      break;
+
+    default:
+      navigationRef.navigate('NotificationSender');
+      break;
+  }
+};
 
   return (
     <View style={styles.root}>
@@ -78,15 +96,17 @@ export default function Footer({ activeIndex, onPress }: Props) {
           {
             paddingBottom: 16 + insets.bottom,
           },
-        ]}>
+        ]}
+      >
         <View pointerEvents="none" style={styles.centerBorder} />
 
-        {/* ⭐ CENTER BUTTON WITH ANIMATION */}
+        {/* ⭐ CENTER BUTTON */}
         <Animated.View
           style={[
             styles.centerButton,
             { transform: [{ scale: scales[2] }] },
-          ]}>
+          ]}
+        >
           <TouchableOpacity activeOpacity={0.9} onPress={() => handlePress(2)}>
             <Image
               source={
@@ -99,12 +119,13 @@ export default function Footer({ activeIndex, onPress }: Props) {
         </Animated.View>
 
         <View style={styles.tabsRow}>
-          {/** TAB 0 */}
+          {/* TAB 0 */}
           <Animated.View style={{ transform: [{ scale: scales[0] }] }}>
             <TouchableOpacity
               style={styles.tab}
               onPress={() => handlePress(0)}
-              activeOpacity={0.8}>
+              activeOpacity={0.8}
+            >
               <Ionicons
                 name="home-outline"
                 size={32}
@@ -113,12 +134,13 @@ export default function Footer({ activeIndex, onPress }: Props) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/** TAB 1 */}
+          {/* ⭐ TAB 1 — chuyển sang màn FEATURES */}
           <Animated.View style={{ transform: [{ scale: scales[1] }] }}>
             <TouchableOpacity
               style={styles.tab}
               onPress={() => handlePress(1)}
-              activeOpacity={0.8}>
+              activeOpacity={0.8}
+            >
               <Ionicons
                 name="checkbox-outline"
                 size={32}
@@ -129,12 +151,13 @@ export default function Footer({ activeIndex, onPress }: Props) {
 
           <View style={styles.tabSpacer} />
 
-          {/** TAB 3 */}
+          {/* TAB 3 */}
           <Animated.View style={{ transform: [{ scale: scales[3] }] }}>
             <TouchableOpacity
               style={styles.tab}
               onPress={() => handlePress(3)}
-              activeOpacity={0.8}>
+              activeOpacity={0.8}
+            >
               <Ionicons
                 name="settings-outline"
                 size={32}
@@ -143,12 +166,13 @@ export default function Footer({ activeIndex, onPress }: Props) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/** TAB 4 */}
+          {/* TAB 4 */}
           <Animated.View style={{ transform: [{ scale: scales[4] }] }}>
             <TouchableOpacity
               style={styles.tab}
               onPress={() => handlePress(4)}
-              activeOpacity={0.8}>
+              activeOpacity={0.8}
+            >
               <Ionicons
                 name="notifications-outline"
                 size={32}
@@ -207,9 +231,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  tabSpacer: {
-    width: 44,
-  },
+  tabSpacer: { width: 44 },
 
   centerButton: {
     position: 'absolute',

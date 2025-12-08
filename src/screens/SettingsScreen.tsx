@@ -10,8 +10,10 @@ import SettingSection from '../components/settings/SettingSection';
 import ToggleButton_Language from '../components/common/ToggleButton_Language';
 import ToggleButton_Notification from '../components/common/ToggleButton_Notification';
 import ToggleButton_Theme from '../components/common/ToggleButton_Theme';
-import {useNavigation} from '@react-navigation/native';
+import HeaderBar from '../components/common/HeaderBar';   // ⭐ ADD
 import Footer from '../components/common/Footer';
+
+import {useNavigation} from '@react-navigation/native';
 import {setUIState} from '../ui/factory/selector';
 import {useUIFactory} from '../ui/factory/useUIFactory';
 import {logout} from '../features/auth/authService';
@@ -55,20 +57,24 @@ export default function SettingsScreen() {
   const isEnglish = lang?.code === 'en';
 
   const handleThemeToggle = () => setUIState({theme: isDark ? 'light' : 'dark'});
-  const handleLanguageToggle = () =>
-    setUIState({lang: isEnglish ? 'vi' : 'en'});
-  const handleNotificationToggle = () =>
-    setNotifications(prev => !prev);
+  const handleLanguageToggle = () => setUIState({lang: isEnglish ? 'vi' : 'en'});
+  const handleNotificationToggle = () => setNotifications(prev => !prev);
 
   return (
-    <SafeAreaView
-      style={{flex: 1, backgroundColor: theme?.colors.background}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme?.colors.background }}>
 
-      {/* ⭐⭐ ScrollView chỉ cần paddingBottom để tránh footer che */}
+      {/* ⭐ HEADER BAR — ẨN NÚT BACK */}
+      <HeaderBar
+        title={L.settings}
+        topInset={insets.top}
+        isShowAvatar={false}
+        isShowBackButton={false}   // ⭐ KHÔNG CHO HIỂN THỊ BACK
+      />
+
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingBottom: 120 } // ⭐ không bị footer che
+          { paddingBottom: 120 } // ⭐ tránh footer che
         ]}
         showsVerticalScrollIndicator={false}>
 
@@ -121,12 +127,7 @@ export default function SettingsScreen() {
             <SettingRow
               icon={<Feather name="moon" size={18} color={BLUE} />}
               label="Theme"
-              right={
-                <ToggleButton_Theme
-                  value={isDark}
-                  onToggle={handleThemeToggle}
-                />
-              }
+              right={<ToggleButton_Theme value={isDark} onToggle={handleThemeToggle} />}
             />
 
             <Divider />
@@ -134,12 +135,7 @@ export default function SettingsScreen() {
             <SettingRow
               icon={<Feather name="globe" size={18} color={BLUE} />}
               label={L.language}
-              right={
-                <ToggleButton_Language
-                  value={isEnglish}
-                  onToggle={handleLanguageToggle}
-                />
-              }
+              right={<ToggleButton_Language value={isEnglish} onToggle={handleLanguageToggle} />}
             />
 
             <Divider />
@@ -147,12 +143,7 @@ export default function SettingsScreen() {
             <SettingRow
               icon={<Feather name="bell" size={18} color={BLUE} />}
               label={L.notifications}
-              right={
-                <ToggleButton_Notification
-                  value={notifications}
-                  onToggle={handleNotificationToggle}
-                />
-              }
+              right={<ToggleButton_Notification value={notifications} onToggle={handleNotificationToggle} />}
             />
 
             <Divider />
@@ -198,8 +189,8 @@ export default function SettingsScreen() {
 
       {/* ⭐ FOOTER FIXED */}
       <Footer
-        activeIndex={3}   // settings tab
-        onPress={i => navigation.navigate('Home')}
+        activeIndex={3}
+        onPress={() => navigation.navigate('Home')}
       />
 
     </SafeAreaView>

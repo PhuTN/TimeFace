@@ -29,17 +29,20 @@ import PersonalInformationFaceDetectionScreen from '../screens/PersonalInformati
 import SubscriptionPlansScreen from '../screens/SubscriptionPlansScreen';
 import SubscriptionBlockedScreen from '../screens/SubscriptionBlockedScreen';
 
+import FeaturesScreen from '../screens/FeaturesScreen';
+
+
 import {navigationRef} from './NavigationService';
+import CompanyLocationConfigScreen from '../screens/CompanyLocationConfigScreen';
 
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
-  ResetPassword: {email?: string} | undefined;
+  ResetPassword: { email?: string } | undefined;
 
   Home: undefined;
   Settings: undefined;
-  NotificationSender: undefined;
 
   Chat: undefined;
   ChatDetail: undefined;
@@ -47,11 +50,13 @@ export type RootStackParamList = {
   Ranking: undefined;
   RankingMatch: undefined;
   Setting: undefined;
+
   DepartmentManagement: undefined;
-  DepartmentDetail: {departmentDetail: any} | undefined;
+  DepartmentDetail: { departmentDetail: any } | undefined;
   EmployeeManagement: undefined;
   EmployeeAttendance: undefined;
   EmployeeFaceDetection: undefined;
+
   Facene: undefined;
   CommonScreen2: undefined;
   Management: undefined;
@@ -59,12 +64,18 @@ export type RootStackParamList = {
   Auth: undefined;
   ChatList: undefined;
   ChatRoom: undefined;
+
   JobInformation: undefined;
-  PersonalInformation: {faces: any} | undefined;
+  PersonalInformation: { faces: any } | undefined;
   PersonalInformationFaceDetection: undefined;
+
   GroupChat: undefined;
+
   SubscriptionPlans: undefined;
   SubscriptionBlocked: undefined;
+
+  Features: undefined;
+  CompanyLocationConfig: undefined;    // ⭐ NEW
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -73,12 +84,12 @@ type AppNavigatorProps = {
   initialRouteName: keyof RootStackParamList;
 };
 
-const AppNavigator = ({initialRouteName}: AppNavigatorProps) => {
+const AppNavigator = ({ initialRouteName }: AppNavigatorProps) => {
   return (
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         initialRouteName={initialRouteName}
-        screenOptions={{headerShown: false}}
+        screenOptions={{ headerShown: false }}
       >
 
         {/* AUTH */}
@@ -89,52 +100,40 @@ const AppNavigator = ({initialRouteName}: AppNavigatorProps) => {
         <Stack.Screen name="SubscriptionPlans" component={SubscriptionPlansScreen} />
 
         {/* MAIN */}
+        <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'none' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'none' }} />
 
-        {/* ⭐ Home – KHÔNG animation */}
+        <Stack.Screen name="Features" component={FeaturesScreen} options={{ animation: 'none' }} />
+
+        {/* ⭐ MAP TEST */}
         <Stack.Screen
-          name="Home"
-          component={HomeScreen}
+          name="CompanyLocationConfig"
+          component={CompanyLocationConfigScreen}
           options={{ animation: 'none' }}
         />
 
-        {/* ⭐ NotificationSender – KHÔNG animation */}
-        {/* <Stack.Screen
-          name="NotificationSender"
-          component={NotificationSenderScreen}
-          options={{ animation: 'none' }}
-        /> */}
-
-        {/* ⭐ Settings – KHÔNG animation */}
-        <Stack.Screen
-          name="Settings"
-          component={SettingsScreen}
-          options={{ animation: 'none' }}
-        />
-
-        {/* CÁC MÀN KHÁC GIỮ NGUYÊN */}
+        {/* OTHER */}
         <Stack.Screen name="CommonScreen2" component={CommonScreen2} />
         <Stack.Screen name="DepartmentManagement" component={DepartmentManagementScreen} />
         <Stack.Screen name="DepartmentDetail" component={DepartmentDetailScreen} />
         <Stack.Screen name="EmployeeManagement" component={EmployeeManagementScreen} />
         <Stack.Screen name="EmployeeAttendance" component={EmployeeAttendanceScreen} />
         <Stack.Screen name="EmployeeFaceDetection" component={EmployeeFaceDetectionScreen} />
-        <Stack.Screen
-          name="SubscriptionBlocked"
-          component={SubscriptionBlockedScreen}
-          options={{title: 'Thông báo'}}
-        />
-        <Stack.Screen name="Management" component={ManagementScreen} />
+
+        <Stack.Screen name="SubscriptionBlocked" component={SubscriptionBlockedScreen} />
+
+        <Stack.Screen name="Management" component={ManagementScreen} options={{ animation: 'none' }} />
         <Stack.Screen name="Report" component={ReportScreen} />
+
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="ChatList" component={ChatListScreen} />
         <Stack.Screen name="ChatRoom" component={ChatRoomScreen} />
         <Stack.Screen name="GroupChat" component={GroupChatScreen} />
+
         <Stack.Screen name="JobInformation" component={JobInformationScreen} />
         <Stack.Screen name="PersonalInformation" component={PersonalInformationScreen} />
-        <Stack.Screen
-          name="PersonalInformationFaceDetection"
-          component={PersonalInformationFaceDetectionScreen}
-        />
+        <Stack.Screen name="PersonalInformationFaceDetection" component={PersonalInformationFaceDetectionScreen} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

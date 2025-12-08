@@ -20,6 +20,7 @@ type Props = {
   numberOfLines?: number;
   containerStyle?: StyleProp<ViewStyle>;
   inputProps?: TextInputProps;
+  editable?: boolean; // ⭐ ADD
 };
 
 const LabeledTextInput: React.FC<Props> = ({
@@ -32,6 +33,7 @@ const LabeledTextInput: React.FC<Props> = ({
   numberOfLines,
   containerStyle,
   inputProps,
+  editable = true, // ⭐ DEFAULT
 }) => {
   const S = themedStyles(theme);
   const {style: inputStyle, ...restInputProps} = inputProps ?? {};
@@ -39,7 +41,13 @@ const LabeledTextInput: React.FC<Props> = ({
   return (
     <View style={[S.field, containerStyle]}>
       <Text style={S.label}>{label}</Text>
-      <View style={[S.inputBox, multiline ? S.multilineBox : null]}>
+
+      <View
+        style={[
+          S.inputBox,
+          multiline ? S.multilineBox : null,
+          !editable && S.disabledBox, // ⭐ style disable
+        ]}>
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -47,9 +55,11 @@ const LabeledTextInput: React.FC<Props> = ({
           placeholderTextColor={theme.colors.placeholder}
           multiline={multiline}
           numberOfLines={multiline ? numberOfLines ?? 3 : 1}
+          editable={editable} // ⭐ Enable/Disable
           style={[
             S.input,
             multiline ? S.multilineInput : null,
+            !editable && S.disabledInput, // ⭐ input mờ
             inputStyle as StyleProp<TextStyle>,
           ]}
           {...restInputProps}
@@ -63,6 +73,7 @@ const themedStyles = (theme: any) =>
   StyleSheet.create({
     field: {flexGrow: 1, flexBasis: '48%', minWidth: '48%'},
     label: {fontSize: 13, color: theme.colors.text, marginBottom: 6},
+
     inputBox: {
       borderWidth: 2,
       borderColor: theme.colors.border,
@@ -73,10 +84,24 @@ const themedStyles = (theme: any) =>
       minHeight: 48,
       justifyContent: 'center',
     },
+
+    // ⭐ Khi disable → nền xám nhẹ
+    disabledBox: {
+      backgroundColor: '#E5E7EB',
+      borderColor: '#D1D5DB',
+    },
+
     multilineBox: {
       paddingVertical: 10,
     },
+
     input: {fontSize: 16, color: theme.colors.text},
+
+    // ⭐ Text mờ khi disable
+    disabledInput: {
+      color: '#6B7280',
+    },
+
     multilineInput: {
       textAlignVertical: 'top',
       minHeight: 80,
