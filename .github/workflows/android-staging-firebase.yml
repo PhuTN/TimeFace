@@ -51,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-staging-apk
-          path: android/app/build/outputs/apk/release/app-staging.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           # hoặc debug: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
@@ -75,6 +75,6 @@ jobs:
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          file: ./dist/app-staging.apk    # hoặc app-debug.apk tuỳ bạn upload gì
+          file: ./dist/app-release.apk    # hoặc app-debug.apk tuỳ bạn upload gì
           groups: testers
           releaseNotes: "Staging build - ${{ github.sha }}"
