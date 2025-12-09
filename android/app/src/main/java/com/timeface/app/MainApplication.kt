@@ -1,4 +1,4 @@
-package com.gokuune
+package timeface.staging.aab
 
 import android.app.Application
 import com.facebook.react.PackageList

@@ -1,4 +1,4 @@
-package com.gokuune
+package timeface.staging.aab
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
