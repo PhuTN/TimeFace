@@ -64,7 +64,7 @@ jobs:
       - name: Download APK from build job
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build-apk.outputs.artifact-name }}
+          name: app-staging-apk
           path: ./dist
 
       - name: List APKs
@@ -75,6 +75,6 @@ jobs:
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          file: ./dist/app-release.apk    # hoặc app-debug.apk tuỳ bạn upload gì
+          file: ./dist/app-staging.apk    # hoặc app-debug.apk tuỳ bạn upload gì
           groups: testers
           releaseNotes: "Staging build - ${{ github.sha }}"
