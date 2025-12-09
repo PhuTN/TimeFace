@@ -1,0 +1,31 @@
+name: Firebase Upload Debug
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upload-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download APK from last successful build
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: android-build-and-smoke.yml   # đúng tên file workflow build của bạn
+          workflow_conclusion: success
+          name: app-debug-apk                    # trùng với name khi upload-artifact
+          path: ./dist
+
+      - name: List APKs
+        run: ls -R ./dist
+
+      - name: Upload to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1.7.1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          file: ./dist/app-debug.apk            # đúng tên file trong artifact
+          groups: testers
+          releaseNotes: "Firebase debug - ${{ github.sha }}"
