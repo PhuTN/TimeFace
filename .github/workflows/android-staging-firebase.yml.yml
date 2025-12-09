@@ -38,17 +38,19 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      - name: Build release AAB
+      - name: Build release APK
         working-directory: android
         run: |
           chmod +x ./gradlew
-          ./gradlew --no-daemon --stacktrace --build-cache --parallel bundleRelease
+          ./gradlew --no-daemon --stacktrace --build-cache --parallel assembleRelease
+          # nếu chưa cấu hình signing, tạm dùng assembleDebug:
+          # ./gradlew --no-daemon --stacktrace --build-cache --parallel assembleDebug
 
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1.7.1
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          file: android/app/build/outputs/bundle/release/app-release.aab
+          file: android/app/build/outputs/apk/release/app-release.apk
           groups: testers   # tên group trong Firebase (VD: "internal-testers")
           releaseNotes: "Staging build - ${{ github.sha }}"
