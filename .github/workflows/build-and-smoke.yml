@@ -2,7 +2,7 @@ name: Android Build & Smoke
 
 on:
   push:
-    branches: [ main ]
+    branches: [ staging ]
   workflow_dispatch:
 
 jobs:
