@@ -8,7 +8,7 @@ on:
 jobs:
   build-apk:
     # CHẠY TRÊN LAPTOP (WSL)
-    runs-on: [self-hosted, android-build]   # trùng label lúc config.sh
+    runs-on: self-hosted
     outputs:
       artifact-name: app-release-apk
     steps:
