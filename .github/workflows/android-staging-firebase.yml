@@ -51,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-staging-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/app-staging.apk
           # hoặc debug: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
