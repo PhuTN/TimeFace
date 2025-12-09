@@ -2,13 +2,15 @@ name: Android Staging (Firebase)
 
 on:
   push:
-    branches: [ staging ]      # hoặc chỉ workflow_dispatch nếu muốn tự bấm tay
+    branches: [ staging ]
   workflow_dispatch:
 
 jobs:
-  build-and-distribute:
-    runs-on: ubuntu-latest
-
+  build-apk:
+    # CHẠY TRÊN LAPTOP (WSL)
+    runs-on: [self-hosted, android-build]   # trùng label lúc config.sh
+    outputs:
+      artifact-name: app-release-apk
     steps:
       - uses: actions/checkout@v4
 
@@ -34,7 +36,7 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.gradle/caches/build-cache-*
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
 
@@ -43,14 +45,36 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon --stacktrace --build-cache --parallel assembleRelease
-          # nếu chưa cấu hình signing, tạm dùng assembleDebug:
-          # ./gradlew --no-daemon --stacktrace --build-cache --parallel assembleDebug
+          # hoặc assembleDebug nếu chỉ test nội bộ
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          # hoặc debug: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+  upload-to-firebase:
+    needs: build-apk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download APK from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-apk.outputs.artifact-name }}
+          path: ./dist
+
+      - name: List APKs
+        run: ls -R ./dist
 
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1.7.1
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          file: android/app/build/outputs/apk/release/app-release.apk
-          groups: testers   # tên group trong Firebase (VD: "internal-testers")
+          file: ./dist/app-release.apk    # hoặc app-debug.apk tuỳ bạn upload gì
+          groups: testers
           releaseNotes: "Staging build - ${{ github.sha }}"
