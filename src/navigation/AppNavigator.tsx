@@ -31,9 +31,12 @@ import SubscriptionBlockedScreen from '../screens/SubscriptionBlockedScreen';
 
 import FeaturesScreen from '../screens/FeaturesScreen';
 
-
 import {navigationRef} from './NavigationService';
 import CompanyLocationConfigScreen from '../screens/CompanyLocationConfigScreen';
+
+// ⭐ NEW
+import AttendanceConfigScreen from '../screens/AttendanceConfigScreen';
+
 
 export type RootStackParamList = {
   Login: undefined;
@@ -75,16 +78,15 @@ export type RootStackParamList = {
   SubscriptionBlocked: undefined;
 
   Features: undefined;
-  CompanyLocationConfig: undefined;    // ⭐ NEW
+
+  CompanyLocationConfig: undefined;
+  AttendanceConfig: undefined;   // ⭐ NEW
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-type AppNavigatorProps = {
-  initialRouteName: keyof RootStackParamList;
-};
 
-const AppNavigator = ({ initialRouteName }: AppNavigatorProps) => {
+const AppNavigator = ({ initialRouteName }: { initialRouteName: keyof RootStackParamList }) => {
   return (
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
@@ -105,10 +107,17 @@ const AppNavigator = ({ initialRouteName }: AppNavigatorProps) => {
 
         <Stack.Screen name="Features" component={FeaturesScreen} options={{ animation: 'none' }} />
 
-        {/* ⭐ MAP TEST */}
+        {/* ⭐ MAP CONFIG */}
         <Stack.Screen
           name="CompanyLocationConfig"
           component={CompanyLocationConfigScreen}
+          options={{ animation: 'none' }}
+        />
+
+        {/* ⭐ CHẤM CÔNG CONFIG */}
+        <Stack.Screen
+          name="AttendanceConfig"
+          component={AttendanceConfigScreen}
           options={{ animation: 'none' }}
         />
 

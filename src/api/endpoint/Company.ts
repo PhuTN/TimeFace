@@ -1,8 +1,8 @@
-import { ep } from "../core/ApiEndpoint";
+import { ep } from "../core/ApiEndpoint" ;
 
 export const CompanyEP = {
   // --------------------------
-  // COMPANY CRUD (nếu cần)
+  // COMPANY CRUD
   // --------------------------
   Create: ep("POST", "company"),
   GetAll: ep("GET", "company"),
@@ -19,4 +19,15 @@ export const CompanyEP = {
 
   // PUT /company/checkin-config
   UpdateCheckinConfig: ep("PUT", "company/checkin-config"),
+
+
+  // --------------------------
+  // ⭐ ATTENDANCE CONFIG
+  // --------------------------
+
+  // GET /company/attendance-config
+  GetAttendanceConfig: ep("GET", "company/attendance-config"),
+
+  // PUT /company/attendance-config
+  UpdateAttendanceConfig: ep("PUT", "company/attendance-config"),
 } as const;
