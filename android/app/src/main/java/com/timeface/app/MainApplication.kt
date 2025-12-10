@@ -1,4 +1,4 @@
-package timeface.staging.aab
+package com.timeface
 
 import android.app.Application
 import com.facebook.react.PackageList

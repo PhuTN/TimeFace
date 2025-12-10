@@ -1,4 +1,4 @@
-package timeface.staging.aab
+package com.timeface
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
