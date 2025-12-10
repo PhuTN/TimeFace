@@ -175,8 +175,8 @@ export const Lang = {
     'Đưa mặt thẳng vào khung',
     'Put your face straight into the frame',
   ],
-  face_step_left: ['Nghiêng mặt sang trái', 'Turn your face to the left'],
-  face_step_right: ['Nghiêng mặt sang phải', 'Turn your face to the right'],
+  face_step_left: ['Nghiêng mặt sang phải', 'Turn your face to the right'],
+  face_step_right: ['Nghiêng mặt sang trái', 'Turn your face to the left'],
   face_status_label: [
     'Hãy giữ yên trong khi chúng tôi chụp ảnh khuôn mặt bạn...',
     'Hold still while we capture your face...',
