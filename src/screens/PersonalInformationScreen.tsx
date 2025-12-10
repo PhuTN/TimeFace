@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import HeaderBar from '../components/common/HeaderBar';
 import LabeledTextInput from '../components/common/LabeledTextInput';
 import LabeledDate from '../components/common/LabeledDate';
@@ -23,41 +23,36 @@ import ReupImageIcon from '../assets/icons/reup_image_icon.svg';
 
 import Toast from 'react-native-toast-message';
 
-import { useUIFactory } from '../ui/factory/useUIFactory';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import {useUIFactory} from '../ui/factory/useUIFactory';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../navigation/AppNavigator';
 
-import { apiHandle } from '../api/apihandle';
-import { User } from '../api/endpoint/User';
+import {apiHandle} from '../api/apihandle';
+import {User} from '../api/endpoint/User';
 
-import { launchImageLibrary } from 'react-native-image-picker';
-import { uploadSingle } from '../api/uploadApi';
-import { useAppReload } from '../context/AppReloadContext';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {uploadSingle} from '../api/uploadApi';
+import {useAppReload} from '../context/AppReloadContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PersonalInformation'>;
 
-const AVATAR_DEFAULT =
-  'https://cdn-icons-png.freepik.com/512/6858/6858504.png';
+const AVATAR_DEFAULT = 'https://cdn-icons-png.freepik.com/512/6858/6858504.png';
 
-const PersonalInformationScreen = ({ navigation }: Props) => {
-  const { theme, lang } = useUIFactory();
+const PersonalInformationScreen = ({navigation, route}: Props) => {
+  const {theme} = useUIFactory();
   const insets = useSafeAreaInsets();
-
-  // ⭐ Reload key
-  const [reloadKey, setReloadKey] = useState(0);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
-
+  const [jobTitle, setJobTitle] = useState('');
+  const [salary, setSalary] = useState('');
   const [avatarUri, setAvatarUri] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
 
-  const [faces, setFaces] = useState({
-    left: '',
-    front: '',
-    right: '',
-  });
+  // ⭐ 2 STATE: API vs PARAM
+  const [faceImageApi, setFaceImageApi] = useState('');
+  const [faceImageParam, setFaceImageParam] = useState('');
 
   const [firstName, setFirstName] = useState('');
   const [phone, setPhone] = useState('');
@@ -68,8 +63,9 @@ const PersonalInformationScreen = ({ navigation }: Props) => {
   const [cityName, setCityName] = useState('');
   const [fullAddress, setFullAddress] = useState('');
 
-  const [approvalStatus, setApprovalStatus] =
-    useState<'approved' | 'pending' | 'rejected'>('pending');
+  const [approvalStatus, setApprovalStatus] = useState<
+    'approved' | 'pending' | 'rejected'
+  >('pending');
 
   // ================= LOAD USER =================
   useEffect(() => {
@@ -88,30 +84,36 @@ const PersonalInformationScreen = ({ navigation }: Props) => {
       setPhone(u.phone_number || '');
       setGender(u.gender || 'male');
       setDateOfBirth(u.date_of_birth ? new Date(u.date_of_birth) : new Date());
-
+      setJobTitle(u.job_title || '');
+      setSalary(u.salary ? u.salary.toString() : '');
       setCountryCode(u.country_code || '');
       setStateCode(u.state_code || '');
       setCityName(u.city_name || '');
       setFullAddress(u.full_address || '');
 
-      setFaces({
-        left: u.face_left || '',
-        front: u.face_image || '',
-        right: u.face_right || '',
-      });
+      // ⭐ Không đụng vào faceImageParam
+      setFaceImageApi(u.face_image || '');
 
       setApprovalStatus(u.info_status || 'pending');
     } catch (err: any) {
-      Toast.show({
-        type: 'error',
-        text1: 'Lỗi',
-        text2: err.message || 'Không thể tải dữ liệu',
-      });
+      Toast.show({type: 'error', text1: 'Lỗi', text2: err.message});
     } finally {
       setLoading(false);
     }
   };
-const { reloadApp } = useAppReload();
+
+  // ⭐ NHẬN ẢNH TỪ FACE DETECTION (ƯU TIÊN)
+  useEffect(() => {
+    if (route?.params?.faces?.image_front) {
+      console.log("🔥 Face received:", route.params.faces.image_front);
+
+      setFaceImageParam(route.params.faces.image_front);
+
+      navigation.setParams({faces: undefined});
+    }
+  }, [route?.params]);
+
+  const {reloadApp} = useAppReload();
 
   // ================= UPDATE PROFILE =================
   const doUpdateProfile = async () => {
@@ -128,28 +130,21 @@ const { reloadApp } = useAppReload();
         city_name: cityName,
         full_address: fullAddress,
         avatar: avatarUri,
-        face_image: faces.front,
+
+        // ⭐ Ưu tiên ảnh param
+        face_image: faceImageParam || faceImageApi,
       };
 
       const result = await apiHandle.callApi(User.UpdateMe, payload).asPromise();
       if (result.status.isError) throw new Error(result.status.errorMessage);
 
-      // ⭐ Reload dữ liệu như kéo refresh
       await loadUser();
-      setReloadKey(k => k + 1);
 
-      Toast.show({
-        type: 'success',
-        text1: 'Thành công',
-        text2: 'Thông tin đã được cập nhật',
-      });
- reloadApp(); 
+      Toast.show({type: 'success', text1: 'Thành công', text2: 'Thông tin đã được cập nhật'});
+
+      reloadApp();
     } catch (err: any) {
-      Toast.show({
-        type: 'error',
-        text1: 'Lỗi',
-        text2: err.message || 'Cập nhật thất bại',
-      });
+      Toast.show({type: 'error', text1: 'Lỗi', text2: err.message});
     } finally {
       setSaving(false);
     }
@@ -157,14 +152,14 @@ const { reloadApp } = useAppReload();
 
   const handleUpdate = () => {
     Alert.alert('Xác nhận', 'Bạn có chắc muốn lưu các thay đổi này?', [
-      { text: 'Hủy', style: 'cancel' },
-      { text: 'Đồng ý', onPress: doUpdateProfile },
+      {text: 'Hủy', style: 'cancel'},
+      {text: 'Đồng ý', onPress: doUpdateProfile},
     ]);
   };
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -174,7 +169,7 @@ const { reloadApp } = useAppReload();
 
   // ================= UPLOAD AVATAR =================
   const handleUploadAvatar = async () => {
-    const pick = await launchImageLibrary({ mediaType: 'photo' });
+    const pick = await launchImageLibrary({mediaType: 'photo'});
     const asset = pick.assets?.[0];
     if (!asset?.uri) return;
 
@@ -184,17 +179,9 @@ const { reloadApp } = useAppReload();
       const uploaded = await uploadSingle(asset.uri, 'avatars');
       setAvatarUri(uploaded.url);
 
-      Toast.show({
-        type: 'success',
-        text1: 'Tải lên thành công',
-        text2: 'Ảnh đại diện đã được tải lên',
-      });
+      Toast.show({type: 'success', text1: 'Tải lên thành công'});
     } catch (err: any) {
-      Toast.show({
-        type: 'error',
-        text1: 'Lỗi tải ảnh',
-        text2: err.message,
-      });
+      Toast.show({type: 'error', text1: 'Lỗi tải ảnh', text2: err.message});
     } finally {
       setAvatarUploading(false);
     }
@@ -216,21 +203,20 @@ const { reloadApp } = useAppReload();
 
   // ================= UI =================
   return (
-    <SafeAreaView key={reloadKey} style={S.safeArea}>
-   <HeaderBar
-  title="Thông tin cá nhân"
-  onBack={() => navigation.goBack()}
-  topInset={insets.top}
-  isShowAvatar={false}   // 🔥 ẩn avatar
-/>
+    <SafeAreaView style={S.safeArea}>
+      <HeaderBar
+        title="Thông tin cá nhân"
+        onBack={() => navigation.goBack()}
+        topInset={insets.top}
+        isShowAvatar={false}
+      />
 
-
-      <ScrollView style={S.scroll} contentContainerStyle={[S.content, { paddingBottom: 120 }]}>
+      <ScrollView style={S.scroll} contentContainerStyle={[S.content, {paddingBottom: 120}]}>
 
         {/* Avatar */}
         <View style={S.photoWrapper}>
           <View style={S.photoCard}>
-            <Image source={{ uri: avatarUri || AVATAR_DEFAULT }} style={S.photo} />
+            <Image source={{uri: avatarUri || AVATAR_DEFAULT}} style={S.photo} />
 
             {avatarUploading && (
               <View style={S.avatarOverlay}>
@@ -246,7 +232,7 @@ const { reloadApp } = useAppReload();
           <Text style={S.uploadTitle}>Ảnh đại diện</Text>
           <Text style={S.uploadHint}>Ảnh rõ nét và đủ sáng</Text>
 
-          <View style={[S.statusBadge, { backgroundColor: statusColor }]}>
+          <View style={[S.statusBadge, {backgroundColor: statusColor}]}>
             <Text style={S.statusText}>{statusText}</Text>
           </View>
         </View>
@@ -254,22 +240,35 @@ const { reloadApp } = useAppReload();
         <LabeledTextInput label="Họ và tên" value={firstName} onChangeText={setFirstName} theme={theme} />
         <View style={S.fieldSpacing} />
 
-        <LabeledTextInput label="Số điện thoại" value={phone} onChangeText={setPhone} keyboardType="phone-pad" theme={theme} />
+        <LabeledTextInput
+          label="Số điện thoại"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          theme={theme}
+        />
+        <View style={S.fieldSpacing} />
+
+        <LabeledTextInput label="Chức vụ" value={jobTitle} editable={false} theme={theme} />
+        <View style={S.fieldSpacing} />
+
+        {jobTitle?.toLowerCase() !== 'admin' && (
+          <LabeledTextInput label="Lương" value={salary} editable={false} theme={theme} />
+        )}
+
         <View style={S.fieldSpacing} />
 
         <Text style={S.sectionTitle}>Giới tính</Text>
         <View style={S.genderRow}>
           <TouchableOpacity
             style={[S.genderOption, gender === 'male' && S.genderSelected]}
-            onPress={() => setGender('male')}
-          >
+            onPress={() => setGender('male')}>
             <Text style={S.genderText}>Nam</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[S.genderOption, gender === 'female' && S.genderSelected]}
-            onPress={() => setGender('female')}
-          >
+            onPress={() => setGender('female')}>
             <Text style={S.genderText}>Nữ</Text>
           </TouchableOpacity>
         </View>
@@ -282,40 +281,64 @@ const { reloadApp } = useAppReload();
         <Text style={S.sectionTitle}>Địa chỉ</Text>
         <Text style={S.sectionSubtitle}>Quốc gia, Tỉnh/TP, Thành phố...</Text>
 
-        <LabeledSelectCountry label="Quốc gia" value={countryCode} onChange={opt => setCountryCode(opt.value)} theme={theme} />
+        <LabeledSelectCountry
+          label="Quốc gia"
+          value={countryCode}
+          onChange={opt => setCountryCode(opt.value)}
+          theme={theme}
+        />
         <View style={S.fieldSpacing} />
 
-        <LabeledSelectState label="Tỉnh / Bang" countryCode={countryCode} value={stateCode} onChange={opt => setStateCode(opt.value)} theme={theme} />
+        <LabeledSelectState
+          label="Tỉnh / Bang"
+          countryCode={countryCode}
+          value={stateCode}
+          onChange={opt => setStateCode(opt.value)}
+          theme={theme}
+        />
         <View style={S.fieldSpacing} />
 
-        <LabeledSelectCity label="Thành phố" countryCode={countryCode} stateCode={stateCode} value={cityName} onChange={opt => setCityName(opt.value)} theme={theme} />
+        <LabeledSelectCity
+          label="Thành phố"
+          countryCode={countryCode}
+          stateCode={stateCode}
+          value={cityName}
+          onChange={opt => setCityName(opt.value)}
+          theme={theme}
+        />
         <View style={S.fieldSpacing} />
 
-        <LabeledTextInput label="Địa chỉ đầy đủ" value={fullAddress} onChangeText={setFullAddress} theme={theme} multiline />
+        <LabeledTextInput
+          label="Địa chỉ đầy đủ"
+          value={fullAddress}
+          onChangeText={setFullAddress}
+          theme={theme}
+          multiline
+        />
+
         <View style={S.sectionSpacing} />
 
+        {/* ⭐ FACE IMAGE */}
         <Text style={S.sectionTitle}>Ảnh khuôn mặt</Text>
-        <Text style={S.sectionSubtitle}>Trái • Chính diện • Phải</Text>
+        <Text style={S.sectionSubtitle}>Ảnh chính diện</Text>
 
-        <View style={S.faceGrid}>
-          <View style={S.faceItem}>
-            <Image source={{ uri: faces.left || AVATAR_DEFAULT }} style={S.faceImage} />
-            <Text style={S.faceLabel}>Trái</Text>
-          </View>
+        <View style={{alignItems: 'center', marginTop: 16}}>
+          <Image
+            source={{uri: faceImageParam || faceImageApi || AVATAR_DEFAULT}}
+            style={[S.faceImage, {width: 120, height: 120, borderRadius: 20}]}
+          />
+          <Text style={S.faceLabel}>Chính diện</Text>
 
-          <View style={S.faceItem}>
-            <Image source={{ uri: faces.front || AVATAR_DEFAULT }} style={S.faceImage} />
-            <Text style={S.faceLabel}>Chính diện</Text>
-          </View>
-
-          <View style={S.faceItem}>
-            <Image source={{ uri: faces.right || AVATAR_DEFAULT }} style={S.faceImage} />
-            <Text style={S.faceLabel}>Phải</Text>
-          </View>
+          <TouchableOpacity
+            style={{marginTop: 12}}
+            onPress={() => navigation.navigate('PersonalInformationFaceDetection')}>
+            <ReupImageIcon width={34} height={34} />
+          </TouchableOpacity>
         </View>
+
       </ScrollView>
 
-      <View style={{ padding: 20 }}>
+      <View style={{padding: 20}}>
         <GradientButton text={saving ? '...' : 'Cập nhật'} onPress={handleUpdate} />
       </View>
     </SafeAreaView>
@@ -324,17 +347,20 @@ const { reloadApp } = useAppReload();
 
 const makeStyles = (theme: any) =>
   StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: theme.colors.background },
-    scroll: { flex: 1 },
-    content: { paddingHorizontal: 20, paddingTop: 20 },
+    safeArea: {flex: 1, backgroundColor: theme.colors.background},
+    scroll: {flex: 1},
+    content: {paddingHorizontal: 20, paddingTop: 20},
 
-    photoWrapper: { alignItems: 'center', marginBottom: 20 },
-    photoCard: { width: 160, height: 160 },
-    photo: { width: 140, height: 140, borderRadius: 20 },
+    photoWrapper: {alignItems: 'center', marginBottom: 20},
+    photoCard: {width: 160, height: 160},
+    photo: {width: 140, height: 140, borderRadius: 20},
 
     avatarOverlay: {
       position: 'absolute',
-      top: 0, left: 0, right: 0, bottom: 0,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.45)',
       borderRadius: 20,
       alignItems: 'center',
@@ -354,8 +380,13 @@ const makeStyles = (theme: any) =>
       justifyContent: 'center',
     },
 
-    uploadTitle: { marginTop: 10, fontSize: 15, fontWeight: '600', color: theme.colors.text },
-    uploadHint: { fontSize: 12, color: theme.colors.muted, textAlign: 'center' },
+    uploadTitle: {
+      marginTop: 10,
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    uploadHint: {fontSize: 12, color: theme.colors.muted, textAlign: 'center'},
 
     statusBadge: {
       marginTop: 12,
@@ -363,15 +394,15 @@ const makeStyles = (theme: any) =>
       paddingHorizontal: 14,
       borderRadius: 16,
     },
-    statusText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+    statusText: {color: '#fff', fontWeight: '700', fontSize: 13},
 
-    fieldSpacing: { height: 16 },
-    sectionSpacing: { height: 28 },
+    fieldSpacing: {height: 16},
+    sectionSpacing: {height: 28},
 
-    sectionTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.text },
-    sectionSubtitle: { fontSize: 12, color: theme.colors.muted },
+    sectionTitle: {fontSize: 16, fontWeight: '700', color: theme.colors.text},
+    sectionSubtitle: {fontSize: 12, color: theme.colors.muted},
 
-    genderRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
+    genderRow: {flexDirection: 'row', gap: 12, marginTop: 8},
     genderOption: {
       paddingVertical: 10,
       paddingHorizontal: 20,
@@ -383,12 +414,16 @@ const makeStyles = (theme: any) =>
       backgroundColor: theme.colors.primary,
       borderColor: theme.colors.primary,
     },
-    genderText: { color: theme.colors.text, fontWeight: '500' },
+    genderText: {color: theme.colors.text, fontWeight: '500'},
 
-    faceGrid: { flexDirection: 'row', gap: 16, marginTop: 16 },
-    faceItem: { width: '30%', alignItems: 'center' },
-    faceImage: { width: 96, height: 96, borderRadius: 16, backgroundColor: '#221c1c' },
-    faceLabel: { fontSize: 12, color: theme.colors.muted },
+    faceLabel: {
+      marginTop: 6,
+      fontSize: 12,
+      color: theme.colors.muted,
+    },
+    faceImage: {
+      backgroundColor: '#221c1c',
+    },
   });
 
 export default PersonalInformationScreen;

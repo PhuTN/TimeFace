@@ -10,33 +10,60 @@ import {
   TextInputProps,
 } from 'react-native';
 
-type Props = {
+/**
+ * Editable props (user có thể nhập)
+ */
+type EditableProps = {
   label: string;
   value: string;
-  onChangeText: (text: string) => void;
+  onChangeText: (text: string) => void;  // ⭐ bắt buộc khi editable = true
   placeholder?: string;
   theme: any;
   multiline?: boolean;
   numberOfLines?: number;
   containerStyle?: StyleProp<ViewStyle>;
   inputProps?: TextInputProps;
-  editable?: boolean; // ⭐ ADD
+  editable?: true; // ⭐ bật edit
 };
+
+/**
+ * Readonly props (không cần onChangeText)
+ */
+type ReadonlyProps = {
+  label: string;
+  value: string;
+  placeholder?: string;
+  theme: any;
+  multiline?: boolean;
+  numberOfLines?: number;
+  containerStyle?: StyleProp<ViewStyle>;
+  inputProps?: TextInputProps;
+  editable: false; // ⭐ khi disable → ko cần onChangeText
+};
+
+/**
+ * Combined props
+ */
+type Props = EditableProps | ReadonlyProps;
 
 const LabeledTextInput: React.FC<Props> = ({
   label,
   value,
-  onChangeText,
   placeholder,
   theme,
   multiline = false,
   numberOfLines,
   containerStyle,
   inputProps,
-  editable = true, // ⭐ DEFAULT
+  editable = true,
+  ...rest
 }) => {
   const S = themedStyles(theme);
-  const {style: inputStyle, ...restInputProps} = inputProps ?? {};
+  const { style: inputStyle, ...restInputProps } = inputProps ?? {};
+
+  // ⭐ lấy hàm onChangeText nếu editable, còn không thì undefined
+  const onChangeText =
+    editable && "onChangeText" in rest ? rest.onChangeText : undefined;
 
   return (
     <View style={[S.field, containerStyle]}>
@@ -46,8 +73,9 @@ const LabeledTextInput: React.FC<Props> = ({
         style={[
           S.inputBox,
           multiline ? S.multilineBox : null,
-          !editable && S.disabledBox, // ⭐ style disable
-        ]}>
+          !editable && S.disabledBox,
+        ]}
+      >
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -55,11 +83,11 @@ const LabeledTextInput: React.FC<Props> = ({
           placeholderTextColor={theme.colors.placeholder}
           multiline={multiline}
           numberOfLines={multiline ? numberOfLines ?? 3 : 1}
-          editable={editable} // ⭐ Enable/Disable
+          editable={editable}
           style={[
             S.input,
             multiline ? S.multilineInput : null,
-            !editable && S.disabledInput, // ⭐ input mờ
+            !editable && S.disabledInput,
             inputStyle as StyleProp<TextStyle>,
           ]}
           {...restInputProps}
@@ -71,8 +99,8 @@ const LabeledTextInput: React.FC<Props> = ({
 
 const themedStyles = (theme: any) =>
   StyleSheet.create({
-    field: {flexGrow: 1, flexBasis: '48%', minWidth: '48%'},
-    label: {fontSize: 13, color: theme.colors.text, marginBottom: 6},
+    field: { flexGrow: 1, flexBasis: '48%', minWidth: '48%' },
+    label: { fontSize: 13, color: theme.colors.text, marginBottom: 6 },
 
     inputBox: {
       borderWidth: 2,
@@ -85,7 +113,6 @@ const themedStyles = (theme: any) =>
       justifyContent: 'center',
     },
 
-    // ⭐ Khi disable → nền xám nhẹ
     disabledBox: {
       backgroundColor: '#E5E7EB',
       borderColor: '#D1D5DB',
@@ -95,9 +122,8 @@ const themedStyles = (theme: any) =>
       paddingVertical: 10,
     },
 
-    input: {fontSize: 16, color: theme.colors.text},
+    input: { fontSize: 16, color: theme.colors.text },
 
-    // ⭐ Text mờ khi disable
     disabledInput: {
       color: '#6B7280',
     },

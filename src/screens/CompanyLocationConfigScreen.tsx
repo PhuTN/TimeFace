@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from 'react';
 import {
   View,
   TextInput,
@@ -8,20 +8,20 @@ import {
   Alert,
   Platform,
   ToastAndroid,
-} from "react-native";
+} from 'react-native';
 
-import MapView, { Marker, Circle } from "react-native-maps";
-import HeaderBar from "../components/common/HeaderBar";
+import MapView, {Marker, Circle} from 'react-native-maps';
+import HeaderBar from '../components/common/HeaderBar';
 
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import LocationPickerModal from "../components/common/LocationPickerModal";
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import LocationPickerModal from '../components/common/LocationPickerModal';
 
-import { apiHandle } from "../api/apihandle";
-import { CompanyEP } from "../api/endpoint/Company";
+import {apiHandle} from '../api/apihandle';
+import {CompanyEP} from '../api/endpoint/Company';
 
-export default function CompanyLocationConfigScreen({ navigation }) {
-  const [locationText, setLocationText] = useState("");
-  const [radiusM, setRadiusM] = useState("100"); // default 100m
+export default function CompanyLocationConfigScreen({navigation}) {
+  const [locationText, setLocationText] = useState('');
+  const [radiusM, setRadiusM] = useState('100'); // default 100m
   const [marker, setMarker] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -43,7 +43,7 @@ export default function CompanyLocationConfigScreen({ navigation }) {
      ⭐ LOAD CONFIG TỪ BACKEND
   ---------------------------------------------------*/
   const loadConfig = async () => {
-    const { status, res } = await apiHandle
+    const {status, res} = await apiHandle
       .callApi(CompanyEP.GetCheckinConfig)
       .asPromise();
 
@@ -57,10 +57,10 @@ export default function CompanyLocationConfigScreen({ navigation }) {
       setMarker({
         latitude: loc.lat,
         longitude: loc.lng,
-        address: loc.address ?? "",
+        address: loc.address ?? '',
       });
 
-      setLocationText(loc.address ?? "");
+      setLocationText(loc.address ?? '');
     }
 
     if (data?.checkin_radius != null) {
@@ -75,7 +75,7 @@ export default function CompanyLocationConfigScreen({ navigation }) {
   /* -------------------------------------------------
      ⭐ CONFIRM LOCATION FROM MODAL
   ---------------------------------------------------*/
-  const confirmLocation = (picked) => {
+  const confirmLocation = picked => {
     const finalAddress =
       picked.address ??
       `Vị trí (${picked.latitude.toFixed(5)}, ${picked.longitude.toFixed(5)})`;
@@ -94,38 +94,35 @@ export default function CompanyLocationConfigScreen({ navigation }) {
   ---------------------------------------------------*/
   const saveConfig = async () => {
     if (!marker) {
-      return Alert.alert("Thiếu tọa độ", "Vui lòng chọn vị trí trên bản đồ");
+      return Alert.alert('Thiếu tọa độ', 'Vui lòng chọn vị trí trên bản đồ');
     }
 
     const payload = {
       lat: marker.latitude,
       lng: marker.longitude,
-      address: marker.address || "",
+      address: marker.address || '',
       radius: Number(radiusM),
     };
 
-    const { status } = await apiHandle
+    const {status} = await apiHandle
       .callApi(CompanyEP.UpdateCheckinConfig, payload)
       .asPromise();
 
     if (status.isError) {
-      return Alert.alert("Lỗi", "Không thể lưu cấu hình");
+      return Alert.alert('Lỗi', 'Không thể lưu cấu hình');
     }
 
     // ⭐ Toast thông báo thành công
-    if (Platform.OS === "android") {
-      ToastAndroid.show("Cập nhật thành công!", ToastAndroid.SHORT);
+    if (Platform.OS === 'android') {
+      ToastAndroid.show('Cập nhật thành công!', ToastAndroid.SHORT);
     } else {
-      Alert.alert("Thành công", "Đã cập nhật cấu hình check-in");
+      Alert.alert('Thành công', 'Đã cập nhật cấu hình check-in');
     }
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <HeaderBar
-        title="Tọa độ công ty"
-        onBack={() => navigation.goBack()}
-      />
+    <View style={{flex: 1}}>
+      <HeaderBar title="Tọa độ công ty" onBack={() => navigation.goBack()} />
 
       <View style={styles.panel}>
         <Text style={styles.label}>Vị trí công ty</Text>
@@ -135,7 +132,12 @@ export default function CompanyLocationConfigScreen({ navigation }) {
             placeholder="Chưa chọn vị trí"
             value={locationText}
             editable={false}
-            style={[styles.input, { flex: 1 }]}
+            multiline={true}
+            numberOfLines={5}
+            style={[
+              styles.input,
+              {flex: 1, textAlignVertical: 'top', height: 120},
+            ]}
           />
 
           <TouchableOpacity onPress={() => setShowPicker(true)}>
@@ -143,7 +145,7 @@ export default function CompanyLocationConfigScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <Text style={[styles.label, { marginTop: 14 }]}>Bán kính (m)</Text>
+        <Text style={[styles.label, {marginTop: 14}]}>Bán kính (m)</Text>
 
         <TextInput
           value={radiusM}
@@ -185,37 +187,37 @@ export default function CompanyLocationConfigScreen({ navigation }) {
 const styles = StyleSheet.create({
   panel: {
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     elevation: 4,
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
     marginBottom: 6,
   },
   row: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
   },
   input: {
-    backgroundColor: "#f4f5f6",
+    backgroundColor: '#f4f5f6',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
   },
   saveBtn: {
-    backgroundColor: "#007AFF",
+    backgroundColor: '#007AFF',
     marginTop: 16,
     paddingVertical: 14,
     borderRadius: 12,
-    alignItems: "center",
+    alignItems: 'center',
   },
   saveText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   map: {
     flex: 1,
