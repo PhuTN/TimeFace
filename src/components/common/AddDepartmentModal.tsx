@@ -23,7 +23,7 @@ import FilterIcon from '../../assets/icons/filter_icon.svg';
 import FilterChip from './FilterChip.tsx';
 
 import {apiHandle} from '../../api/apihandle';
-import {User} from '../../api/endpoint/User';
+import {User} from '../../api/endpoint/User.ts';
 import Toast from 'react-native-toast-message';
 
 export type AddDepartmentModal = {

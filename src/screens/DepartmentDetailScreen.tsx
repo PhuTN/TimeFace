@@ -35,7 +35,7 @@ import FilterChip from '../components/common/FilterChip.tsx';
 // ⭐ ADDED
 import {apiHandle} from '../api/apihandle';
 import {DepartmentEP} from '../api/endpoint/Department';
-import {User} from '../api/endpoint/User';
+import {User} from '../api/endpoint/User.ts';
 import Toast from 'react-native-toast-message';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DepartmentDetail'>;

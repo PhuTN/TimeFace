@@ -52,7 +52,9 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
 
   // ⭐ 2 STATE: API vs PARAM
   const [faceImageApi, setFaceImageApi] = useState('');
-  const [faceImageParam, setFaceImageParam] = useState('');
+  const [faceFrontParam, setFaceFrontParam] = useState('');
+  const [faceLeftParam, setFaceLeftParam] = useState('');
+  const [faceRightParam, setFaceRightParam] = useState('');
 
   const [firstName, setFirstName] = useState('');
   const [phone, setPhone] = useState('');
@@ -104,14 +106,25 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
 
   // ⭐ NHẬN ẢNH TỪ FACE DETECTION (ƯU TIÊN)
   useEffect(() => {
-    if (route?.params?.faces?.image_front) {
-      console.log("🔥 Face received:", route.params.faces.image_front);
+    const faces = route?.params?.faces;
+    if (!faces) return;
 
-      setFaceImageParam(route.params.faces.image_front);
-
-      navigation.setParams({faces: undefined});
+    if (faces.image_front) {
+      console.log("🔥 Face front received:", faces.image_front);
+      setFaceFrontParam(faces.image_front);
     }
-  }, [route?.params]);
+    if (faces.image_left) {
+      console.log("🔥 Face left received:", faces.image_left);
+      setFaceLeftParam(faces.image_left);
+    }
+    if (faces.image_right) {
+      console.log("🔥 Face right received:", faces.image_right);
+      setFaceRightParam(faces.image_right);
+    }
+
+    // clear params tránh set lại khi re-render
+    navigation.setParams({faces: undefined});
+  }, [route?.params?.faces, navigation]);
 
   const {reloadApp} = useAppReload();
 
@@ -132,7 +145,7 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
         avatar: avatarUri,
 
         // ⭐ Ưu tiên ảnh param
-        face_image: faceImageParam || faceImageApi,
+         face_image: faceFrontParam || faceImageApi,
       };
 
       const result = await apiHandle.callApi(User.UpdateMe, payload).asPromise();
@@ -318,19 +331,41 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
 
         <View style={S.sectionSpacing} />
 
-        {/* ⭐ FACE IMAGE */}
+        {/* ⭐ FACE IMAGES */}
         <Text style={S.sectionTitle}>Ảnh khuôn mặt</Text>
-        <Text style={S.sectionSubtitle}>Ảnh chính diện</Text>
+        <Text style={S.sectionSubtitle}>Chính diện / Trái / Phải</Text>
 
-        <View style={{alignItems: 'center', marginTop: 16}}>
-          <Image
-            source={{uri: faceImageParam || faceImageApi || AVATAR_DEFAULT}}
-            style={[S.faceImage, {width: 120, height: 120, borderRadius: 20}]}
-          />
-          <Text style={S.faceLabel}>Chính diện</Text>
+        <View style={S.faceRow}>
+          {/* LEFT */}
+          <View style={S.faceItem}>
+            <Image
+              source={{uri: faceLeftParam || faceImageApi || AVATAR_DEFAULT}}
+              style={S.facePreview}
+            />
+            <Text style={S.faceLabel}>Trái</Text>
+          </View>
 
+          {/* FRONT */}
+          <View style={S.faceItem}>
+            <Image
+              source={{uri: faceFrontParam || faceImageApi || AVATAR_DEFAULT}}
+              style={S.facePreview}
+            />
+            <Text style={S.faceLabel}>Chính diện</Text>
+          </View>
+
+          {/* RIGHT */}
+          <View style={S.faceItem}>
+            <Image
+              source={{uri: faceRightParam || faceImageApi || AVATAR_DEFAULT}}
+              style={S.facePreview}
+            />
+            <Text style={S.faceLabel}>Phải</Text>
+          </View>
+        </View>
+
+        <View style={{alignItems: 'center', marginTop: 12}}>
           <TouchableOpacity
-            style={{marginTop: 12}}
             onPress={() => navigation.navigate('PersonalInformationFaceDetection')}>
             <ReupImageIcon width={34} height={34} />
           </TouchableOpacity>
@@ -422,6 +457,22 @@ const makeStyles = (theme: any) =>
       color: theme.colors.muted,
     },
     faceImage: {
+      backgroundColor: '#221c1c',
+    },
+    faceRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 16,
+      gap: 12,
+    },
+    faceItem: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    facePreview: {
+      width: 95,
+      height: 95,
+      borderRadius: 16,
       backgroundColor: '#221c1c',
     },
   });
