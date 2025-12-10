@@ -78,9 +78,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "timeface.staging.aab"
+    namespace "com.timeface"
     defaultConfig {
-        applicationId "timeface.staging.aab"
+        applicationId "com.timeface"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
