@@ -1,26 +1,26 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {
+  ActivityIndicator,
   SafeAreaView,
   ScrollView,
-  View,
   StyleSheet,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
+  View,
 } from 'react-native';
 
-import {useUIFactory} from '../../ui/factory/useUIFactory';
 import StatusToggleButtons, {
   StatusType,
 } from '../../components/common/StatusToggleButtons';
 import LeaveRecord from '../../components/list_items/employe-list-items/LeaveRecord';
 import LeaveRequestAddModal from '../../components/modals/add-modals/LeaveRequestAddModal';
 import LeaveRequestDetailModal from '../../components/modals/detail-modals/LeaveRequestDetailModal';
+import {useUIFactory} from '../../ui/factory/useUIFactory';
 
-import {CompanyEP} from '../../api/endpoint/Company';
-import {User} from '../../api/endpoint/User';
-import {apiHandle} from '../../api/apihandle';
 import Toast from 'react-native-toast-message';
+import {apiHandle} from '../../api/apihandle';
+import {CompanyEP} from '../../api/endpoint/Company';
+import {User} from '../../api/endpoint/user';
 import HeaderBar from '../../components/common/HeaderBar';
 
 /* ===================== TYPES ===================== */

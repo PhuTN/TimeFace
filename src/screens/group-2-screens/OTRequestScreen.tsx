@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {View, ScrollView, SafeAreaView, Text} from 'react-native';
+import {useEffect, useState} from 'react';
+import {SafeAreaView, ScrollView, Text, View} from 'react-native';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 
 import HeaderBar from '../../components/common/HeaderBar';
@@ -14,9 +14,9 @@ import OTRequestFilterModal, {
 import FilterIcon from '../../assets/icons/filter_icon.svg';
 import FilterChip from '../../components/common/FilterChip';
 
-import {User} from '../../api/endpoint/User';
-import {apiHandle} from '../../api/apihandle';
 import Toast from 'react-native-toast-message';
+import {apiHandle} from '../../api/apihandle';
+import {User} from '../../api/endpoint/user';
 
 /* ===================== UTILS ===================== */
 const addHours = (start: string, hours: number) => {
@@ -190,15 +190,13 @@ export default function OTRequestScreen() {
         case 'created_desc':
           next.sort(
             (a, b) =>
-              new Date(b.createdAt).getTime() -
-              new Date(a.createdAt).getTime(),
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           );
           break;
         case 'created_asc':
           next.sort(
             (a, b) =>
-              new Date(a.createdAt).getTime() -
-              new Date(b.createdAt).getTime(),
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
           );
           break;
         case 'name_asc':
@@ -221,28 +219,60 @@ export default function OTRequestScreen() {
     const chips: {key: string; mainText: string; subText: string}[] = [];
 
     if (values.ticketCode)
-      chips.push({key: 'ticketCode', mainText: t('id_form_label'), subText: values.ticketCode});
+      chips.push({
+        key: 'ticketCode',
+        mainText: t('id_form_label'),
+        subText: values.ticketCode,
+      });
 
     if (values.employeeName)
-      chips.push({key: 'employeeName', mainText: t('employee_name_label'), subText: values.employeeName});
+      chips.push({
+        key: 'employeeName',
+        mainText: t('employee_name_label'),
+        subText: values.employeeName,
+      });
 
     if (values.positionName)
-      chips.push({key: 'positionName', mainText: t('position_name_label'), subText: values.positionName});
+      chips.push({
+        key: 'positionName',
+        mainText: t('position_name_label'),
+        subText: values.positionName,
+      });
 
     if (values.department && values.department.value !== 'all')
-      chips.push({key: 'department', mainText: t('department_label'), subText: values.department.label});
+      chips.push({
+        key: 'department',
+        mainText: t('department_label'),
+        subText: values.department.label,
+      });
 
     if (values.approvalStatus && values.approvalStatus.value !== 'all')
-      chips.push({key: 'approvalStatus', mainText: t('approval_status_label'), subText: values.approvalStatus.label});
+      chips.push({
+        key: 'approvalStatus',
+        mainText: t('approval_status_label'),
+        subText: values.approvalStatus.label,
+      });
 
     if (!isSameDay(values.createdDate, new Date()))
-      chips.push({key: 'createdDate', mainText: t('created_date_label'), subText: values.createdDate.toLocaleDateString('vi-VN')});
+      chips.push({
+        key: 'createdDate',
+        mainText: t('created_date_label'),
+        subText: values.createdDate.toLocaleDateString('vi-VN'),
+      });
 
     if (!isSameDay(values.otDate, new Date()))
-      chips.push({key: 'otDate', mainText: t('otDate'), subText: values.otDate.toLocaleDateString('vi-VN')});
+      chips.push({
+        key: 'otDate',
+        mainText: t('otDate'),
+        subText: values.otDate.toLocaleDateString('vi-VN'),
+      });
 
     if (values.sortBy)
-      chips.push({key: 'sortBy', mainText: t('sort_by_label'), subText: values.sortBy.label});
+      chips.push({
+        key: 'sortBy',
+        mainText: t('sort_by_label'),
+        subText: values.sortBy.label,
+      });
 
     setActiveFilters(chips);
   };
@@ -265,7 +295,10 @@ export default function OTRequestScreen() {
 
     const {status} = await apiHandle
       .callApi(
-        User.AdminDecideOvertime(selectedRequest.user_id, selectedRequest.ot_id),
+        User.AdminDecideOvertime(
+          selectedRequest.user_id,
+          selectedRequest.ot_id,
+        ),
         {status: 'approved'},
       )
       .asPromise();
@@ -280,7 +313,10 @@ export default function OTRequestScreen() {
 
     const {status} = await apiHandle
       .callApi(
-        User.AdminDecideOvertime(selectedRequest.user_id, selectedRequest.ot_id),
+        User.AdminDecideOvertime(
+          selectedRequest.user_id,
+          selectedRequest.ot_id,
+        ),
         {status: 'rejected'},
       )
       .asPromise();
@@ -298,26 +334,57 @@ export default function OTRequestScreen() {
       <HeaderBar title={t('otRequestTitle')} isShowBackButton />
 
       <ScrollView
-        contentContainerStyle={{paddingHorizontal: 16, paddingTop: 20, paddingBottom: 24}}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 20,
+          paddingBottom: 24,
+        }}
         showsVerticalScrollIndicator={false}>
-        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
-          <Text style={{fontSize: 16, fontWeight: '600', color: theme.colors.text}}>
-            { 'Danh sách phiếu OT'}
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+          }}>
+          <Text
+            style={{fontSize: 16, fontWeight: '600', color: theme.colors.text}}>
+            {'Danh sách phiếu OT'}
           </Text>
-          <FilterIcon width={22} height={22} onPress={() => setShowFilter(true)} />
+          <FilterIcon
+            width={22}
+            height={22}
+            onPress={() => setShowFilter(true)}
+          />
         </View>
 
         {activeFilters.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap: 10, marginBottom: 12}}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{gap: 10, marginBottom: 12}}>
             {activeFilters.map(f => (
-              <FilterChip key={f.key} mainText={f.mainText} subText={f.subText} theme={theme} onRemove={() => handleRemoveFilter(f.key)} />
+              <FilterChip
+                key={f.key}
+                mainText={f.mainText}
+                subText={f.subText}
+                theme={theme}
+                onRemove={() => handleRemoveFilter(f.key)}
+              />
             ))}
           </ScrollView>
         )}
 
         <View style={{gap: 12}}>
           {displayed.map((r, i) => (
-            <OTRequest key={i} {...r} onPress={() => { setSelectedRequest(r); setShowDetailModal(true); }} />
+            <OTRequest
+              key={i}
+              {...r}
+              onPress={() => {
+                setSelectedRequest(r);
+                setShowDetailModal(true);
+              }}
+            />
           ))}
         </View>
       </ScrollView>

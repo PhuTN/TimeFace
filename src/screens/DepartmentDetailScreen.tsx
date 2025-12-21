@@ -1,42 +1,37 @@
-import React, {memo, useMemo, useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-  FlatList,
-  ListRenderItem,
-  Image,
-  Pressable,
-  Alert,
-  ScrollView,
-  RefreshControl,
-} from 'react-native';
-import {useUIFactory} from '../ui/factory/useUIFactory';
-import Header from '../components/common/Header';
-import LabeledTextInput from '../components/common/LabeledTextInput';
-import LabeledSelect from '../components/common/LabeledSelect';
-import type {Option} from '../types/common';
-import {
-  Department,
-  Employee,
-  DEPARTMENTS,
-} from '../fake_data/Dien/fake_data.tsx';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {RootStackParamList} from '../navigation/AppNavigator';
+import React, {memo, useState} from 'react';
+import {
+  Alert,
+  FlatList,
+  Image,
+  ListRenderItem,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import FilterIcon from '../assets/icons/filter_icon.svg';
 import EmployeeFilterInDepartment, {
   EmployeeFilterInDeptValues,
 } from '../components/common/EmployeeFilterInDepartment';
-import HeaderBar from '../components/common/HeaderBar.tsx';
 import FilterChip from '../components/common/FilterChip.tsx';
+import HeaderBar from '../components/common/HeaderBar.tsx';
+import LabeledSelect from '../components/common/LabeledSelect';
+import LabeledTextInput from '../components/common/LabeledTextInput';
+import {Employee} from '../fake_data/Dien/fake_data.tsx';
+import {RootStackParamList} from '../navigation/AppNavigator';
+import type {Option} from '../types/common';
+import {useUIFactory} from '../ui/factory/useUIFactory';
 
 // ⭐ ADDED
+import Toast from 'react-native-toast-message';
 import {apiHandle} from '../api/apihandle';
 import {DepartmentEP} from '../api/endpoint/Department';
-import {User} from '../api/endpoint/User.ts';
-import Toast from 'react-native-toast-message';
+import {User} from '../api/endpoint/user.ts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DepartmentDetail'>;
 
@@ -435,7 +430,7 @@ export default function DepartmentDetailScreen({route, navigation}: Props) {
                   style: 'destructive',
                   onPress: async () => {
                     try {
-                      const {status,res} = await apiHandle
+                      const {status, res} = await apiHandle
                         .callApi(DepartmentEP.Delete(departmentDetail.id))
                         .asPromise();
 

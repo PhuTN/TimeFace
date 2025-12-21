@@ -1,35 +1,35 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import MaskedView from '@react-native-masked-view/masked-view';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  ActivityIndicator,
   SafeAreaView,
-  View,
-  StyleSheet,
   ScrollView,
-  useWindowDimensions,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
+  useWindowDimensions,
+  View,
 } from 'react-native';
-import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {useUIFactory} from '../ui/factory/useUIFactory';
-import HeaderBar from '../components/common/HeaderBar';
-import {RootStackParamList} from '../navigation/AppNavigator';
-import MaskedView from '@react-native-masked-view/masked-view';
 import Svg, {Path as SvgPath} from 'react-native-svg';
 import {Camera} from 'react-native-vision-camera';
+import HeaderBar from '../components/common/HeaderBar';
+import {RootStackParamList} from '../navigation/AppNavigator';
+import {useUIFactory} from '../ui/factory/useUIFactory';
 import {useFaceDetectionHandle} from '../utils/FaceDetectionHandle';
 
 import {
   Canvas,
-  Path as SkiaPath,
-  Skia,
   LinearGradient,
-  vec,
   PathOp,
+  Skia,
+  Path as SkiaPath,
+  vec,
 } from '@shopify/react-native-skia';
 
-import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/User';
 import Toast from 'react-native-toast-message';
+import {apiHandle} from '../api/apihandle';
+import {User} from '../api/endpoint/user';
 import {uploadSingle} from '../api/uploadApi';
 
 import {getFaceIdFromFile, preloadFaceIdModel} from '../utils/face-id-utils';

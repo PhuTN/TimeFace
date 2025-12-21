@@ -1,4 +1,4 @@
-import { ep } from '../core/ApiEndpoint';
+import {ep} from '../core/ApiEndpoint';
 
 export const User = {
   /* ======================== SELF ======================== */

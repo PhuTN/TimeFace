@@ -29,6 +29,8 @@ export default function ManagementScreen({navigation}: any) {
       icon: require('../assets/QuanLy/shift.png'),
       title: 'Quản lý bảng công',
       subtitle: 'Theo dõi công theo nhân viên',
+      route: 'EmployeeManagement',
+      params: {mode: 'timesheet'},
     },
     {
       icon: require('../assets/QuanLy/day-off.png'),
@@ -77,6 +79,12 @@ export default function ManagementScreen({navigation}: any) {
       title: 'Cấu hình tọa độ công ty',
       subtitle: 'Thiết lập vị trí & bán kính check-in',
       route: 'CompanyLocationConfig', // ⭐ MÀN HÌNH CẬU ĐÃ CODE
+    },
+    {
+      icon: require('../assets/QuanLy/organization-structure.png'),
+      title: 'Thông tin công ty',
+      subtitle: 'Xem thông tin & cấu hình check-in',
+      route: 'Company',
     },
   ];
 
@@ -130,7 +138,10 @@ export default function ManagementScreen({navigation}: any) {
             activeOpacity={0.7}
             onPress={() => {
               // ⭐ Nếu item có route → điều hướng
-              if (item.route) navigation.navigate(item.route);
+              if (item.route) {
+                if (item.params) navigation.navigate(item.route, item.params);
+                else navigation.navigate(item.route);
+              }
             }}>
             <View style={styles.textContainer}>
               <Text style={styles.menuTitle}>{item.title}</Text>

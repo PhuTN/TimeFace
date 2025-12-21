@@ -1,34 +1,34 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Image,
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  View,
   Text,
-  Image,
   TouchableOpacity,
-  ActivityIndicator,
-  Alert,
+  View,
 } from 'react-native';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import ReupImageIcon from '../assets/icons/reup_image_icon.svg';
+import GradientButton from '../components/common/GradientButton';
 import HeaderBar from '../components/common/HeaderBar';
-import LabeledTextInput from '../components/common/LabeledTextInput';
 import LabeledDate from '../components/common/LabeledDate';
+import LabeledSelectCity from '../components/common/LabeledSelectCity';
 import LabeledSelectCountry from '../components/common/LabeledSelectCountry';
 import LabeledSelectState from '../components/common/LabeledSelectState';
-import LabeledSelectCity from '../components/common/LabeledSelectCity';
-import GradientButton from '../components/common/GradientButton';
-import ReupImageIcon from '../assets/icons/reup_image_icon.svg';
+import LabeledTextInput from '../components/common/LabeledTextInput';
 
 import Toast from 'react-native-toast-message';
 
-import {useUIFactory} from '../ui/factory/useUIFactory';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../navigation/AppNavigator';
+import {useUIFactory} from '../ui/factory/useUIFactory';
 
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/User';
+import {User} from '../api/endpoint/user';
 
 import {launchImageLibrary} from 'react-native-image-picker';
 import {uploadSingle} from '../api/uploadApi';

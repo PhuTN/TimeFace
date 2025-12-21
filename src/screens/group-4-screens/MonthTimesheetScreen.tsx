@@ -1,23 +1,23 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {
-  View,
+  ActivityIndicator,
   SafeAreaView,
   ScrollView,
   Text,
-  ActivityIndicator,
+  View,
 } from 'react-native';
-import {useUIFactory} from '../../ui/factory/useUIFactory';
-import Header2 from '../../components/common/Header2';
 import FilterBar from '../../components/common/FilterBar';
+import Header2 from '../../components/common/Header2';
 import MonthTimesheet from '../../components/list_items/employe-list-items/MonthTimesheet';
 import MonthFilterModal, {
   MonthFilters,
 } from '../../components/modals/filter-modals/MonthFilterModal';
-import {useFilterSystem, FilterChipData} from '../../hooks/useFilterSystem';
+import {FilterChipData, useFilterSystem} from '../../hooks/useFilterSystem';
+import {useUIFactory} from '../../ui/factory/useUIFactory';
 
 // ✅ API
-import {User} from '../../api/endpoint/User';
 import {apiHandle} from '../../api/apihandle';
+import {User} from '../../api/endpoint/user';
 
 type MonthTimesheetItem = {
   id?: string;
@@ -35,6 +35,9 @@ const MonthTimesheetScreen: React.FC<any> = ({route, navigation}: any) => {
 
   // ✅ nhận employeeId từ navigate
   const employeeId: string = route?.params?.employeeId ?? 'me';
+  const employeeName: string =
+    route?.params?.employeeName ??
+    (employeeId === 'me' ? 'Bản thân tôi' : 'Nhân viên');
   const isMe = employeeId === 'me';
 
   const {
@@ -52,6 +55,9 @@ const MonthTimesheetScreen: React.FC<any> = ({route, navigation}: any) => {
 
   // ✅ Hook MUST chạy trước mọi return
   const filteredMonths = useMemo(() => {
+    const now = new Date();
+    const currentIdx = now.getFullYear() * 12 + now.getMonth(); // 0-based month
+
     const start = activeFilters?.find(c => c.id === 'startMonth')?.value;
     const end = activeFilters?.find(c => c.id === 'endMonth')?.value;
 
@@ -73,6 +79,9 @@ const MonthTimesheetScreen: React.FC<any> = ({route, navigation}: any) => {
 
     return sorted.filter(it => {
       const idx = toIdx(it.year, it.month);
+      // Chỉ hiển thị khi tháng đã kết thúc (nhỏ hơn tháng hiện tại)
+      if (idx >= currentIdx) return false;
+
       if (startIdx !== null && idx < startIdx) return false;
       if (endIdx !== null && idx > endIdx) return false;
       return true;
@@ -119,9 +128,13 @@ const MonthTimesheetScreen: React.FC<any> = ({route, navigation}: any) => {
     return null;
   }
 
+  const headerTitle = employeeName
+    ? `${lang.t('monthTimesheetTitle')} - ${employeeName}`
+    : lang.t('monthTimesheetTitle');
+
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
-      <Header2 title={lang.t('monthTimesheetTitle')} theme={theme} />
+      <Header2 title={headerTitle} theme={theme} />
 
       <ScrollView
         contentContainerStyle={{
@@ -193,6 +206,7 @@ const MonthTimesheetScreen: React.FC<any> = ({route, navigation}: any) => {
                   employeeId,
                   year: item.year,
                   month: item.month,
+                  employeeName,
                 });
               }}
             />

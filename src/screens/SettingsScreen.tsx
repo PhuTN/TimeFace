@@ -3,23 +3,22 @@ import {ScrollView, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import Feather from 'react-native-vector-icons/Feather';
 
+import Footer from '../components/common/Footer';
+import HeaderBar from '../components/common/HeaderBar';
+import ToggleButton_Language from '../components/common/ToggleButton_Language';
+import ToggleButton_Notification from '../components/common/ToggleButton_Notification';
+import ToggleButton_Theme from '../components/common/ToggleButton_Theme';
 import Divider from '../components/settings/Divider';
 import ProfileCard from '../components/settings/ProfileCard';
 import SettingRow from '../components/settings/SettingRow';
 import SettingSection from '../components/settings/SettingSection';
-import ToggleButton_Language from '../components/common/ToggleButton_Language';
-import ToggleButton_Notification from '../components/common/ToggleButton_Notification';
-import ToggleButton_Theme from '../components/common/ToggleButton_Theme';
-import HeaderBar from '../components/common/HeaderBar';
-import Footer from '../components/common/Footer';
 
-import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {setUIState} from '../ui/factory/selector';
 import {useUIFactory} from '../ui/factory/useUIFactory';
-import {logout} from '../features/auth/authService';
 
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/User';
+import {User} from '../api/endpoint/user';
 
 export default function SettingsScreen() {
   const {theme, lang} = useUIFactory();
@@ -105,7 +104,10 @@ export default function SettingsScreen() {
           name={user?.full_name || '—'}
           subtitle={user?.job_title || '—'}
           verified={user?.profile_approved}
-          avatarUri={user?.avatar || "https://cdn-icons-png.freepik.com/512/6858/6858504.png"}
+          avatarUri={
+            user?.avatar ||
+            'https://cdn-icons-png.freepik.com/512/6858/6858504.png'
+          }
         />
 
         {/* ACCOUNT */}

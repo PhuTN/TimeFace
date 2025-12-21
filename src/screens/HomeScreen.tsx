@@ -1,24 +1,24 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
+  Image,
+  Platform,
   SafeAreaView,
   ScrollView,
-  View,
-  Text,
   StyleSheet,
-  Platform,
-  Image,
+  Text,
+  View,
 } from 'react-native';
-import HeaderBar from '../components/common/HeaderBar';
 import Footer from '../components/common/Footer';
-import {useUIFactory} from '../ui/factory/useUIFactory';
-import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import HeaderBar from '../components/common/HeaderBar';
 import {RootStackParamList} from '../navigation/AppNavigator';
+import {useUIFactory} from '../ui/factory/useUIFactory';
 
 // ✅ API
 import {apiHandle} from '../api/apihandle';
 import {CompanyEP} from '../api/endpoint/Company';
-import {User} from '../api/endpoint/User';
+import {User} from '../api/endpoint/user';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -36,7 +36,8 @@ const timeToMin = (hhmm?: string | null) => {
   return h * 60 + m;
 };
 
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+const clamp = (n: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, n));
 
 const jsDayToCode = (jsDay: number) => {
   switch (jsDay) {
@@ -89,7 +90,9 @@ const HomeScreen = ({navigation}: Props) => {
         if (!mounted) return;
 
         if (rMe.status.isError) {
-          setErrMsg(rMe.status.errorMessage ?? 'Không lấy được thông tin người dùng');
+          setErrMsg(
+            rMe.status.errorMessage ?? 'Không lấy được thông tin người dùng',
+          );
         } else {
           const u = rMe?.res?.data?.user ?? rMe?.res?.user ?? rMe?.res;
           setMe(u);
@@ -97,7 +100,12 @@ const HomeScreen = ({navigation}: Props) => {
         }
 
         if (rCompany.status.isError) {
-          setErrMsg(prev => prev ?? (rCompany.status.errorMessage ?? 'Không lấy được thông tin công ty'));
+          setErrMsg(
+            prev =>
+              prev ??
+              rCompany.status.errorMessage ??
+              'Không lấy được thông tin công ty',
+          );
         } else {
           setCompanyPack(rCompany?.res?.data ?? rCompany?.res ?? null);
         }
@@ -121,9 +129,12 @@ const HomeScreen = ({navigation}: Props) => {
     const today = new Date();
     const todayISO = fmtISO(today);
 
-    const companyFromCompanyEP = companyPack?.company ?? companyPack?.data?.company ?? null;
+    const companyFromCompanyEP =
+      companyPack?.company ?? companyPack?.data?.company ?? null;
     const companyFromMe =
-      me?.company_id && typeof me.company_id === 'object' ? me.company_id : null;
+      me?.company_id && typeof me.company_id === 'object'
+        ? me.company_id
+        : null;
     const company = companyFromCompanyEP ?? companyFromMe;
 
     const cfg = company?.attendance_config?.working_hours;
@@ -132,14 +143,19 @@ const HomeScreen = ({navigation}: Props) => {
     const breakStart = cfg?.break_start ?? '12:00';
     const breakEnd = cfg?.break_end ?? '13:00';
 
-    const workingDays: string[] = Array.isArray(cfg?.working_days) ? cfg.working_days : [];
-    const holidays: string[] = Array.isArray(cfg?.company_holidays) ? cfg.company_holidays : [];
+    const workingDays: string[] = Array.isArray(cfg?.working_days)
+      ? cfg.working_days
+      : [];
+    const holidays: string[] = Array.isArray(cfg?.company_holidays)
+      ? cfg.company_holidays
+      : [];
 
     const todayCode = jsDayToCode(today.getDay());
     const isHoliday = holidays.includes(todayISO);
     const isWorkday = workingDays.includes(todayCode) && !isHoliday;
 
-    const allowMin = Number(company?.attendance_config?.late_rule?.allow_minutes ?? 0) || 0;
+    const allowMin =
+      Number(company?.attendance_config?.late_rule?.allow_minutes ?? 0) || 0;
 
     const logs = Array.isArray(me?.attendance_logs) ? me.attendance_logs : [];
     const todayLog = logs.find((x: any) => x?.date === todayISO);
@@ -159,18 +175,28 @@ const HomeScreen = ({navigation}: Props) => {
       if (!checkIn) {
         if (nowMin > lateThreshold) {
           const m = nowMin - lateThreshold;
-          canhBaoTre = {minutes: m, text: `Bạn đang trễ ${m} phút (chưa check-in)`};
+          canhBaoTre = {
+            minutes: m,
+            text: `Bạn đang trễ ${m} phút (chưa check-in)`,
+          };
         }
       } else {
         const ciMin = timeToMin(checkIn);
         if (ciMin != null && ciMin > lateThreshold) {
           const m = ciMin - lateThreshold;
-          canhBaoTre = {minutes: m, text: `Check-in trễ ${m} phút (lúc ${checkIn})`};
+          canhBaoTre = {
+            minutes: m,
+            text: `Check-in trễ ${m} phút (lúc ${checkIn})`,
+          };
         }
       }
     }
 
-    const trangThaiHomNay = isHoliday ? 'Ngày lễ' : isWorkday ? 'Ngày làm' : 'Ngày nghỉ';
+    const trangThaiHomNay = isHoliday
+      ? 'Ngày lễ'
+      : isWorkday
+      ? 'Ngày làm'
+      : 'Ngày nghỉ';
 
     const progress =
       isWorkday && endMin > startMin
@@ -180,15 +206,19 @@ const HomeScreen = ({navigation}: Props) => {
     const badge = isHoliday
       ? {bg: '#FEF3C7', text: '#92400E', dot: '#F59E0B'}
       : isWorkday
-        ? {bg: '#DCFCE7', text: '#166534', dot: '#22C55E'}
-        : {bg: '#E5E7EB', text: '#374151', dot: '#6B7280'};
+      ? {bg: '#DCFCE7', text: '#166534', dot: '#22C55E'}
+      : {bg: '#E5E7EB', text: '#374151', dot: '#6B7280'};
 
     const avatarUrl: string | null = me?.avatar ?? null;
     const fullName: string = me?.full_name ?? '---';
     const initial = (fullName || 'U').trim().charAt(0).toUpperCase();
 
     // ✅ viền avatar theo trạng thái
-    const avatarRing = isHoliday ? '#F59E0B' : isWorkday ? '#22C55E' : '#9CA3AF';
+    const avatarRing = isHoliday
+      ? '#F59E0B'
+      : isWorkday
+      ? '#22C55E'
+      : '#9CA3AF';
 
     return {
       today,
@@ -223,7 +253,11 @@ const HomeScreen = ({navigation}: Props) => {
 
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
-      <HeaderBar title="Trang Chủ" isShowBackButton={false} isShowAvatar={false}/>
+      <HeaderBar
+        title="Trang Chủ"
+        isShowBackButton={false}
+        isShowAvatar={false}
+      />
 
       <ScrollView
         style={{flex: 1}}
@@ -236,9 +270,17 @@ const HomeScreen = ({navigation}: Props) => {
         }}
         showsVerticalScrollIndicator={false}>
         {fetching && (
-          <View style={{alignItems: 'center', justifyContent: 'center', gap: 10, paddingTop: 6}}>
+          <View
+            style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              paddingTop: 6,
+            }}>
             <ActivityIndicator />
-            <Text style={{color: theme.colors.mutedText}}>Đang tải dữ liệu...</Text>
+            <Text style={{color: theme.colors.mutedText}}>
+              Đang tải dữ liệu...
+            </Text>
           </View>
         )}
 
@@ -247,10 +289,17 @@ const HomeScreen = ({navigation}: Props) => {
             style={[
               styles.card,
               styles.shadow,
-              {borderColor: theme.colors.borderLight, backgroundColor: theme.colors.background},
+              {
+                borderColor: theme.colors.borderLight,
+                backgroundColor: theme.colors.background,
+              },
             ]}>
-            <Text style={{color: theme.colors.text, fontWeight: '800'}}>Có lỗi xảy ra</Text>
-            <Text style={{color: theme.colors.mutedText, marginTop: 6}}>{errMsg}</Text>
+            <Text style={{color: theme.colors.text, fontWeight: '800'}}>
+              Có lỗi xảy ra
+            </Text>
+            <Text style={{color: theme.colors.mutedText, marginTop: 6}}>
+              {errMsg}
+            </Text>
           </View>
         )}
 
@@ -258,7 +307,8 @@ const HomeScreen = ({navigation}: Props) => {
           <>
             {/* ✅ AVATAR - nằm 1 mình ở trên (khớp header) */}
             <View style={styles.avatarTopWrap}>
-              <View style={[styles.avatarRing, {borderColor: derived.avatarRing}]}>
+              <View
+                style={[styles.avatarRing, {borderColor: derived.avatarRing}]}>
                 {!!derived.avatarUrl && !avatarError ? (
                   <Image
                     source={{uri: derived.avatarUrl}}
@@ -296,8 +346,11 @@ const HomeScreen = ({navigation}: Props) => {
                   Hôm nay • {fmtDDMMYYYY(derived.today)}
                 </Text>
 
-                <View style={[styles.badge, {backgroundColor: derived.badge.bg}]}>
-                  <View style={[styles.dot, {backgroundColor: derived.badge.dot}]} />
+                <View
+                  style={[styles.badge, {backgroundColor: derived.badge.bg}]}>
+                  <View
+                    style={[styles.dot, {backgroundColor: derived.badge.dot}]}
+                  />
                   <Text style={[styles.badgeText, {color: derived.badge.text}]}>
                     {derived.trangThaiHomNay}
                   </Text>
@@ -307,8 +360,13 @@ const HomeScreen = ({navigation}: Props) => {
               {/* ✅ Giờ làm 1 dòng, Nghỉ xuống dòng */}
               <Text style={{color: theme.colors.mutedText, marginTop: 8}}>
                 Giờ làm:{' '}
-                <Text style={{fontWeight: '800', color: theme.colors.text}}>{derived.start}</Text> -{' '}
-                <Text style={{fontWeight: '800', color: theme.colors.text}}>{derived.end}</Text>
+                <Text style={{fontWeight: '800', color: theme.colors.text}}>
+                  {derived.start}
+                </Text>{' '}
+                -{' '}
+                <Text style={{fontWeight: '800', color: theme.colors.text}}>
+                  {derived.end}
+                </Text>
               </Text>
 
               <Text style={{color: theme.colors.mutedText, marginTop: 4}}>
@@ -326,7 +384,12 @@ const HomeScreen = ({navigation}: Props) => {
                       ]}
                     />
                   </View>
-                  <Text style={{color: theme.colors.mutedText, marginTop: 6, fontSize: 12}}>
+                  <Text
+                    style={{
+                      color: theme.colors.mutedText,
+                      marginTop: 6,
+                      fontSize: 12,
+                    }}>
                     Tiến độ ca làm: {Math.round(derived.progress * 100)}%
                   </Text>
                 </View>
@@ -339,9 +402,15 @@ const HomeScreen = ({navigation}: Props) => {
                 style={[
                   styles.pillCard,
                   styles.shadow,
-                  {backgroundColor: theme.colors.background, borderColor: theme.colors.borderLight},
+                  {
+                    backgroundColor: theme.colors.background,
+                    borderColor: theme.colors.borderLight,
+                  },
                 ]}>
-                <Text style={[styles.pillLabel, {color: theme.colors.mutedText}]}>Check-in</Text>
+                <Text
+                  style={[styles.pillLabel, {color: theme.colors.mutedText}]}>
+                  Check-in
+                </Text>
                 <Text style={[styles.pillValue, {color: theme.colors.text}]}>
                   {derived.checkIn ? derived.checkIn : '--:--'}
                 </Text>
@@ -351,9 +420,15 @@ const HomeScreen = ({navigation}: Props) => {
                 style={[
                   styles.pillCard,
                   styles.shadow,
-                  {backgroundColor: theme.colors.background, borderColor: theme.colors.borderLight},
+                  {
+                    backgroundColor: theme.colors.background,
+                    borderColor: theme.colors.borderLight,
+                  },
                 ]}>
-                <Text style={[styles.pillLabel, {color: theme.colors.mutedText}]}>Check-out</Text>
+                <Text
+                  style={[styles.pillLabel, {color: theme.colors.mutedText}]}>
+                  Check-out
+                </Text>
                 <Text style={[styles.pillValue, {color: theme.colors.text}]}>
                   {derived.checkOut ? derived.checkOut : '--:--'}
                 </Text>
@@ -365,22 +440,37 @@ const HomeScreen = ({navigation}: Props) => {
               style={[
                 styles.card,
                 styles.shadow,
-                {borderColor: theme.colors.borderLight, backgroundColor: theme.colors.background},
+                {
+                  borderColor: theme.colors.borderLight,
+                  backgroundColor: theme.colors.background,
+                },
               ]}>
-              <Text style={{color: theme.colors.text, fontWeight: '900'}}>Quy định hôm nay</Text>
+              <Text style={{color: theme.colors.text, fontWeight: '900'}}>
+                Quy định hôm nay
+              </Text>
 
               <View style={{height: 10}} />
 
               <View style={styles.row}>
-                <Text style={[styles.rowLabel, {color: theme.colors.mutedText}]}>Cho phép trễ</Text>
-                <Text style={[styles.rowValue, {color: theme.colors.text}]}>{derived.allowMin} phút</Text>
+                <Text
+                  style={[styles.rowLabel, {color: theme.colors.mutedText}]}>
+                  Cho phép trễ
+                </Text>
+                <Text style={[styles.rowValue, {color: theme.colors.text}]}>
+                  {derived.allowMin} phút
+                </Text>
               </View>
 
               <View style={styles.divider} />
 
               <View style={styles.row}>
-                <Text style={[styles.rowLabel, {color: theme.colors.mutedText}]}>Vai trò</Text>
-                <Text style={[styles.rowValue, {color: theme.colors.text}]}>{me?.role ?? '---'}</Text>
+                <Text
+                  style={[styles.rowLabel, {color: theme.colors.mutedText}]}>
+                  Vai trò
+                </Text>
+                <Text style={[styles.rowValue, {color: theme.colors.text}]}>
+                  {me?.role ?? '---'}
+                </Text>
               </View>
             </View>
 
@@ -390,7 +480,8 @@ const HomeScreen = ({navigation}: Props) => {
                 <Text style={styles.alertTitle}>⚠️ Cảnh báo trễ giờ</Text>
                 <Text style={styles.alertText}>{derived.canhBaoTre.text}</Text>
                 <Text style={styles.alertHint}>
-                  Tip: vào “Chấm công” và check-in ngay để tránh bị tính phạt nha.
+                  Tip: vào “Chấm công” và check-in ngay để tránh bị tính phạt
+                  nha.
                 </Text>
               </View>
             )}

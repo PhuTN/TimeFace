@@ -1,39 +1,34 @@
 // src/screens/EmployeeManagementScreen.tsx
+import {useFocusEffect} from '@react-navigation/native';
 import React, {memo, useMemo, useState} from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  ListRenderItem,
-  Pressable,
   FlatList,
   Image,
-  ScrollView,
+  ListRenderItem,
+  Pressable,
   RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import {useUIFactory} from '../ui/factory/useUIFactory';
-import HeaderBar from '../components/common/HeaderBar.tsx';
-import Footer from '../components/common/Footer';
+import Toast from 'react-native-toast-message';
+import {apiHandle} from '../api/apihandle.ts';
+import {User} from '../api/endpoint/user.ts';
 import FilterIcon from '../assets/icons/filter_icon.svg';
 import AddButton from '../components/common/AddButton';
+import AddEmployeeModal from '../components/common/AddEmployeeModal';
+import Chip from '../components/common/Chip.tsx';
 import EmployeeFilter, {
   EmployeeFilterValues,
   EmpSortValue,
 } from '../components/common/EmployeeFilter';
-import {
-  Employee,
-  DEPARTMENTS,
-  PasswordChangeStatus,
-} from '../fake_data/Dien/fake_data.tsx';
-import AddEmployeeModal from '../components/common/AddEmployeeModal';
-import Chip from '../components/common/Chip.tsx';
 import FilterChip from '../components/common/FilterChip.tsx';
-import {apiHandle} from '../api/apihandle.ts';
-import {User} from '../api/endpoint/User.ts';
-import Toast from 'react-native-toast-message';
-import {useFocusEffect} from '@react-navigation/native';
+import HeaderBar from '../components/common/HeaderBar.tsx';
+import {Employee, PasswordChangeStatus} from '../fake_data/Dien/fake_data.tsx';
+import {useUIFactory} from '../ui/factory/useUIFactory';
 
 type Props = any; // hoặc: NativeStackScreenProps<RootStackParamList, 'EmployeeManagement'>
 
@@ -81,8 +76,9 @@ export function toPwdKey(
   return '';
 }
 
-export default function EmployeeManagementScreen({navigation}: Props) {
+export default function EmployeeManagementScreen({navigation, route}: Props) {
   const {loading, theme, lang} = useUIFactory();
+  const isTimesheetMode = route?.params?.mode === 'timesheet';
 
   // ---------- HOOKS (luôn đặt trước mọi return có điều kiện)
   const [activeTab, setActiveTab] = useState<number>(2);
@@ -213,16 +209,19 @@ export default function EmployeeManagementScreen({navigation}: Props) {
 
   const S = makeStyles(theme);
   const t = lang.t;
+  const headerTitle = isTimesheetMode
+    ? 'Quản lý bảng công'
+    : t('employee_management');
 
-const DEFAULT_CRITERIA: EmployeeFilterValues = {
-  employeeName: '',
-  passwordChangeStatus: '',
-  accountActive: '',
-  profile_approved: '', // ✅ QUAN TRỌNG
-  departmentId: '',
-  position: '',
-  sortBy: 'created_desc',
-};
+  const DEFAULT_CRITERIA: EmployeeFilterValues = {
+    employeeName: '',
+    passwordChangeStatus: '',
+    accountActive: '',
+    profile_approved: '', // ✅ QUAN TRỌNG
+    departmentId: '',
+    position: '',
+    sortBy: 'created_desc',
+  };
   const departmentNameById = (id: string) => {
     const dep = EMPLOYEES.find(e => e.departmentId === id)?.departmentName;
     return dep ?? '';
@@ -264,6 +263,9 @@ const DEFAULT_CRITERIA: EmployeeFilterValues = {
   };
   const getprofile_approvedLabel = (v: 'approved' | 'pending') =>
     v === 'approved' ? 'Đã duyệt hồ sơ' : 'Chờ duyệt hồ sơ';
+
+  const buildEmployeeDisplayName = (emp: Employee) =>
+    emp.employeeCode ? `${emp.name} - ${emp.employeeCode}` : emp.name;
 
   const buildActiveFilterChips = (values: EmployeeFilterValues) => {
     const chips: {key: string; mainText: string; subText: string}[] = [];
@@ -453,9 +455,16 @@ const DEFAULT_CRITERIA: EmployeeFilterValues = {
       item={item}
       onPress={() => {
         console.log('ITEEM', item);
-        navigation.navigate('PersonalInformationView', {
-          userId: item.id,
-        });
+        if (isTimesheetMode) {
+          navigation.navigate('MonthTimesheet', {
+            employeeId: item.id,
+            employeeName: buildEmployeeDisplayName(item),
+          });
+        } else {
+          navigation.navigate('PersonalInformationView', {
+            userId: item.id,
+          });
+        }
       }}
     />
   );
@@ -554,7 +563,7 @@ const DEFAULT_CRITERIA: EmployeeFilterValues = {
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
       <HeaderBar
-        title={t('employee_management')}
+        title={headerTitle}
         onBack={() => navigation?.goBack?.()}
       />
 

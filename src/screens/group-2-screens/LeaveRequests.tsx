@@ -1,17 +1,17 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {
+  ActivityIndicator,
   SafeAreaView,
   ScrollView,
-  View,
   Text,
-  ActivityIndicator,
+  View,
 } from 'react-native';
 
-import {useUIFactory} from '../../ui/factory/useUIFactory';
-import Header2 from '../../components/common/Header2';
 import FilterIcon from '../../assets/icons/filter_icon.svg';
 import FilterChip from '../../components/common/FilterChip';
+import Header2 from '../../components/common/Header2';
 import ICRequest from '../../components/list_items/ICRequest';
+import {useUIFactory} from '../../ui/factory/useUIFactory';
 
 import LeaveRequestDetailModal, {
   LeaveRequestDetail,
@@ -21,9 +21,9 @@ import LeaveRequestFilterModal, {
   LeaveRequestFilters,
 } from '../../components/modals/filter-modals/LeaveRequestFilterModal';
 
-import {User} from '../../api/endpoint/User';
-import {apiHandle} from '../../api/apihandle';
 import Toast from 'react-native-toast-message';
+import {apiHandle} from '../../api/apihandle';
+import {User} from '../../api/endpoint/user';
 
 /* ===================== TYPES ===================== */
 type ActiveFilter = {
@@ -176,9 +176,7 @@ export default function LeaveRequestScreen() {
 
         case 'ticketCode':
           next = next.filter(r =>
-            r.requestCode
-              .toLowerCase()
-              .includes(String(f.value).toLowerCase()),
+            r.requestCode.toLowerCase().includes(String(f.value).toLowerCase()),
           );
           break;
       }
@@ -234,13 +232,15 @@ export default function LeaveRequestScreen() {
   const handleApprove = async () => {
     if (!selectedRequest) return;
 
-    await apiHandle.callApi(
-      User.AdminDecideLeave(
-        selectedRequest.user_id!,
-        selectedRequest.leave_id!,
-      ),
-      {status: 'approved'},
-    ).asPromise();
+    await apiHandle
+      .callApi(
+        User.AdminDecideLeave(
+          selectedRequest.user_id!,
+          selectedRequest.leave_id!,
+        ),
+        {status: 'approved'},
+      )
+      .asPromise();
 
     Toast.show({type: 'success', text1: t('approved')});
     setShowDetailModal(false);
@@ -250,13 +250,15 @@ export default function LeaveRequestScreen() {
   const handleReject = async () => {
     if (!selectedRequest) return;
 
-    await apiHandle.callApi(
-      User.AdminDecideLeave(
-        selectedRequest.user_id!,
-        selectedRequest.leave_id!,
-      ),
-      {status: 'rejected'},
-    ).asPromise();
+    await apiHandle
+      .callApi(
+        User.AdminDecideLeave(
+          selectedRequest.user_id!,
+          selectedRequest.leave_id!,
+        ),
+        {status: 'rejected'},
+      )
+      .asPromise();
 
     Toast.show({type: 'success', text1: t('rejected')});
     setShowDetailModal(false);
@@ -280,7 +282,11 @@ export default function LeaveRequestScreen() {
           <Text style={{fontSize: 16, fontWeight: '600'}}>
             {t('leaveRequestTitle')}
           </Text>
-          <FilterIcon width={22} height={22} onPress={() => setShowFilter(true)} />
+          <FilterIcon
+            width={22}
+            height={22}
+            onPress={() => setShowFilter(true)}
+          />
         </View>
 
         {/* FILTER CHIPS */}

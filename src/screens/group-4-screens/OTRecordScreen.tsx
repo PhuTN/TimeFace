@@ -1,28 +1,28 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {
+  ActivityIndicator,
   SafeAreaView,
   ScrollView,
-  View,
   StyleSheet,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
+  View,
 } from 'react-native';
 
-import {useUIFactory} from '../../ui/factory/useUIFactory';
 import HeaderBar from '../../components/common/HeaderBar';
 import StatusToggleButtons, {
   StatusType,
 } from '../../components/common/StatusToggleButtons';
 import OTRecord from '../../components/list_items/employe-list-items/OTRecord';
 import OTRecordAddModal from '../../components/modals/add-modals/OTRecordAddModal';
+import {useUIFactory} from '../../ui/factory/useUIFactory';
 
 import OTRequestDetailModal, {
   OTRequestDetail,
 } from '../../components/modals/detail-modals/OTRequestDetailModal';
 
-import {User} from '../../api/endpoint/User';
 import {apiHandle} from '../../api/apihandle';
+import {User} from '../../api/endpoint/user';
 
 /* ===================== TYPES ===================== */
 type OvertimeItem = {
