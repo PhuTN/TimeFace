@@ -46,9 +46,12 @@ export const Lang = {
   darkMode: ['Tối', 'Dark'],
   vietnamese: ['Tiếng Việt', 'Vietnamese'],
   english: ['Tiếng Anh', 'English'],
-  requestCode: ['Mã đơn', 'Request code'],
+  evidenceImages: ['Ảnh minh chứng', 'Evidence images'],
+  requestCode: ['Mã nhân viên', 'Employee code'],
   createdAt: ['Ngày tạo đơn', 'Created at'],
   time: ['Thời gian', 'Time'],
+  otRequestTitle: ['DUYỆT ĐƠN XIN OT', 'APPROVE OT REQUEST'],
+
   date: ['ngày', 'date'],
   approved: ['Đã duyệt', 'Approved'],
   rejected: ['Từ chối', 'Rejected'],
@@ -72,6 +75,59 @@ export const Lang = {
   shiftTime: ['thời gian ca làm việc', 'shift time'],
   leaveReason: ['Xin nghỉ lý do', 'Leave reason'],
   //CommonScreen3
+  // =======================
+  // CHECK-IN COMPLAINT
+  // =======================
+
+  complaintRequestTitle: [
+    'DUYỆT KHIẾU NẠI CHẤM CÔNG',
+    'APPROVE CHECK-IN COMPLAINTS',
+  ],
+
+  complaintRequestList: ['Danh sách khiếu nại', 'Complaint list'],
+
+  complaintDetails: ['Chi tiết khiếu nại', 'Complaint details'],
+
+  complaintType: ['Loại khiếu nại', 'Complaint type'],
+
+  complaintCheckIn: ['Khiếu nại check-in', 'Check-in complaint'],
+
+  complaintCheckOut: ['Khiếu nại check-out', 'Check-out complaint'],
+
+  complaintReason: ['Lý do khiếu nại', 'Complaint reason'],
+
+  complaintCreatedDate: ['Ngày gửi khiếu nại', 'Complaint date'],
+
+  complaintStatus: ['Trạng thái khiếu nại', 'Complaint status'],
+
+  complaintApprovedBy: ['Xử lý bởi', 'Handled by'],
+
+  complaintAdminNote: ['Ghi chú quản lý', 'Admin note'],
+
+  // =======================
+  // CHECK-IN COMPLAINT FILTER
+  // =======================
+
+  complaintFilterTitle: [
+    'Bộ lọc khiếu nại chấm công',
+    'Check-in complaint filters',
+  ],
+
+  complaintEmployeeName: ['Tên nhân viên', 'Employee name'],
+
+  complaintDepartment: ['Phòng ban', 'Department'],
+
+  complaintTypeLabel: ['Loại khiếu nại', 'Complaint type'],
+
+  complaintStatusLabel: ['Trạng thái', 'Status'],
+
+  complaintCreatedDateLabel: ['Ngày gửi', 'Created date'],
+
+  newest: ['Mới nhất', 'Newest'],
+  approvedProfile: ['Đã duyệt hồ sơ', 'Profile approved'],
+  pendingProfile: ['Chờ duyệt hồ sơ', 'Profile pending'],
+  oldest: ['Cũ nhất', 'Oldest'],
+  all: ['Tất cả', 'All'],
   employee_name_label: ['Tên nhân viên', 'Employee name'],
   position_name_label: ['Tên chức vụ', 'Position name'],
   approval_status_label: ['Trạng thái duyệt', 'Approval status'],
@@ -303,12 +359,33 @@ export const Lang = {
   days: ['ngày', 'days'],
   leaveRecordTitle: ['LỊCH SỬ NGHỈ PHÉP', 'LEAVE RECORDS'],
   // Leave Summary
-  leaveSummary: ['Số lần nghỉ phép', 'Leave summary'],
+  leaveSummary: ['Số ngày nghỉ', 'Leave summary'],
   year2025: ['Năm 2025', 'Year 2025'],
+  annualLeave: ['Phép năm', 'Annual leave'],
+  sickLeave: ['Nghỉ ốm', 'Sick leave'],
+  unpaidLeave: ['Nghỉ không lương', 'Unpaid leave'],
   createLeaveRequest: ['Tạo đơn nghỉ phép', 'Create leave request'],
   daysTaken: ['Số ngày đã nghỉ', 'Days taken'],
   remainingLeaveDays: ['Số ngày nghỉ phép còn lại', 'Remaining leave days'],
   paidLeaveDays: ['Số ngày nghỉ phép có lương', 'Paid leave days'],
+  leaveRequestList: ['Danh sách đơn nghỉ', 'Leave request list'],
+  leaveRequestFilterTitle: ['Bộ lọc đơn nghỉ', 'Leave request filters'],
+  leave_status_all: ['Tất cả', 'All'],
+  leave_status_pending: ['Đang chờ', 'Pending'],
+  leave_status_approved: ['Đã duyệt', 'Approved'],
+  leave_status_rejected: ['Từ chối', 'Rejected'],
+  approve_success: ['Duyệt thành công', 'Approved successfully'],
+  reject_success: ['Từ chối thành công', 'Rejected successfully'],
+  action_failed: ['Thao tác thất bại', 'Action failed'],
+  leave_type_annual: ['Phép năm', 'Annual leave'],
+  leave_type_sick: ['Nghỉ ốm', 'Sick leave'],
+  leave_type_unpaid: ['Không lương', 'Unpaid leave'],
+  leaveRequestListEmpty: ['Không có đơn nghỉ nào', 'No leave requests found'],
+  requestList: ['Danh sách phiếu', 'Request list'],
+  requestDetails: ['Chi tiết phiếu', 'Request details'],
+  leaveRequestManagement: ['Quản lý đơn nghỉ', 'Leave request management'],
+  approveLeaveRequest: ['Duyệt đơn nghỉ', 'Approve leave request'],
+
   // OT Summary
   overtimeHours: ['Số giờ overtime', 'Overtime hours'],
   createOvertimeRequest: ['Tạo đơn overtime', 'Create OT request'],

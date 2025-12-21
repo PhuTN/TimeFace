@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -6,218 +6,334 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
+
 import {useUIFactory} from '../../ui/factory/useUIFactory';
-import Header2 from '../../components/common/Header2';
+import HeaderBar from '../../components/common/HeaderBar';
 import StatusToggleButtons, {
   StatusType,
 } from '../../components/common/StatusToggleButtons';
 import OTRecord from '../../components/list_items/employe-list-items/OTRecord';
 import OTRecordAddModal from '../../components/modals/add-modals/OTRecordAddModal';
 
-// Fake data for demonstration
-const fakeOTRecords = [
-  {
-    id: '1',
-    date: new Date('2025-10-15'),
-    startTime: '08:00 PM',
-    otHours: '02:00',
-    status: 'approved' as const,
-    approvalDate: '16-10-2025',
-    approverName: 'Nguyễn Văn A',
-    approverAvatar: 'https://i.pravatar.cc/150?img=1',
-  },
-  {
-    id: '2',
-    date: new Date('2025-10-16'),
-    startTime: '06:00 PM',
-    otHours: '03:00',
-    status: 'pending' as const,
-  },
-  {
-    id: '3',
-    date: new Date('2025-10-17'),
-    startTime: '07:00 PM',
-    otHours: '01:30',
-    status: 'rejected' as const,
-    approvalDate: '18-10-2025',
-    approverName: 'Trần Thị B',
-    approverAvatar: 'https://i.pravatar.cc/150?img=2',
-  },
-  {
-    id: '4',
-    date: new Date('2025-10-18'),
-    startTime: '08:30 PM',
-    otHours: '02:30',
-    status: 'approved' as const,
-    approvalDate: '19-10-2025',
-    approverName: 'Lê Văn C',
-    approverAvatar: 'https://i.pravatar.cc/150?img=3',
-  },
-  {
-    id: '5',
-    date: new Date('2025-10-19'),
-    startTime: '09:00 PM',
-    otHours: '01:00',
-    status: 'pending' as const,
-  },
-  {
-    id: '6',
-    date: new Date('2025-10-20'),
-    startTime: '07:30 PM',
-    otHours: '02:00',
-    status: 'approved' as const,
-    approvalDate: '21-10-2025',
-    approverName: 'Phạm Thị D',
-    approverAvatar: 'https://i.pravatar.cc/150?img=4',
-  },
-  {
-    id: '7',
-    date: new Date('2025-10-21'),
-    startTime: '06:30 PM',
-    otHours: '01:30',
-    status: 'approved' as const,
-    approvalDate: '22-10-2025',
-    approverName: 'Đặng Văn E',
-    approverAvatar: 'https://i.pravatar.cc/150?img=5',
-  },
-];
+import OTRequestDetailModal, {
+  OTRequestDetail,
+} from '../../components/modals/detail-modals/OTRequestDetailModal';
 
+import {User} from '../../api/endpoint/User';
+import {apiHandle} from '../../api/apihandle';
+
+/* ===================== TYPES ===================== */
+type OvertimeItem = {
+  /* ===== USER ===== */
+  user_id: string;
+  full_name: string;
+  employee_code?: string;
+  avatar?: string | null;
+  job_title?: string | null;
+  department_name?: string | null;
+
+  /* ===== OT ===== */
+  ot_id: string;
+  date: string; // YYYY-MM-DD
+  start_time?: string;
+  hours: number;
+  reason: string;
+  evidence_images: string[];
+
+  status: StatusType;
+  admin_note?: string;
+
+  created_at: string;
+  approved_at?: string | null;
+
+  approver_name?: string | null;
+  approver_avatar?: string | null;
+};
+
+/* ===================== SCREEN ===================== */
 const OTRecordScreen: React.FC = () => {
   const {loading, theme, lang} = useUIFactory();
+
   const [selectedStatus, setSelectedStatus] = useState<StatusType>('pending');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  if (loading || !theme || !lang) {
-    return null;
-  }
+  const [records, setRecords] = useState<OvertimeItem[]>([]);
+  const [fetching, setFetching] = useState(false);
 
-  // Filter records based on selected status
-  const filteredRecords = fakeOTRecords.filter(
-    record => record.status === selectedStatus,
+  /* ===== DETAIL MODAL ===== */
+  const [showDetail, setShowDetail] = useState(false);
+  const [selectedDetail, setSelectedDetail] = useState<OTRequestDetail | null>(
+    null,
   );
+  const formatHoursToHHMM = (hours: number) => {
+    const totalMinutes = Math.round(hours * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
 
-  const handleCreateOTRequest = () => {
-    setShowAddModal(true);
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   };
 
-  const handleAddOTRecord = (data: {
+  /* ===================== LOAD API ===================== */
+  const loadMyOvertime = async () => {
+    setFetching(true);
+
+    const {status, res} = await apiHandle
+      .callApi(User.GetMyOvertime)
+      .asPromise();
+
+    if (!status.isError) {
+      const mapped: OvertimeItem[] =
+        res?.data?.overtime_requests?.map((item: any) => {
+          const {user, ot} = item;
+
+          return {
+            /* ===== USER ===== */
+            user_id: user.user_id,
+            full_name: user.full_name,
+            employee_code: user.employee_code,
+            avatar: user.avatar,
+            job_title: user.job_title,
+            department_name: user.department?.name ?? null,
+
+            /* ===== OT ===== */
+            ot_id: ot.ot_id,
+            date: ot.date,
+            start_time: ot.start_time,
+            hours: ot.hours,
+            reason: ot.reason,
+            evidence_images: ot.evidence_images ?? [],
+
+            status: ot.status,
+            admin_note: ot.admin_note,
+
+            created_at: ot.created_at,
+            approved_at: ot.approved_at,
+
+            approver_name: ot.approved_by?.full_name ?? null,
+            approver_avatar: ot.approved_by?.avatar ?? null,
+          };
+        }) ?? [];
+
+      setRecords(mapped);
+    }
+
+    setFetching(false);
+  };
+
+  useEffect(() => {
+    loadMyOvertime();
+  }, []);
+
+  /* ===================== CREATE OT ===================== */
+  const formatTime = (d: Date) => {
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  };
+
+  const handleAddOTRecord = async (data: {
     date: Date;
     startTime: Date;
     hours: string;
     reason: string;
+    images: string[];
   }) => {
-    // TODO: Add logic to save the new OT record
-    console.log('New OT Record:', data);
+    const payload = {
+      date: data.date.toISOString().slice(0, 10),
+      start_time: formatTime(data.startTime),
+      hours: Number(data.hours),
+      reason: data.reason,
+      evidence_images: data.images,
+    };
+
+    const {status} = await apiHandle
+      .callApi(User.CreateOvertime, payload)
+      .asPromise();
+
+    if (!status.isError) {
+      setShowAddModal(false);
+      loadMyOvertime();
+    }
   };
 
+  /* ===================== FILTER ===================== */
+  const filteredRecords = useMemo(
+    () => records.filter(r => r.status === selectedStatus),
+    [records, selectedStatus],
+  );
+
+  /* ===================== STATS ===================== */
+  const totalThisMonth = useMemo(() => {
+    const now = new Date();
+    return records
+      .filter(r => {
+        const d = new Date(r.date);
+        return (
+          r.status === 'approved' &&
+          d.getMonth() === now.getMonth() &&
+          d.getFullYear() === now.getFullYear()
+        );
+      })
+      .reduce((sum, r) => sum + r.hours, 0);
+  }, [records]);
+
+  const totalThisYear = useMemo(() => {
+    const year = new Date().getFullYear();
+    return records
+      .filter(
+        r => r.status === 'approved' && new Date(r.date).getFullYear() === year,
+      )
+      .reduce((sum, r) => sum + r.hours, 0);
+  }, [records]);
+
+  /* ===================== OPEN DETAIL ===================== */
+  const openDetail = (item: OvertimeItem) => {
+    const detail: OTRequestDetail = {
+      avatarSource: item.avatar ? {uri: item.avatar} : undefined,
+
+      name: item.full_name,
+      position: item.job_title ?? '—',
+      department: item.department_name ?? '—',
+
+      status: item.status,
+      code: item.employee_code ?? '',
+
+      date: item.date,
+      time: item.start_time ?? '—',
+      hours: item.hours,
+      reason: item.reason,
+
+      createdAt: item.created_at
+        ? new Date(item.created_at).toLocaleDateString('vi-VN')
+        : '',
+
+      images: item.evidence_images,
+
+      approver:
+        item.status !== 'pending'
+          ? {
+              name: item.approver_name ?? 'Admin',
+              date: item.approved_at
+                ? new Date(item.approved_at).toLocaleDateString('vi-VN')
+                : '',
+            }
+          : undefined,
+    };
+
+    setSelectedDetail(detail);
+    setShowDetail(true);
+  };
+
+  if (loading || !theme || !lang) return null;
+
+  /* ===================== UI ===================== */
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
-      <Header2 title={lang.t('otRecordTitle')} theme={theme} />
+      <HeaderBar title={lang.t('otRecordTitle')} isShowBackButton />
 
-      {/* Scrollable Content */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        {/* OT Summary */}
+        {/* SUMMARY */}
         <View
           style={[
             styles.summaryContainer,
-            {
-              backgroundColor: theme.colors.background,
-              borderColor: theme.colors.borderLight,
-              shadowColor: theme.colors.text,
-            },
+            {borderColor: theme.colors.borderLight},
           ]}>
-          {/* Header Row */}
           <View style={styles.headerRow}>
             <Text style={[styles.headerTitle, {color: theme.colors.text}]}>
               {lang.t('overtimeHours')}
             </Text>
+
             <TouchableOpacity
               style={[
                 styles.createButton,
                 {backgroundColor: theme.colors.addButton},
               ]}
-              onPress={handleCreateOTRequest}
-              activeOpacity={0.8}>
+              onPress={() => setShowAddModal(true)}>
               <Text style={styles.createButtonText}>
                 {lang.t('createOvertimeRequest')}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Statistics Row */}
           <View style={styles.statsRow}>
-            {/* This Month */}
-            <View
-              style={[
-                styles.statBox,
-                {
-                  backgroundColor: theme.colors.lightGrayBackground,
-                  borderColor: theme.colors.borderLight,
-                },
-              ]}>
-              <Text style={[styles.statLabel, {color: theme.colors.mutedText}]}>
-                {lang.t('thisMonth')}
-              </Text>
-              <Text style={[styles.statValue, {color: theme.colors.text}]}>
-                12
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>{lang.t('thisMonth')}</Text>
+              <Text style={styles.statValue}>
+                {formatHoursToHHMM(totalThisMonth)}
               </Text>
             </View>
 
-            {/* This Year */}
-            <View
-              style={[
-                styles.statBox,
-                {
-                  backgroundColor: theme.colors.lightGrayBackground,
-                  borderColor: theme.colors.borderLight,
-                },
-              ]}>
-              <Text style={[styles.statLabel, {color: theme.colors.mutedText}]}>
-                {lang.t('thisYear')}
-              </Text>
-              <Text style={[styles.statValue, {color: theme.colors.text}]}>
-                145
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>{lang.t('thisYear')}</Text>
+              <Text style={styles.statValue}>
+                {formatHoursToHHMM(totalThisYear)}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Status Toggle Buttons */}
-        <View style={styles.toggleContainer}>
-          <StatusToggleButtons
-            selectedStatus={selectedStatus}
-            onStatusChange={setSelectedStatus}
-          />
-        </View>
+        {/* STATUS */}
+        <StatusToggleButtons
+          selectedStatus={selectedStatus}
+          onStatusChange={setSelectedStatus}
+        />
 
-        {/* OT Records List */}
-        {filteredRecords.map(record => (
-          <OTRecord
-            key={record.id}
-            date={record.date}
-            startTime={record.startTime}
-            otHours={record.otHours}
-            status={record.status}
-            approvalDate={record.approvalDate}
-            approverName={record.approverName}
-            approverAvatar={record.approverAvatar}
-          />
-        ))}
+        {/* LIST */}
+        {fetching ? (
+          <ActivityIndicator color={theme.colors.primary} />
+        ) : (
+          filteredRecords.map(item => (
+            <TouchableOpacity
+              key={item.ot_id}
+              activeOpacity={0.85}
+              onPress={() => openDetail(item)}>
+              <OTRecord
+                date={new Date(item.date)}
+                startTime={item.start_time ?? '—'}
+                otHours={item.hours.toFixed(2)}
+                status={item.status}
+                approvalDate={
+                  item.status !== 'pending'
+                    ? new Date(item.created_at).toLocaleDateString()
+                    : undefined
+                }
+                approverName={
+                  item.status !== 'pending'
+                    ? item.approver_name ?? 'Admin'
+                    : undefined
+                }
+                approverAvatar={item.approver_avatar ?? undefined}
+              />
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
 
-      {/* Add OT Record Modal */}
+      {/* ADD MODAL */}
       <OTRecordAddModal
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={handleAddOTRecord}
       />
+
+      {/* DETAIL MODAL */}
+      <OTRequestDetailModal
+        visible={showDetail}
+        onClose={() => setShowDetail(false)}
+        request={selectedDetail}
+        theme={theme}
+        lang={lang}
+        isAdmin={false}
+      />
     </SafeAreaView>
   );
 };
 
+/* ===================== STYLES ===================== */
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
@@ -229,10 +345,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     padding: 12,
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   headerRow: {
     flexDirection: 'row',
@@ -250,7 +362,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   createButtonText: {
-    color: '#FFFFFF',
+    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -263,7 +375,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    gap: 4,
   },
   statLabel: {
     fontSize: 14,
@@ -271,9 +382,6 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: '600',
-  },
-  toggleContainer: {
-    paddingVertical: 0,
   },
 });
 

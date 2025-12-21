@@ -11,64 +11,63 @@ import BottomSheetModal from '../../common/BottomSheetModal';
 import type {Option} from '../../../types/common';
 import {apiHandle} from '../../../api/apihandle';
 import {DepartmentEP} from '../../../api/endpoint/Department';
-import {
-  makeApprovalOptions,
-  makeSortingOptions,
-} from '../../../fake_data/Dien/fake_data';
 
 /* ===================== TYPES ===================== */
-type OTRequestFilterModalProps = {
+type Props = {
   visible: boolean;
   onClose: () => void;
-  onApplyFilters?: (filters: OTRequestFilters) => void;
+  onApplyFilters?: (filters: CheckinComplaintFilters) => void;
 };
 
-export type OTRequestFilters = {
-  ticketCode: string;
+export type CheckinComplaintFilters = {
   employeeName: string;
-  positionName: string;
   department: Option | null;
-  approvalStatus: Option | null;
+  status: Option | null;
+  type: Option | null; // check_in | check_out
   createdDate: Date;
-  otDate: Date;
   sortBy: Option | null;
 };
 
 /* ===================== COMPONENT ===================== */
-export default function OTRequestFilterModal({
+export default function CheckinComplaintFilterModal({
   visible,
   onClose,
   onApplyFilters,
-}: OTRequestFilterModalProps) {
+}: Props) {
   const {loading, theme, lang} = useUIFactory();
 
   /* ---------- OPTIONS ---------- */
-  const [approvals, setApprovals] = useState<Option[]>([]);
-  const [sortings, setSortings] = useState<Option[]>([]);
   const [departments, setDepartments] = useState<Option[]>([
     {value: 'all', label: '—'},
   ]);
 
+  const statusOptions: Option[] = [
+    {value: 'all', label: lang?.t('all') ?? 'Tất cả'},
+    {value: 'pending', label: lang?.t('pending') ?? 'Chờ duyệt'},
+    {value: 'approved', label: lang?.t('approved') ?? 'Đã duyệt'},
+    {value: 'rejected', label: lang?.t('rejected') ?? 'Từ chối'},
+  ];
+
+  const typeOptions: Option[] = [
+    {value: 'all', label: lang?.t('all') ?? 'Tất cả'},
+    {value: 'check_in', label: 'Check-in'},
+    {value: 'check_out', label: 'Check-out'},
+  ];
+
+  const sortOptions: Option[] = [
+    {value: 'newest', label: lang?.t('newest') ?? 'Mới nhất'},
+    {value: 'oldest', label: lang?.t('oldest') ?? 'Cũ nhất'},
+  ];
+
   /* ---------- VALUES ---------- */
-  const [approvalStatus, setApprovalStatus] = useState<Option | null>(null);
-  const [department, setDepartment] = useState<Option | null>(null);
-  const [sortBy, setSortBy] = useState<Option | null>(null);
-
-  const [ticketCode, setTicketCode] = useState('');
   const [employeeName, setEmployeeName] = useState('');
-  const [positionName, setPositionName] = useState('');
-
+  const [department, setDepartment] = useState<Option | null>(null);
+  const [status, setStatus] = useState<Option | null>(null);
+  const [type, setType] = useState<Option | null>(null);
+  const [sortBy, setSortBy] = useState<Option | null>(null);
   const [createdDate, setCreatedDate] = useState<Date>(new Date());
-  const [otDate, setOtDate] = useState<Date>(new Date());
 
-  /* ===================== LOAD STATIC OPTIONS ===================== */
-  useEffect(() => {
-    if (!lang) return;
-    setApprovals(makeApprovalOptions(lang));
-    setSortings(makeSortingOptions(lang));
-  }, [lang]);
-
-  /* ===================== LOAD DEPARTMENTS (REAL API) ===================== */
+  /* ===================== LOAD DEPARTMENTS ===================== */
   useEffect(() => {
     const loadDepartments = async () => {
       try {
@@ -94,24 +93,20 @@ export default function OTRequestFilterModal({
 
   /* ===================== DEFAULT SELECT ===================== */
   useEffect(() => {
-    if (approvals.length && !approvalStatus) setApprovalStatus(approvals[0]);
-  }, [approvals, approvalStatus]);
-
-  useEffect(() => {
-    if (departments.length && !department) setDepartment(departments[0]);
-  }, [departments, department]);
-
-  useEffect(() => {
-    if (sortings.length && !sortBy) setSortBy(sortings[0]);
-  }, [sortings, sortBy]);
+    if (!department && departments.length) setDepartment(departments[0]);
+    if (!status) setStatus(statusOptions[0]);
+    if (!type) setType(typeOptions[0]);
+    if (!sortBy) setSortBy(sortOptions[0]);
+  }, [departments, status, type, sortBy]);
 
   /* ===================== GUARD ===================== */
   if (
     loading ||
     !theme ||
     !lang ||
-    !approvalStatus ||
     !department ||
+    !status ||
+    !type ||
     !sortBy
   ) {
     return null;
@@ -120,38 +115,30 @@ export default function OTRequestFilterModal({
   const S = themedStyles(theme);
 
   /* ===================== HANDLERS ===================== */
-  const handleClearFilters = () => {
-    setTicketCode('');
+  const handleClear = () => {
     setEmployeeName('');
-    setPositionName('');
-    setApprovalStatus(approvals[0]);
     setDepartment(departments[0]);
-    setSortBy(sortings[0]);
-
-    const d = new Date();
-    setCreatedDate(d);
-    setOtDate(d);
+    setStatus(statusOptions[0]);
+    setType(typeOptions[0]);
+    setSortBy(sortOptions[0]);
+    setCreatedDate(new Date());
   };
 
-  const handleApplyFilters = () => {
-    const filters: OTRequestFilters = {
-      ticketCode,
+  const handleApply = () => {
+    onApplyFilters?.({
       employeeName,
-      positionName,
       department,
-      approvalStatus,
+      status,
+      type,
       createdDate,
-      otDate,
       sortBy,
-    };
-
-    onApplyFilters?.(filters);
+    });
     onClose();
   };
 
   /* ===================== UI ===================== */
   return (
-    <BottomSheetModal visible={visible} onClose={onClose} maxHeightRatio={0.92}>
+    <BottomSheetModal visible={visible} onClose={onClose} maxHeightRatio={0.9}>
       <View
         style={[
           S.container,
@@ -167,32 +154,29 @@ export default function OTRequestFilterModal({
           <View style={S.card}>
             {/* ROW 1 */}
             <Row>
-              <View style={{flex: 1}}>
-                <LabeledTextInput
-                  label={lang.t('id_form_label')}
-                  value={ticketCode}
-                  onChangeText={setTicketCode}
-                  placeholder={lang.t('id_form_placeholder')}
-                  theme={theme}
-                />
-              </View>
-              <View style={{flex: 1}} />
+              <LabeledTextInput
+                label={lang.t('employee_name_label') ?? 'Tên nhân viên'}
+                value={employeeName}
+                onChangeText={setEmployeeName}
+                placeholder={lang.t('employee_placeholder') ?? 'Nhập tên'}
+                theme={theme}
+              />
             </Row>
 
             {/* ROW 2 */}
             <Row>
-              <LabeledTextInput
-                label={lang.t('employee_name_label')}
-                value={employeeName}
-                onChangeText={setEmployeeName}
-                placeholder={lang.t('employee_placeholder')}
+              <LabeledSelect
+                label={lang.t('department_label') ?? 'Phòng ban'}
+                selected={department}
+                options={departments}
+                onSelect={setDepartment}
                 theme={theme}
               />
-              <LabeledTextInput
-                label={lang.t('position_name_label')}
-                value={positionName}
-                onChangeText={setPositionName}
-                placeholder={lang.t('position_placeholder')}
+              <LabeledSelect
+                label={lang.t('status') ?? 'Trạng thái'}
+                selected={status}
+                options={statusOptions}
+                onSelect={setStatus}
                 theme={theme}
               />
             </Row>
@@ -200,43 +184,26 @@ export default function OTRequestFilterModal({
             {/* ROW 3 */}
             <Row>
               <LabeledSelect
-                label={lang.t('department_label')}
-                selected={department}
-                options={departments}
-                onSelect={setDepartment}
+                label="Loại khiếu nại"
+                selected={type}
+                options={typeOptions}
+                onSelect={setType}
                 theme={theme}
               />
-              <LabeledSelect
-                label={lang.t('approval_status_label')}
-                selected={approvalStatus}
-                options={approvals}
-                onSelect={setApprovalStatus}
+              <LabeledDate
+                label={lang.t('created_date_label') ?? 'Ngày gửi'}
+                date={createdDate}
+                onChange={setCreatedDate}
                 theme={theme}
               />
             </Row>
 
             {/* ROW 4 */}
             <Row>
-              <LabeledDate
-                label={lang.t('created_date_label')}
-                date={createdDate}
-                onChange={setCreatedDate}
-                theme={theme}
-              />
-              <LabeledDate
-                label={lang.t('otDate')}
-                date={otDate}
-                onChange={setOtDate}
-                theme={theme}
-              />
-            </Row>
-
-            {/* ROW 5 */}
-            <Row>
               <LabeledSelect
-                label={lang.t('sort_by_label')}
+                label={lang.t('sort_by_label') ?? 'Sắp xếp'}
                 selected={sortBy}
-                options={sortings}
+                options={sortOptions}
                 onSelect={setSortBy}
                 theme={theme}
               />
@@ -245,16 +212,16 @@ export default function OTRequestFilterModal({
             {/* ACTIONS */}
             <View style={S.actions}>
               <ButtonFilter
-                text={lang.t('clear_filters')}
+                text={lang.t('clear_filters') ?? 'Xóa lọc'}
                 textColor="#000"
                 backgroundColor="#E3F4FF"
-                onPress={handleClearFilters}
+                onPress={handleClear}
               />
               <ButtonFilter
-                text={lang.t('apply_filters')}
+                text={lang.t('apply_filters') ?? 'Áp dụng'}
                 textColor="#FFF"
                 backgroundColor="#6A96EE"
-                onPress={handleApplyFilters}
+                onPress={handleApply}
               />
             </View>
           </View>

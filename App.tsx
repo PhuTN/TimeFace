@@ -20,6 +20,10 @@ import {
   useAppReload,
 } from './src/context/AppReloadContext';
 
+import AppConfig from './src/appconfig/AppConfig';
+import { socketService } from './services/socketService';
+
+
 // ======================= ROOT APP =======================
 function RootApp({
   initialRoute,
@@ -31,11 +35,15 @@ function RootApp({
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     (async () => {
       const session = await rehydrateAuth();
       let user = session?.user ?? null;
 
+      // set token vào AppConfig trước khi call API
       if (session?.token) {
+        AppConfig.getInstance().setAuthToken(session.token, { rebuildAxios: true });
         try {
           const { status, res } = await apiHandle.callApi(User.GetMe).asPromise();
           if (!status.isError && res?.success && res.data?.user) {
@@ -45,8 +53,21 @@ function RootApp({
         } catch {}
       }
 
-      setReady(true);
+      // ✅ socket connect nếu có user
+      if (user?._id) {
+        await socketService.connect(); // tự lấy apiUrl & _id từ storage
+      } else {
+        socketService.disconnect();
+      }
+
+      if (mounted) setReady(true);
     })();
+
+    return () => {
+      mounted = false;
+      // unmount root -> đảm bảo ngắt socket nếu không còn dùng
+      socketService.disconnect();
+    };
   }, [reloadKey]); // 🔥 reload toàn app khi reloadKey đổi
 
   // Deep link stripe
@@ -58,7 +79,7 @@ function RootApp({
           if (res?.success && res.data?.user) {
             const stored = await authStorage.load();
             await authStorage.save({
-              token: stored?.token || null,
+              token: stored?.token || '',
               user: res.data.user,
             });
           }
@@ -68,6 +89,9 @@ function RootApp({
             text1: 'Thanh toán thành công',
             text2: 'Gói dịch vụ đã được kích hoạt.',
           });
+
+          // sau khi cập nhật user -> đảm bảo socket còn sống
+          await socketService.connect();
         }
 
         if (url.startsWith('timeface://stripe-cancel')) {
@@ -112,6 +136,8 @@ function AppContent() {
       let user = session?.user ?? null;
 
       if (session?.token) {
+        // đảm bảo axios có token trước khi GetMe
+        AppConfig.getInstance().setAuthToken(session.token, { rebuildAxios: true });
         try {
           const { res } = await apiHandle.callApi(User.GetMe).asPromise();
           if (res?.success && res.data?.user) {

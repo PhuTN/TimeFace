@@ -43,15 +43,19 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
   const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [jobTitle, setJobTitle] = useState('');
   const [salary, setSalary] = useState('');
   const [avatarUri, setAvatarUri] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
-
+  const [userData, setUserData] = useState<any>(null);
   // ⭐ 2 STATE: API vs PARAM
-  const [faceImageApi, setFaceImageApi] = useState('');
+  const [faceFrontApi, setFaceFrontApi] = useState('');
+  const [faceLeftApi, setFaceLeftApi] = useState('');
+  const [faceRightApi, setFaceRightApi] = useState('');
+
   const [faceFrontParam, setFaceFrontParam] = useState('');
   const [faceLeftParam, setFaceLeftParam] = useState('');
   const [faceRightParam, setFaceRightParam] = useState('');
@@ -80,46 +84,54 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
       if (result.status.isError) throw new Error(result.status.errorMessage);
 
       const u = result.res.data.user;
-
+      setUserData(u);
       setAvatarUri(u.avatar || '');
       setFirstName(u.full_name || '');
       setPhone(u.phone_number || '');
       setGender(u.gender || 'male');
-      setDateOfBirth(u.date_of_birth ? new Date(u.date_of_birth) : new Date());
+      setDateOfBirth(u.date_of_birth ? new Date(u.date_of_birth) : null);
       setJobTitle(u.job_title || '');
       setSalary(u.salary ? u.salary.toString() : '');
-      setCountryCode(u.country_code || '');
+      setCountryCode(u.country_code || null);
       setStateCode(u.state_code || '');
       setCityName(u.city_name || '');
       setFullAddress(u.full_address || '');
-
+      setEmail(u.email || '');
       // ⭐ Không đụng vào faceImageParam
-      setFaceImageApi(u.face_image || '');
+      setFaceFrontApi(u.face_image || '');
+      setFaceLeftApi(u.face_image2 || '');
+      setFaceRightApi(u.face_image3 || '');
 
-      setApprovalStatus(u.info_status || 'pending');
+      setApprovalStatus(u.profile_approved ? 'approved' : 'pending');
     } catch (err: any) {
       Toast.show({type: 'error', text1: 'Lỗi', text2: err.message});
     } finally {
       setLoading(false);
     }
   };
-
+  const [faceIdFront, setFaceIdFront] = useState<Float32Array | null>(null);
   // ⭐ NHẬN ẢNH TỪ FACE DETECTION (ƯU TIÊN)
   useEffect(() => {
     const faces = route?.params?.faces;
+    console.log('FACES', faces);
     if (!faces) return;
 
     if (faces.image_front) {
-      console.log("🔥 Face front received:", faces.image_front);
+      console.log('🔥 Face front received:', faces.image_front);
       setFaceFrontParam(faces.image_front);
     }
     if (faces.image_left) {
-      console.log("🔥 Face left received:", faces.image_left);
+      console.log('🔥 Face left received:', faces.image_left);
       setFaceLeftParam(faces.image_left);
     }
     if (faces.image_right) {
-      console.log("🔥 Face right received:", faces.image_right);
+      console.log('🔥 Face right received:', faces.image_right);
       setFaceRightParam(faces.image_right);
+    }
+
+    if (faces.faceid_front) {
+      console.log('🔥 FaceID front vector length:', faces.faceid_front.length);
+      setFaceIdFront(faces.faceid_front); // ✅ thêm state mới ở Bước 2
     }
 
     // clear params tránh set lại khi re-render
@@ -144,16 +156,29 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
         full_address: fullAddress,
         avatar: avatarUri,
 
-        // ⭐ Ưu tiên ảnh param
-         face_image: faceFrontParam || faceImageApi,
+        // ⭐ Ảnh khuôn mặt
+        face_image: faceFrontParam || faceFrontApi, // chính diện
+        face_image2: faceLeftParam || faceLeftApi, // trái
+        face_image3: faceRightParam || faceRightApi, // phải
+
+        // ⭐ Face ID vector (convert sang JSON)
+        face_id: faceIdFront
+          ? JSON.stringify(Array.from(faceIdFront))
+          : undefined,
       };
 
-      const result = await apiHandle.callApi(User.UpdateMe, payload).asPromise();
+      const result = await apiHandle
+        .callApi(User.UpdateMe, payload)
+        .asPromise();
       if (result.status.isError) throw new Error(result.status.errorMessage);
 
       await loadUser();
 
-      Toast.show({type: 'success', text1: 'Thành công', text2: 'Thông tin đã được cập nhật'});
+      Toast.show({
+        type: 'success',
+        text1: 'Thành công',
+        text2: 'Thông tin đã được cập nhật',
+      });
 
       reloadApp();
     } catch (err: any) {
@@ -202,10 +227,10 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
 
   const statusColor =
     approvalStatus === 'approved'
-      ? '#2ECC71'
+      ? '#2ECC71' // xanh
       : approvalStatus === 'pending'
-      ? '#F1C40F'
-      : '#E74C3C';
+      ? '#F1C40F' // vàng
+      : '#E74C3C'; // đỏ
 
   const statusText =
     approvalStatus === 'approved'
@@ -224,12 +249,16 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
         isShowAvatar={false}
       />
 
-      <ScrollView style={S.scroll} contentContainerStyle={[S.content, {paddingBottom: 120}]}>
-
+      <ScrollView
+        style={S.scroll}
+        contentContainerStyle={[S.content, {paddingBottom: 120}]}>
         {/* Avatar */}
         <View style={S.photoWrapper}>
           <View style={S.photoCard}>
-            <Image source={{uri: avatarUri || AVATAR_DEFAULT}} style={S.photo} />
+            <Image
+              source={{uri: avatarUri || AVATAR_DEFAULT}}
+              style={S.photo}
+            />
 
             {avatarUploading && (
               <View style={S.avatarOverlay}>
@@ -237,7 +266,9 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
               </View>
             )}
 
-            <TouchableOpacity style={S.photoAction} onPress={handleUploadAvatar}>
+            <TouchableOpacity
+              style={S.photoAction}
+              onPress={handleUploadAvatar}>
               <ReupImageIcon width={34} height={34} />
             </TouchableOpacity>
           </View>
@@ -245,28 +276,66 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
           <Text style={S.uploadTitle}>Ảnh đại diện</Text>
           <Text style={S.uploadHint}>Ảnh rõ nét và đủ sáng</Text>
 
-          <View style={[S.statusBadge, {backgroundColor: statusColor}]}>
-            <Text style={S.statusText}>{statusText}</Text>
-          </View>
+          {/* ⭐ Chỉ hiện nếu user là role user */}
+          {userData?.role === 'user' && (
+            <View style={[S.statusBadge, {backgroundColor: statusColor}]}>
+              <Text style={S.statusText}>{statusText}</Text>
+            </View>
+          )}
         </View>
 
-        <LabeledTextInput label="Họ và tên" value={firstName} onChangeText={setFirstName} theme={theme} />
-        <View style={S.fieldSpacing} />
-
         <LabeledTextInput
-          label="Số điện thoại"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
+          label="Họ và tên"
+          value={firstName}
+          onChangeText={setFirstName}
           theme={theme}
         />
         <View style={S.fieldSpacing} />
 
-        <LabeledTextInput label="Chức vụ" value={jobTitle} editable={false} theme={theme} />
+        {userData?.employee_code ? (
+          <>
+            <LabeledTextInput
+              label="Mã nhân viên"
+              value={userData.employee_code}
+              editable={false}
+              theme={theme}
+            />
+            <View style={S.fieldSpacing} />
+          </>
+        ) : null}
+        <View style={S.fieldSpacing} />
+        <LabeledTextInput
+          label="Số điện thoại"
+          value={phone}
+          onChangeText={setPhone}
+          type="number"
+          theme={theme}
+        />
         <View style={S.fieldSpacing} />
 
+        <LabeledTextInput
+          label="Chức vụ"
+          value={jobTitle}
+          editable={false}
+          theme={theme}
+        />
+        <View style={S.fieldSpacing} />
+        <LabeledTextInput
+          label="Email"
+          value={email}
+          editable={false}
+          theme={theme}
+        />
+
+        <View style={S.fieldSpacing} />
         {jobTitle?.toLowerCase() !== 'admin' && (
-          <LabeledTextInput label="Lương" value={salary} editable={false} theme={theme} />
+          <LabeledTextInput
+            label="Lương"
+            value={salary}
+            editable={false}
+            theme={theme}
+            type="money"
+          />
         )}
 
         <View style={S.fieldSpacing} />
@@ -288,7 +357,12 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
 
         <View style={S.fieldSpacing} />
 
-        <LabeledDate label="Ngày sinh" date={dateOfBirth} onChange={setDateOfBirth} theme={theme} />
+        <LabeledDate
+          label="Ngày sinh"
+          date={dateOfBirth}
+          onChange={setDateOfBirth}
+          theme={theme}
+        />
         <View style={S.sectionSpacing} />
 
         <Text style={S.sectionTitle}>Địa chỉ</Text>
@@ -339,7 +413,7 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
           {/* LEFT */}
           <View style={S.faceItem}>
             <Image
-              source={{uri: faceLeftParam || faceImageApi || AVATAR_DEFAULT}}
+              source={{uri: faceLeftParam || faceLeftApi || AVATAR_DEFAULT}}
               style={S.facePreview}
             />
             <Text style={S.faceLabel}>Trái</Text>
@@ -348,7 +422,7 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
           {/* FRONT */}
           <View style={S.faceItem}>
             <Image
-              source={{uri: faceFrontParam || faceImageApi || AVATAR_DEFAULT}}
+              source={{uri: faceFrontParam || faceFrontApi || AVATAR_DEFAULT}}
               style={S.facePreview}
             />
             <Text style={S.faceLabel}>Chính diện</Text>
@@ -357,7 +431,7 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
           {/* RIGHT */}
           <View style={S.faceItem}>
             <Image
-              source={{uri: faceRightParam || faceImageApi || AVATAR_DEFAULT}}
+              source={{uri: faceRightParam || faceRightApi || AVATAR_DEFAULT}}
               style={S.facePreview}
             />
             <Text style={S.faceLabel}>Phải</Text>
@@ -366,15 +440,19 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
 
         <View style={{alignItems: 'center', marginTop: 12}}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('PersonalInformationFaceDetection')}>
+            onPress={() =>
+              navigation.replace('PersonalInformationFaceDetection')
+            }>
             <ReupImageIcon width={34} height={34} />
           </TouchableOpacity>
         </View>
-
       </ScrollView>
 
       <View style={{padding: 20}}>
-        <GradientButton text={saving ? '...' : 'Cập nhật'} onPress={handleUpdate} />
+        <GradientButton
+          text={saving ? '...' : 'Cập nhật'}
+          onPress={handleUpdate}
+        />
       </View>
     </SafeAreaView>
   );

@@ -26,4 +26,7 @@ export class AxiosHttpClient implements IHttpClient {
   async delete<T = any>(u: string) {
     return (await this.client.delete(u)).data as T;
   }
+  async patch<T = any>(u: string, b?: any) {
+  return (await this.client.patch(u, b)).data as T;
+}
 }

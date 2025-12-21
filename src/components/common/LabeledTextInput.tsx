@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import {
   View,
   Text,
@@ -10,25 +10,24 @@ import {
   TextInputProps,
 } from 'react-native';
 
-/**
- * Editable props (user có thể nhập)
- */
+type InputType = 'text' | 'number' | 'money';
+
+/* ================== EDITABLE ================== */
 type EditableProps = {
   label: string;
   value: string;
-  onChangeText: (text: string) => void;  // ⭐ bắt buộc khi editable = true
+  onChangeText: (text: string) => void;
   placeholder?: string;
   theme: any;
   multiline?: boolean;
   numberOfLines?: number;
   containerStyle?: StyleProp<ViewStyle>;
   inputProps?: TextInputProps;
-  editable?: true; // ⭐ bật edit
+  editable?: true;
+  type?: InputType;   // ⭐ NEW
 };
 
-/**
- * Readonly props (không cần onChangeText)
- */
+/* ================= READONLY ================== */
 type ReadonlyProps = {
   label: string;
   value: string;
@@ -38,15 +37,13 @@ type ReadonlyProps = {
   numberOfLines?: number;
   containerStyle?: StyleProp<ViewStyle>;
   inputProps?: TextInputProps;
-  editable: false; // ⭐ khi disable → ko cần onChangeText
+  editable: false;
+  type?: InputType;   // ⭐ có nhưng không dùng
 };
 
-/**
- * Combined props
- */
 type Props = EditableProps | ReadonlyProps;
 
-const LabeledTextInput: React.FC<Props> = ({
+export default function LabeledTextInput({
   label,
   value,
   placeholder,
@@ -56,14 +53,40 @@ const LabeledTextInput: React.FC<Props> = ({
   containerStyle,
   inputProps,
   editable = true,
+  type = 'text',
   ...rest
-}) => {
+}: Props) {
   const S = themedStyles(theme);
-  const { style: inputStyle, ...restInputProps } = inputProps ?? {};
+  const {style: inputStyle, ...restInputProps} = inputProps ?? {};
 
-  // ⭐ lấy hàm onChangeText nếu editable, còn không thì undefined
+  // ⭐ Handler cho type money / number
+  const formatMoney = useCallback((num: string) => {
+    const cleaned = num.replace(/[^\d]/g, '');
+    if (!cleaned) return '';
+
+    return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }, []);
+
   const onChangeText =
-    editable && "onChangeText" in rest ? rest.onChangeText : undefined;
+    editable && 'onChangeText' in rest
+      ? (text: string) => {
+          let final = text;
+
+          if (type === 'number') {
+            final = text.replace(/[^\d]/g, '');
+          }
+
+          if (type === 'money') {
+            final = formatMoney(text);
+          }
+
+          rest.onChangeText(final);
+        }
+      : undefined;
+
+  // ⭐ value hiển thị: nếu type = money → format luôn
+  const displayValue =
+    type === 'money' ? formatMoney(value ?? '') : value ?? '';
 
   return (
     <View style={[S.field, containerStyle]}>
@@ -74,16 +97,18 @@ const LabeledTextInput: React.FC<Props> = ({
           S.inputBox,
           multiline ? S.multilineBox : null,
           !editable && S.disabledBox,
-        ]}
-      >
+        ]}>
         <TextInput
-          value={value}
+          value={displayValue}
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={theme.colors.placeholder}
           multiline={multiline}
           numberOfLines={multiline ? numberOfLines ?? 3 : 1}
           editable={editable}
+          keyboardType={
+            type === 'number' || type === 'money' ? 'numeric' : 'default'
+          }
           style={[
             S.input,
             multiline ? S.multilineInput : null,
@@ -95,12 +120,14 @@ const LabeledTextInput: React.FC<Props> = ({
       </View>
     </View>
   );
-};
+}
+
+/* ================== THEME ================== */
 
 const themedStyles = (theme: any) =>
   StyleSheet.create({
-    field: { flexGrow: 1, flexBasis: '48%', minWidth: '48%' },
-    label: { fontSize: 13, color: theme.colors.text, marginBottom: 6 },
+    field: {flexGrow: 1, flexBasis: '48%', minWidth: '48%'},
+    label: {fontSize: 13, color: theme.colors.text, marginBottom: 6},
 
     inputBox: {
       borderWidth: 2,
@@ -122,7 +149,7 @@ const themedStyles = (theme: any) =>
       paddingVertical: 10,
     },
 
-    input: { fontSize: 16, color: theme.colors.text },
+    input: {fontSize: 16, color: theme.colors.text},
 
     disabledInput: {
       color: '#6B7280',
@@ -133,5 +160,3 @@ const themedStyles = (theme: any) =>
       minHeight: 80,
     },
   });
-
-export default React.memo(LabeledTextInput);

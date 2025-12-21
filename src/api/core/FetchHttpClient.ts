@@ -9,7 +9,9 @@ export class FetchHttpClient implements IHttpClient {
   ): Promise<T> {
     let finalUrl = url;
 
-    // xử lý query string cho GET nếu cần
+    // =========================
+    //  XỬ LÝ QUERY STRING (GET)
+    // =========================
     if (options.params && method === 'GET') {
       const qs = new URLSearchParams(options.params).toString();
       finalUrl = qs ? `${url}?${qs}` : url;
@@ -19,25 +21,40 @@ export class FetchHttpClient implements IHttpClient {
       method,
       headers: {
         'Content-Type': 'application/json',
-        // nếu bạn có token từ AppConfig hoặc nơi khác thì gắn ở đây
-        // Authorization: `Bearer ${token}`,
       },
-      body: method === 'GET' || method === 'DELETE'
-        ? undefined
-        : JSON.stringify(options.body),
+      body:
+        method === 'GET' || method === 'DELETE'
+          ? undefined
+          : JSON.stringify(options.body),
     });
 
+    // =========================
+    //  XỬ LÝ ERROR
+    // =========================
     if (!res.ok) {
-      // tuỳ ý: ném Error hoặc build object error giống AxiosHttpClient + AppConfig.errorMapper
-      const errBody = await res.json().catch(() => undefined);
-      const err: any = new Error(errBody?.message || `HTTP error ${res.status}`);
+      let errBody: any = null;
+      try {
+        errBody = await res.json();
+      } catch (_) {}
+
+      const err: any = new Error(
+        errBody?.message || errBody?.error || `HTTP error ${res.status}`,
+      );
+
       err.status = res.status;
       err.data = errBody;
+
       throw err;
     }
 
-    // giả sử API luôn trả JSON
-    return (await res.json()) as T;
+    // =========================
+    //  PARSE JSON
+    // =========================
+    try {
+      return (await res.json()) as T;
+    } catch (_) {
+      return {} as T;
+    }
   }
 
   async get<T = any>(url: string, params?: any): Promise<T> {
@@ -54,5 +71,12 @@ export class FetchHttpClient implements IHttpClient {
 
   async delete<T = any>(url: string): Promise<T> {
     return this.request<T>('DELETE', url);
+  }
+
+  // =========================
+  //      ⭐ PATCH (THÊM MỚI)
+  // =========================
+  async patch<T = any>(url: string, body?: any): Promise<T> {
+    return this.request<T>('PATCH', url, { body });
   }
 }

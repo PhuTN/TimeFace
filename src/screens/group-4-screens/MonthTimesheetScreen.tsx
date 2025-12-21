@@ -1,5 +1,11 @@
-import React from 'react';
-import {View, SafeAreaView, ScrollView} from 'react-native';
+import React, {useEffect, useMemo, useState} from 'react';
+import {
+  View,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  ActivityIndicator,
+} from 'react-native';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 import Header2 from '../../components/common/Header2';
 import FilterBar from '../../components/common/FilterBar';
@@ -9,36 +15,27 @@ import MonthFilterModal, {
 } from '../../components/modals/filter-modals/MonthFilterModal';
 import {useFilterSystem, FilterChipData} from '../../hooks/useFilterSystem';
 
-// Fake data for demonstration
-const fakeMonthTimesheets = [
-  {
-    id: '1',
-    month: 10,
-    year: 2025,
-    workingDays: 22,
-    unpaidLeaveDays: 0,
-    monthlySalary: 15000000,
-  },
-  {
-    id: '2',
-    month: 9,
-    year: 2025,
-    workingDays: 21,
-    unpaidLeaveDays: 1,
-    monthlySalary: 14500000,
-  },
-  {
-    id: '3',
-    month: 8,
-    year: 2025,
-    workingDays: 23,
-    unpaidLeaveDays: 0,
-    monthlySalary: 15500000,
-  },
-];
+// ✅ API
+import {User} from '../../api/endpoint/User';
+import {apiHandle} from '../../api/apihandle';
 
-const MonthTimesheetScreen: React.FC = () => {
+type MonthTimesheetItem = {
+  id?: string;
+  month: number;
+  year: number;
+  workingDays: number;
+  unpaidLeaveDays?: number; // FE dùng field này
+  unpaidDays?: number; // BE có thể trả field này
+  monthlySalary?: number; // FE dùng field này
+  netSalary?: number; // BE có thể trả field này
+};
+
+const MonthTimesheetScreen: React.FC<any> = ({route, navigation}: any) => {
   const {loading, theme, lang} = useUIFactory();
+
+  // ✅ nhận employeeId từ navigate
+  const employeeId: string = route?.params?.employeeId ?? 'me';
+  const isMe = employeeId === 'me';
 
   const {
     activeFilters,
@@ -49,12 +46,78 @@ const MonthTimesheetScreen: React.FC = () => {
     removeFilter,
   } = useFilterSystem<MonthFilters>();
 
+  const [months, setMonths] = useState<MonthTimesheetItem[]>([]);
+  const [fetching, setFetching] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // ✅ Hook MUST chạy trước mọi return
+  const filteredMonths = useMemo(() => {
+    const start = activeFilters?.find(c => c.id === 'startMonth')?.value;
+    const end = activeFilters?.find(c => c.id === 'endMonth')?.value;
+
+    const startDate = start ? new Date(start) : null;
+    const endDate = end ? new Date(end) : null;
+
+    const toIdx = (y: number, m: number) => y * 12 + (m - 1);
+    const startIdx = startDate
+      ? toIdx(startDate.getFullYear(), startDate.getMonth() + 1)
+      : null;
+    const endIdx = endDate
+      ? toIdx(endDate.getFullYear(), endDate.getMonth() + 1)
+      : null;
+
+    const sorted = [...months].sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return b.month - a.month;
+    });
+
+    return sorted.filter(it => {
+      const idx = toIdx(it.year, it.month);
+      if (startIdx !== null && idx < startIdx) return false;
+      if (endIdx !== null && idx > endIdx) return false;
+      return true;
+    });
+  }, [months, activeFilters]);
+
+  // ✅ CALL API HERE
+  useEffect(() => {
+    if (loading || !theme || !lang) return;
+
+    let mounted = true;
+
+    const run = async () => {
+      setFetching(true);
+      setErrorMsg(null);
+
+      const endpoint = isMe
+        ? User.GetMyTimesheetMonths
+        : User.GetUserTimesheetMonths(employeeId);
+
+      const {status, res} = await apiHandle.callApi(endpoint).asPromise();
+
+      if (!mounted) return;
+
+      if (status.isError) {
+        setErrorMsg(status.errorMessage ?? 'Không lấy được dữ liệu bảng công');
+        setMonths([]);
+      } else {
+        setMonths(Array.isArray(res) ? res : []);
+      }
+
+      setFetching(false);
+    };
+
+    run();
+
+    return () => {
+      mounted = false;
+    };
+  }, [employeeId, isMe, loading, theme, lang]);
+
+  // ✅ return sau khi tất cả hooks đã chạy
   if (loading || !theme || !lang) {
     return null;
   }
-
-  const isDark = theme.name === 'dark';
-  const isEnglish = lang.code === 'en';
 
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
@@ -74,17 +137,66 @@ const MonthTimesheetScreen: React.FC = () => {
           theme={theme}
         />
 
-        {/* Month Timesheets List */}
-        {fakeMonthTimesheets.map(item => (
-          <MonthTimesheet
-            key={item.id}
-            month={item.month}
-            year={item.year}
-            workingDays={item.workingDays}
-            unpaidLeaveDays={item.unpaidLeaveDays}
-            monthlySalary={item.monthlySalary}
-          />
-        ))}
+        {/* ✅ Loading */}
+        {fetching && (
+          <View style={{paddingVertical: 16, alignItems: 'center', gap: 8}}>
+            <ActivityIndicator />
+            <Text style={{color: theme.colors.mutedText}}>
+              {lang.code === 'vi' ? 'Đang tải dữ liệu...' : 'Loading...'}
+            </Text>
+          </View>
+        )}
+
+        {/* ✅ Error */}
+        {!fetching && !!errorMsg && (
+          <View
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: theme.colors.borderLight,
+            }}>
+            <Text style={{color: theme.colors.text}}>{errorMsg}</Text>
+          </View>
+        )}
+
+        {/* ✅ Empty */}
+        {!fetching && !errorMsg && filteredMonths.length === 0 && (
+          <View
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: theme.colors.borderLight,
+            }}>
+            <Text style={{color: theme.colors.mutedText}}>
+              {lang.code === 'vi'
+                ? 'Chưa có dữ liệu bảng công.'
+                : 'No timesheet data.'}
+            </Text>
+          </View>
+        )}
+
+        {/* ✅ Month Timesheets List */}
+        {!fetching &&
+          !errorMsg &&
+          filteredMonths.map((item, index) => (
+            <MonthTimesheet
+              key={item.id ?? `${item.year}-${item.month}-${index}`}
+              month={item.month}
+              year={item.year}
+              workingDays={item.workingDays}
+              unpaidLeaveDays={item.unpaidLeaveDays ?? item.unpaidDays ?? 0}
+              monthlySalary={item.monthlySalary ?? item.netSalary ?? 0}
+              onPress={() => {
+                navigation.navigate('DailyRecord', {
+                  employeeId,
+                  year: item.year,
+                  month: item.month,
+                });
+              }}
+            />
+          ))}
       </ScrollView>
 
       {/* Filter Modal */}
@@ -94,12 +206,13 @@ const MonthTimesheetScreen: React.FC = () => {
         onApplyFilters={(filters: MonthFilters) => {
           const chips: FilterChipData[] = [];
 
+          const formatDate = (date: Date) => {
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const y = date.getFullYear();
+            return `${m}/${y}`;
+          };
+
           if (filters.startMonth) {
-            const formatDate = (date: Date) => {
-              const month = String(date.getMonth() + 1).padStart(2, '0');
-              const year = date.getFullYear();
-              return `${month}/${year}`;
-            };
             chips.push({
               id: 'startMonth',
               label: 'Tháng bắt đầu',
@@ -109,11 +222,6 @@ const MonthTimesheetScreen: React.FC = () => {
           }
 
           if (filters.endMonth) {
-            const formatDate = (date: Date) => {
-              const month = String(date.getMonth() + 1).padStart(2, '0');
-              const year = date.getFullYear();
-              return `${month}/${year}`;
-            };
             chips.push({
               id: 'endMonth',
               label: 'Tháng kết thúc',

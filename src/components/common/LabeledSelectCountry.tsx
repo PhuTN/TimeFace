@@ -6,11 +6,12 @@ import type {Option} from '../../types/common';
 
 type Props = {
   label?: string;
-  value?: string;
+  value?: string;               // ISO
   onChange: (opt: Option) => void;
   theme: any;
 };
 
+// Build options only once
 const selectOptions: Option[] = Country.getAllCountries()
   .map(country => ({
     label: country.name,
@@ -24,28 +25,36 @@ export default function LabeledSelectCountry({
   onChange,
   theme,
 }: Props) {
-  if (!selectOptions.length) {
-    return null;
-  }
+
+  // ==== Nếu value rỗng → default fallback ====
+  const fallback: Option = {
+    label: 'Chưa chọn quốc gia',
+    value: '',
+  };
 
   const selected =
-    selectOptions.find(option => option.value === value) ?? selectOptions[0];
+    value
+      ? selectOptions.find(o => o.value === value) ?? fallback
+      : fallback;
 
+  // ❌ Không auto change khi value rỗng
   React.useEffect(() => {
-    if (!value) {
+    // nếu value = "" → do nothing
+    if (!value) return;
+
+    // nếu value không match option → tự fix bằng option đầu tiên
+    if (!selectOptions.some(o => o.value === value)) {
       onChange(selectOptions[0]);
     }
-  }, [onChange, value]);
+  }, [value, onChange]);
 
   return (
     <LabeledSelect
       label={label}
       selected={selected}
-      options={selectOptions}
+      options={[fallback, ...selectOptions]}
       onSelect={onChange}
       theme={theme}
-
-      // ⭐ ONLY ADD SEARCH — everything else kept exactly the same
       searchable
       searchPlaceholder="Search country..."
     />
@@ -53,5 +62,6 @@ export default function LabeledSelectCountry({
 }
 
 export function getCountryLabel(code?: string) {
+  if (!code) return '';
   return selectOptions.find(option => option.value === code)?.label ?? '';
 }

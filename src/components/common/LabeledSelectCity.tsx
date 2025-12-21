@@ -11,6 +11,7 @@ type Props = {
   value?: string;
   onChange: (opt: Option) => void;
   theme: any;
+  editable?: boolean; // nếu cần disable trong view-only
 };
 
 export default function LabeledSelectCity({
@@ -20,17 +21,18 @@ export default function LabeledSelectCity({
   value,
   onChange,
   theme,
+  editable = true,
 }: Props) {
-  const options = React.useMemo<Option[]>(() => {
-    if (!countryCode) {
-      return [];
-    }
-    const data =
-      stateCode
-        ? City.getCitiesOfState(countryCode, stateCode) ?? []
-        : City.getCitiesOfCountry(countryCode) ?? [];
 
-    return data
+  // ===== LOAD OPTIONS =====
+  const options = React.useMemo<Option[]>(() => {
+    if (!countryCode) return [];
+
+    const list = stateCode
+      ? City.getCitiesOfState(countryCode, stateCode) ?? []
+      : City.getCitiesOfCountry(countryCode) ?? [];
+
+    return list
       .map(item => ({
         label: item.name,
         value: item.name,
@@ -38,49 +40,61 @@ export default function LabeledSelectCity({
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [countryCode, stateCode]);
 
-  const disabled = !countryCode || options.length === 0;
+  // ===== FLAGS =====
+  const disabledSystem = !countryCode || options.length === 0;
+  const disabled = disabledSystem || !editable;
+
   const fallback: Option = {
-    label: !countryCode ? 'Select country first' : 'No cities available',
+    label: !countryCode ? 'Chọn quốc gia trước' : 'Không có thành phố',
     value: '',
   };
-  const displayOptions = disabled ? [fallback] : options;
 
-  const selected =
-    displayOptions.find(option => option.value === value) ?? displayOptions[0];
+  const displayOptions = disabledSystem ? [fallback] : options;
 
+  // ===== SELECTED =====
+  const selected = disabledSystem
+    ? fallback
+    : options.find(o => o.value === value) ?? fallback;
+
+  // ===== FIX AUTO-SET =====
   React.useEffect(() => {
-    if (disabled || !options.length) {
-      return;
-    }
-    if (value && options.some(option => option.value === value)) {
-      return;
-    }
+    if (!editable) return;
+
+    // ❌ stop nếu chưa chọn country
+    if (!countryCode) return;
+
+    // ❌ stop nếu không có cities
+    if (!options.length) return;
+
+    // ❌ stop nếu city đang valid
+    if (value && options.some(o => o.value === value)) return;
+
+    // ✔ nếu value = "" nhưng country/state đã có thì không auto pick
+    if (!value) return;
+
+    // ✔ trường hợp country thay đổi và value ko hợp lệ → fix về item đầu
     onChange(options[0]);
-  }, [disabled, onChange, options, value]);
+  }, [editable, countryCode, stateCode, options, value, onChange]);
 
   return (
     <LabeledSelect
       label={label}
       selected={selected}
-      options={displayOptions}
-      onSelect={onChange}
+      options={[fallback, ...displayOptions]}
+      onSelect={editable ? onChange : () => {}}
       theme={theme}
       disabled={disabled}
     />
   );
 }
 
-export function getCityLabel(
-  countryCode?: string,
-  stateCode?: string,
-  cityName?: string,
-) {
-  if (!countryCode || !cityName) {
-    return '';
-  }
-  const list =
-    stateCode
-      ? City.getCitiesOfState(countryCode, stateCode) ?? []
-      : City.getCitiesOfCountry(countryCode) ?? [];
-  return list.find(item => item.name === cityName)?.name ?? '';
+// ===== GET LABEL =====
+export function getCityLabel(countryCode?: string, stateCode?: string, cityName?: string) {
+  if (!countryCode || !cityName) return '';
+
+  const list = stateCode
+    ? City.getCitiesOfState(countryCode, stateCode) ?? []
+    : City.getCitiesOfCountry(countryCode) ?? [];
+
+  return list.find(c => c.name === cityName)?.name ?? '';
 }

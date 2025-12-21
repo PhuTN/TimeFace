@@ -1,16 +1,26 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { useUIFactory } from '../../ui/factory/useUIFactory';
+import {View, Text} from 'react-native';
+import {useUIFactory} from '../../ui/factory/useUIFactory';
 
-type RequestStatus = 'approved' | 'rejected' | 'pending' | 'active' | 'inactive' | 'password_changed' | 'waiting_for_password_change' | 'do_not_change_password';
+type RequestStatus =
+  | 'approved'
+  | 'rejected'
+  | 'pending'
+  | 'active'
+  | 'inactive'
+  | 'password_changed'
+  | 'waiting_for_password_change'
+  | 'do_not_change_password'
+  | 'approvedProfile'
+  | 'pendingProfile';
 
 interface ChipProps {
   status?: RequestStatus;
   text?: string;
 }
 
-const Chip: React.FC<ChipProps> = ({ status, text }) => {
-  const { loading, theme, lang } = useUIFactory();
+const Chip: React.FC<ChipProps> = ({status, text}) => {
+  const {loading, theme, lang} = useUIFactory();
   if (loading || !theme || !lang) {
     return;
   }
@@ -33,6 +43,11 @@ const Chip: React.FC<ChipProps> = ({ status, text }) => {
         return theme.colors.pending;
       case 'do_not_change_password':
         return theme.colors.rejected;
+      case 'approvedProfile':
+        return theme.colors.approved;
+
+      case 'pendingProfile':
+        return theme.colors.pending;
       default:
         return theme.colors.border;
     }
@@ -50,11 +65,11 @@ const Chip: React.FC<ChipProps> = ({ status, text }) => {
         borderRadius: 5,
         marginRight: 8,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: {width: 0, height: 1},
         shadowOpacity: 0.2,
         shadowRadius: 2,
         elevation: 2,
-        maxWidth: 160,
+        maxWidth: 180,
       }}>
       <Text
         style={{

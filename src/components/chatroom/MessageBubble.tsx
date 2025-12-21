@@ -19,7 +19,6 @@ export default function MessageBubble({
   label,
 }: Props) {
   const isMe = !!fromMe;
-  void audioSec;
   const showLabel = !!label && !isMe;
 
   if (type === 'audio') {
@@ -35,7 +34,7 @@ export default function MessageBubble({
             ]}>
             <View style={styles.wave} />
             <View style={styles.playWrap}>
-              <Icon name="play" size={20} color="#3BB6A1" />
+              <Icon name="play" size={18} color="#3BB6A1" />
             </View>
           </View>
         </View>
@@ -45,70 +44,98 @@ export default function MessageBubble({
 
   return (
     <View style={[styles.row, isMe ? styles.right : styles.left]}>
-      {!isMe && <Image source={{uri: avatar}} style={styles.avtSmall} />}
+      {!isMe && <Image source={{uri: avatar || "https://cdn-icons-png.flaticon.com/512/9131/9131529.png"}} style={styles.avtSmall} />}
       <View style={styles.content}>
         {showLabel && <Text style={styles.label}>{label}</Text>}
         <View
           style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubblePeer]}>
-          <Text style={[styles.text, isMe && {color: '#21436D'}]}>{text}</Text>
+          <Text style={[styles.text, isMe && styles.textMe]}>{text}</Text>
         </View>
       </View>
     </View>
   );
 }
 
-const AV = 34;
+const AV = 30;
+
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 12,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   left: {justifyContent: 'flex-start'},
   right: {justifyContent: 'flex-end'},
-  avtSmall: {width: AV, height: AV, borderRadius: AV / 2, marginRight: 10},
-  content: {maxWidth: '78%'},
-  bubble: {
-    maxWidth: '78%',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 20,
+
+  avtSmall: {
+    width: AV,
+    height: AV,
+    borderRadius: AV / 2,
+    marginRight: 8,
   },
-  text: {fontSize: 16, color: '#454F66'},
-  bubblePeer: {backgroundColor: '#EDEEF2'},
-  bubbleMe: {backgroundColor: '#D6E4FF'},
+
+  content: {
+    maxWidth: '78%',
+  },
+
+  bubble: {
+    maxWidth: '100%',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  text: {
+    fontSize: 14,
+    color: '#40485C',
+    lineHeight: 20,
+  },
+  textMe: {
+    color: '#1A3D70',
+  },
+
+  bubblePeer: {
+    backgroundColor: '#F1F2F6',
+    borderTopLeftRadius: 4,
+  },
+  bubbleMe: {
+    backgroundColor: '#CFE2FF',
+    borderTopRightRadius: 4,
+  },
+
   audioWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 18,
-    paddingRight: 12,
-    paddingVertical: 14,
-    borderRadius: 20,
+    paddingLeft: 16,
+    paddingRight: 10,
+    paddingVertical: 10,
+    borderRadius: 18,
   },
   wave: {
-    height: 24,
+    height: 20,
     flex: 1,
     borderRadius: 8,
     backgroundColor: '#3BB6A1',
-    marginRight: 12,
+    marginRight: 10,
+    opacity: 0.9,
   },
   playWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
     elevation: 1,
   },
   label: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#74809A',
-    marginBottom: 4,
+    color: '#8A92A6',
+    marginBottom: 3,
+    marginLeft: 2,
   },
 });

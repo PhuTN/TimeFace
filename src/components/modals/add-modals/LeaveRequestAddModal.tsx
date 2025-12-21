@@ -1,308 +1,401 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Platform,
   ScrollView,
   Alert,
+  ActivityIndicator,
+  Image,
+  Modal,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import BottomSheetModal from '../../common/BottomSheetModal';
 import LabeledDate from '../../common/LabeledDate';
 import {useUIFactory} from '../../../ui/factory/useUIFactory';
+import * as ImagePicker from 'react-native-image-picker';
+import {uploadSingle} from '../../../api/uploadApi';
+
+/* ===================== TYPES ===================== */
+type LeaveType = 'annual' | 'sick' | 'unpaid';
+type DayType = 'full' | 'half_morning' | 'half_afternoon';
 
 type Props = {
   visible: boolean;
+  allowHalfDay: boolean; // từ company config
   onClose: () => void;
   onAdd: (data: {
+    type: LeaveType;
     startDate: Date;
     endDate: Date;
+    dayType: DayType;
     reason: string;
-    attachedFile?: string;
+    images: string[];
   }) => void;
 };
 
-const LeaveRequestAddModal: React.FC<Props> = ({visible, onClose, onAdd}) => {
-  const {theme, lang} = useUIFactory();
+/* ===================== TEXT ===================== */
+const LEAVE_TYPE_TEXT: Record<LeaveType, string> = {
+  annual: 'Phép năm',
+  sick: 'Nghỉ ốm',
+  unpaid: 'Nghỉ không lương',
+};
+
+const DAY_TYPE_TEXT: Record<DayType, string> = {
+  full: 'Cả ngày',
+  half_morning: 'Nửa ngày (sáng)',
+  half_afternoon: 'Nửa ngày (chiều)',
+};
+
+/* ===================== COMPONENT ===================== */
+const LeaveRequestAddModal: React.FC<Props> = ({
+  visible,
+  allowHalfDay,
+  onClose,
+  onAdd,
+}) => {
+  const {theme} = useUIFactory();
+
+  /* ===== STATE ===== */
+  const [type, setType] = useState<LeaveType>('annual');
+  const [dayType, setDayType] = useState<DayType>('full');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [reason, setReason] = useState('');
-  const [attachedFile, setAttachedFile] = useState<string | undefined>(undefined);
+  const [images, setImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
 
-  if (!theme || !lang) return null;
-
-  const handleAdd = () => {
-    // Validate dates
-    if (endDate < startDate) {
-      Alert.alert('Error', 'End date must be after start date');
-      return;
+  /* ===== AUTO FIX DAY TYPE ===== */
+  useEffect(() => {
+    if (!allowHalfDay && dayType !== 'full') {
+      setDayType('full');
     }
+  }, [allowHalfDay, dayType]);
 
-    onAdd({startDate, endDate, reason, attachedFile});
-    // Reset form
-    setStartDate(new Date());
-    setEndDate(new Date());
-    setReason('');
-    setAttachedFile(undefined);
-    onClose();
-  };
+  /* ===== PICK IMAGE ===== */
+  const pickImages = () => {
+    ImagePicker.launchImageLibrary(
+      {mediaType: 'photo', selectionLimit: 5},
+      async res => {
+        if (res.didCancel || !res.assets) return;
 
-  const handleAttachFile = () => {
-    // TODO: Implement file picker
-    // For now, just simulate file attachment
-    Alert.alert(
-      lang.t('attachFile'),
-      'File picker will be implemented here',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'OK',
-          onPress: () => setAttachedFile('document.pdf'),
-        },
-      ],
+        try {
+          setUploading(true);
+          for (const asset of res.assets) {
+            if (!asset.uri) continue;
+            const uploaded = await uploadSingle(
+              asset.uri,
+              'leave-evidence',
+            );
+            if (uploaded?.url) {
+              setImages(prev => [...prev, uploaded.url]);
+            }
+          }
+        } finally {
+          setUploading(false);
+        }
+      },
     );
   };
 
+  /* ===== SUBMIT ===== */
+  const handleAdd = () => {
+    if (!reason.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập lý do nghỉ');
+      return;
+    }
+
+    if (endDate < startDate) {
+      Alert.alert('Lỗi', 'Ngày kết thúc phải sau ngày bắt đầu');
+      return;
+    }
+
+    onAdd({
+      type,
+      startDate,
+      endDate,
+      dayType,
+      reason,
+      images,
+    });
+
+    // reset
+    setType('annual');
+    setDayType('full');
+    setStartDate(new Date());
+    setEndDate(new Date());
+    setReason('');
+    setImages([]);
+
+    onClose();
+  };
+
+  /* ===== RENDER ===== */
   return (
-    <BottomSheetModal
+    <Modal
       visible={visible}
-      onClose={onClose}
-      maxHeightRatio={0.85}
-      backdropOpacity={0.4}>
-      <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.colors.background,
-            borderTopColor: theme.colors.contrastBackground,
-            borderTopWidth: 1,
-            borderLeftColor: theme.colors.contrastBackground,
-            borderLeftWidth: 1,
-            borderRightColor: theme.colors.contrastBackground,
-            borderRightWidth: 1,
-          },
-        ]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, {color: theme.colors.text}]}>
-            {lang.t('createLeaveRequest')}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <View
+          style={[
+            styles.card,
+            {backgroundColor: theme?.colors.background ?? '#fff'},
+          ]}>
+          <Text
+            style={[
+              styles.title,
+              {color: theme?.colors.text ?? '#000'},
+            ]}>
+            Tạo đơn xin nghỉ phép
           </Text>
-        </View>
 
-        {/* Content */}
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}>
-          {/* Start Date Picker */}
-          <LabeledDate
-            label={lang.t('startDate')}
-            date={startDate}
-            onChange={setStartDate}
-            theme={theme}
-          />
+          <ScrollView contentContainerStyle={styles.content}>
+            {/* ===== LOẠI NGHỈ ===== */}
+            <Text style={[styles.label, {color: theme?.colors.text}]}>
+              Loại nghỉ
+            </Text>
+            <View style={styles.row}>
+              {(Object.keys(LEAVE_TYPE_TEXT) as LeaveType[]).map(t => (
+                <TouchableOpacity
+                  key={t}
+                  onPress={() => setType(t)}
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor:
+                        type === t
+                          ? theme?.colors.primary
+                          : theme?.colors.borderLight,
+                    },
+                  ]}>
+                  <Text
+                    style={{
+                      color:
+                        type === t ? '#fff' : theme?.colors.text,
+                    }}>
+                    {LEAVE_TYPE_TEXT[t]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-          {/* End Date Picker */}
-          <LabeledDate
-            label={lang.t('endDate')}
-            date={endDate}
-            onChange={setEndDate}
-            theme={theme}
-          />
+            {/* ===== HÌNH THỨC NGHỈ ===== */}
+            <Text style={[styles.label, {color: theme?.colors.text}]}>
+              Hình thức nghỉ
+            </Text>
+            <View style={styles.row}>
+              <TouchableOpacity
+                onPress={() => setDayType('full')}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor:
+                      dayType === 'full'
+                        ? theme?.colors.primary
+                        : theme?.colors.borderLight,
+                  },
+                ]}>
+                <Text
+                  style={{
+                    color:
+                      dayType === 'full'
+                        ? '#fff'
+                        : theme?.colors.text,
+                  }}>
+                  Cả ngày
+                </Text>
+              </TouchableOpacity>
 
-          {/* Reason Text Area */}
-          <View style={styles.field}>
-            <Text style={[styles.label, {color: theme.colors.text}]}>
-              {lang.t('leaveReasonLabel')}
+              {allowHalfDay &&
+                (['half_morning', 'half_afternoon'] as DayType[]).map(
+                  d => (
+                    <TouchableOpacity
+                      key={d}
+                      onPress={() => setDayType(d)}
+                      style={[
+                        styles.chip,
+                        {
+                          backgroundColor:
+                            dayType === d
+                              ? theme?.colors.primary
+                              : theme?.colors.borderLight,
+                        },
+                      ]}>
+                      <Text
+                        style={{
+                          color:
+                            dayType === d
+                              ? '#fff'
+                              : theme?.colors.text,
+                        }}>
+                        {DAY_TYPE_TEXT[d]}
+                      </Text>
+                    </TouchableOpacity>
+                  ),
+                )}
+            </View>
+
+            {/* ===== NGÀY ===== */}
+            <LabeledDate
+              label="Ngày bắt đầu"
+              date={startDate}
+              onChange={setStartDate}
+              theme={theme}
+            />
+            <LabeledDate
+              label="Ngày kết thúc"
+              date={endDate}
+              onChange={setEndDate}
+              theme={theme}
+            />
+
+            {/* ===== LÝ DO ===== */}
+            <Text style={[styles.label, {color: theme?.colors.text}]}>
+              Lý do nghỉ
             </Text>
             <View
               style={[
                 styles.textAreaBox,
-                {
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.background,
-                },
+                {borderColor: theme?.colors.border},
               ]}>
               <TextInput
                 value={reason}
                 onChangeText={setReason}
-                placeholder={lang.t('leaveReasonPlaceholder')}
-                placeholderTextColor={theme.colors.placeholder}
-                style={[styles.textArea, {color: theme.colors.text}]}
+                placeholder="Nhập lý do xin nghỉ"
+                placeholderTextColor={theme?.colors.placeholder}
+                style={[styles.textArea, {color: theme?.colors.text}]}
                 multiline
-                numberOfLines={4}
-                textAlignVertical="top"
               />
             </View>
-          </View>
 
-          {/* Attach File Button */}
-          <View style={styles.field}>
+            {/* ===== ẢNH ===== */}
+            <Text style={[styles.label, {color: theme?.colors.text}]}>
+              Ảnh minh chứng
+            </Text>
+            <View style={styles.imageRow}>
+              {images.map((url, i) => (
+                <Image key={i} source={{uri: url}} style={styles.image} />
+              ))}
               <TouchableOpacity
-                style={[
-                  styles.attachButton,
-                  {backgroundColor: theme.colors.borderLight},
-                ]}
-                onPress={handleAttachFile}
-                activeOpacity={0.7}>
-                <MaterialCommunityIcons
-                  name="paperclip"
-                  size={18}
-                  color={theme.colors.text}
-                />
-                <Text style={[styles.attachButtonText, { color: theme.colors.text }]}>
-                  {lang.t('attachFile')}
-                </Text>
+                style={styles.addImage}
+                onPress={pickImages}
+                disabled={uploading}>
+                {uploading ? (
+                  <ActivityIndicator />
+                ) : (
+                  <Text style={{fontSize: 26}}>＋</Text>
+                )}
               </TouchableOpacity>
-            {attachedFile && (
-              <View style={styles.fileInfoRow}>
-                <MaterialCommunityIcons
-                  name="file-document-outline"
-                  size={16}
-                  color={theme.colors.primary}
-                />
-                <Text
-                  style={[
-                    styles.fileInfoText,
-                    {color: theme.colors.text},
-                  ]}>
-                  {attachedFile}
-                </Text>
-              </View>
-            )}
+            </View>
+          </ScrollView>
+
+          {/* ===== ACTION ===== */}
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.button, styles.cancel]}
+              onPress={onClose}>
+              <Text style={{color: theme?.colors.text}}>Hủy</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                {backgroundColor: theme?.colors.primary},
+              ]}
+              onPress={handleAdd}>
+              <Text style={{color: '#fff', fontWeight: '600'}}>
+                Gửi đơn
+              </Text>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-
-        {/* Action Buttons */}
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.cancelButton,
-              {borderColor: theme.colors.border},
-            ]}
-            onPress={onClose}
-            activeOpacity={0.7}>
-            <Text style={[styles.buttonText, {color: theme.colors.text}]}>
-              {lang.t('exit')}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.addButton,
-              {backgroundColor: theme.colors.primary},
-            ]}
-            onPress={handleAdd}
-            activeOpacity={0.7}>
-            <Text style={[styles.buttonText, styles.addButtonText]}>
-              {lang.t('add')}
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
-    </BottomSheetModal>
+    </Modal>
   );
 };
 
+/* ===================== STYLES ===================== */
 const styles = StyleSheet.create({
-  container: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: Platform.select({ios: 24, android: 16}),
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+  card: {
+    width: '100%',
+    maxHeight: '90%',
+    borderRadius: 20,
+    padding: 16,
   },
   title: {
     fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
+    marginBottom: 12,
   },
-  scrollView: {
-    maxHeight: 450,
+  content: {
+    gap: 14,
   },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-    gap: 16,
+  row: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
   },
-  field: {
-    width: '100%',
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
   },
   label: {
     fontSize: 13,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   textAreaBox: {
     borderWidth: 2,
     borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 100,
+    padding: 12,
+    minHeight: 90,
   },
   textArea: {
     fontSize: 16,
-    minHeight: 76,
   },
-  attachButton: {
+  imageRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  image: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+  },
+  addImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderStyle: 'dashed',
     alignItems: 'center',
-    gap: 8,
-    width: 140,
-    alignSelf: "flex-end",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  attachButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  fileInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-    marginTop: 8,
-    paddingHorizontal: 4,
-  },
-  fileInfoText: {
-    fontSize: 13,
-    flex: 1,
+    justifyContent: 'center',
   },
   buttonRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingTop: 16,
     gap: 12,
+    marginTop: 12,
   },
   button: {
     flex: 1,
-    height: 48,
+    height: 46,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelButton: {
+  cancel: {
     borderWidth: 2,
-  },
-  addButton: {
-    // backgroundColor set via theme.colors.primary
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  addButtonText: {
-    color: '#FFFFFF',
   },
 });
 

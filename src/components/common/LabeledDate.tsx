@@ -8,6 +8,7 @@ type Props = {
   onChange: (d: Date) => void;
   theme: any;
   placeholder?: string;
+  editable?: boolean; // ⭐ Thêm editable giống các component khác
 };
 
 const LabeledDate: React.FC<Props> = ({
@@ -15,7 +16,8 @@ const LabeledDate: React.FC<Props> = ({
   date,
   onChange,
   theme,
-  placeholder,
+  placeholder = 'Chọn ngày',
+  editable = true, // default: cho phép chọn
 }) => {
   const [open, setOpen] = useState(false);
   const S = themedStyles(theme);
@@ -27,16 +29,21 @@ const LabeledDate: React.FC<Props> = ({
       ).padStart(2, '0')}/${d.getFullYear()}`;
   }, []);
 
-  const displayValue = date ? format(date) : placeholder ?? 'Select date';
+  // ===== DISPLAY VALUE =====
+  const displayValue = date ? format(date) : placeholder;
 
   return (
     <View style={S.field}>
       <Text style={S.label}>{label}</Text>
 
       <TouchableOpacity
-        style={[S.inputBox, S.selectBox]}
-        onPress={() => setOpen(true)}
-        activeOpacity={0.7}>
+        style={[
+          S.inputBox,
+          S.selectBox,
+          !editable && S.disabledBox,
+        ]}
+        onPress={() => editable && setOpen(true)} // ❗ chỉ mở nếu editable
+        activeOpacity={editable ? 0.7 : 1}>
         <Text
           style={[
             S.input,
@@ -48,7 +55,14 @@ const LabeledDate: React.FC<Props> = ({
           ]}>
           {displayValue}
         </Text>
-        <Text style={S.calendarIcon}>📅</Text>
+
+        <Text
+          style={[
+            S.calendarIcon,
+            !editable && {opacity: 0.4},
+          ]}>
+          📅
+        </Text>
       </TouchableOpacity>
 
       <DatePicker
@@ -56,7 +70,7 @@ const LabeledDate: React.FC<Props> = ({
         mode="date"
         open={open}
         date={date ?? new Date()}
-        onConfirm={(d) => {
+        onConfirm={d => {
           setOpen(false);
           onChange(d);
         }}
@@ -78,6 +92,10 @@ const themedStyles = (theme: any) =>
       paddingHorizontal: 14,
       minHeight: 48,
       justifyContent: 'center',
+    },
+    disabledBox: {
+      backgroundColor: '#E5E7EB',
+      borderColor: '#D1D5DB',
     },
     input: {fontSize: 16, color: theme.colors.text},
     selectBox: {

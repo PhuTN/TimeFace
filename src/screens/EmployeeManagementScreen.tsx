@@ -33,6 +33,7 @@ import FilterChip from '../components/common/FilterChip.tsx';
 import {apiHandle} from '../api/apihandle.ts';
 import {User} from '../api/endpoint/User.ts';
 import Toast from 'react-native-toast-message';
+import {useFocusEffect} from '@react-navigation/native';
 
 type Props = any; // hoặc: NativeStackScreenProps<RootStackParamList, 'EmployeeManagement'>
 
@@ -111,6 +112,7 @@ export default function EmployeeManagementScreen({navigation}: Props) {
           position: u.job_title ?? '',
           createdAt: u.createdAt,
           employeeCode: u.employee_code,
+          profile_approved: u.profile_approved,
         }));
 
         mapped.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
@@ -138,6 +140,7 @@ export default function EmployeeManagementScreen({navigation}: Props) {
     passwordChangeStatus: '',
     accountActive: '',
     departmentId: '',
+    profile_approved: '',
     position: '',
     sortBy: 'created_desc',
   });
@@ -179,6 +182,7 @@ export default function EmployeeManagementScreen({navigation}: Props) {
           departmentName: u.department_id?.name ?? '',
           position: u.job_title ?? '',
           createdAt: u.createdAt,
+          profile_approved: u.profile_approved,
         }));
 
         console.log('MAP', mapped);
@@ -198,22 +202,27 @@ export default function EmployeeManagementScreen({navigation}: Props) {
 
     fetchEmployees();
   }, []);
-
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 Screen focused → Reload employees');
+      reloadEmployees();
+    }, []),
+  );
   // ---------- GUARD
   if (loading || !theme || !lang) return null;
 
   const S = makeStyles(theme);
   const t = lang.t;
 
-  const DEFAULT_CRITERIA: EmployeeFilterValues = {
-    employeeName: '',
-    passwordChangeStatus: '',
-    accountActive: '',
-    departmentId: '',
-    position: '',
-    sortBy: 'created_desc',
-  };
-
+const DEFAULT_CRITERIA: EmployeeFilterValues = {
+  employeeName: '',
+  passwordChangeStatus: '',
+  accountActive: '',
+  profile_approved: '', // ✅ QUAN TRỌNG
+  departmentId: '',
+  position: '',
+  sortBy: 'created_desc',
+};
   const departmentNameById = (id: string) => {
     const dep = EMPLOYEES.find(e => e.departmentId === id)?.departmentName;
     return dep ?? '';
@@ -253,6 +262,8 @@ export default function EmployeeManagementScreen({navigation}: Props) {
         return t('sort_created_desc');
     }
   };
+  const getprofile_approvedLabel = (v: 'approved' | 'pending') =>
+    v === 'approved' ? 'Đã duyệt hồ sơ' : 'Chờ duyệt hồ sơ';
 
   const buildActiveFilterChips = (values: EmployeeFilterValues) => {
     const chips: {key: string; mainText: string; subText: string}[] = [];
@@ -264,7 +275,13 @@ export default function EmployeeManagementScreen({navigation}: Props) {
         subText: values.employeeName.trim(),
       });
     }
-
+    if (values.profile_approved) {
+      chips.push({
+        key: 'profile_approved',
+        mainText: 'Hồ sơ',
+        subText: getprofile_approvedLabel(values.profile_approved),
+      });
+    }
     if (values.position.trim()) {
       chips.push({
         key: 'position',
@@ -407,7 +424,12 @@ export default function EmployeeManagementScreen({navigation}: Props) {
               />
 
               <Chip
-                status={pwdStatus}
+                status={
+                  item.profile_approved ? 'approvedProfile' : 'pendingProfile'
+                }
+                label={
+                  item.profile_approved ? 'Đã duyệt hồ sơ' : 'Chờ duyệt hồ sơ'
+                }
                 styleOverride={{
                   paddingVertical: 2,
                   paddingHorizontal: 5,
@@ -430,7 +452,10 @@ export default function EmployeeManagementScreen({navigation}: Props) {
     <EmployeeCard
       item={item}
       onPress={() => {
-        // navigation.navigate("EmployeeDetail", { id: item.id });
+        console.log('ITEEM', item);
+        navigation.navigate('PersonalInformationView', {
+          userId: item.id,
+        });
       }}
     />
   );
@@ -442,13 +467,17 @@ export default function EmployeeManagementScreen({navigation}: Props) {
     const depId = values.departmentId?.trim() || '';
     const accountSel = values.accountActive; // "active" | "inactive" | ""
     const pwdSel = values.passwordChangeStatus; // "changed" | "waiting_for_changed" | "do_not_change" | ""
-
+    const profileSel = values.profile_approved; // 'approved' | 'pending' | ''
     let next = EMPLOYEES.filter(e => {
       const isActive = !!e.accountActive;
 
       // 🔧 Chuẩn hoá enum trong data sang key ngắn để so sánh với filter
       const pwdKey = toPwdKey(e.passwordChangeStatus);
-
+      const okProfile =
+        !profileSel ||
+        (profileSel === 'approved'
+          ? e.profile_approved === true
+          : e.profile_approved === false);
       const okName = !name || e.name.toLowerCase().includes(name);
       const okPos = !position || e.position.toLowerCase().includes(position);
       const okDep = !depId || e.departmentId === depId;
@@ -456,7 +485,7 @@ export default function EmployeeManagementScreen({navigation}: Props) {
         !accountSel || (accountSel === 'active' ? isActive : !isActive);
       const okPwd = !pwdSel || pwdKey === pwdSel;
 
-      return okName && okPos && okDep && okAcc && okPwd;
+      return okName && okPos && okDep && okAcc && okPwd && okProfile;
     });
 
     next = next.sort((a, b) => {
@@ -498,8 +527,9 @@ export default function EmployeeManagementScreen({navigation}: Props) {
       next.passwordChangeStatus = '';
     } else if (key === 'sortBy') {
       next.sortBy = DEFAULT_CRITERIA.sortBy;
+    } else if (key === 'profile_approved') {
+      next.profile_approved = '';
     }
-
     const updated = filterEmployeesData(next);
     setCriteria(next);
     setDisplayed(updated);

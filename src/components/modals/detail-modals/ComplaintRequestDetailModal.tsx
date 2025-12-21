@@ -13,6 +13,7 @@ import Toast from 'react-native-toast-message';
 
 import type {Theme} from '../../../ui/theme/theme';
 import type {LanguageResolved} from '../../../ui/factory/abstract';
+
 import CenterModal from '../../common/CenterModal';
 import Chip from '../../common/Chip';
 
@@ -23,34 +24,23 @@ interface Approver {
   date: string;
 }
 
-export interface LeaveRequestDetail {
+export interface ComplaintRequestDetail {
   avatarSource: any;
   name: string;
-  position: string;
   department: string;
-  status: RequestStatus;
-  requestCode: string;
-
-  type: 'annual' | 'sick' | 'unpaid';
-
-  startDate: string;
-  endDate: string;
-  numberOfDays: number;
+  action: 'check_in' | 'check_out';
+  date: string;
+  time: string;
   reason: string;
-  createdAt: string;
-
+  status: RequestStatus;
   evidenceImages?: string[];
-
   approver?: Approver;
-
-  user_id?: string;
-  leave_id?: string;
 }
 
-interface LeaveRequestDetailModalProps {
+interface ComplaintRequestDetailModalProps {
   visible: boolean;
   onClose: () => void;
-  request: LeaveRequestDetail | null;
+  request: ComplaintRequestDetail | null;
   theme: Theme;
   lang: LanguageResolved;
   isAdmin?: boolean;
@@ -58,7 +48,9 @@ interface LeaveRequestDetailModalProps {
   onReject?: () => void;
 }
 
-const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
+const ComplaintRequestDetailModal: React.FC<
+  ComplaintRequestDetailModalProps
+> = ({
   visible,
   onClose,
   request,
@@ -70,7 +62,10 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
 }) => {
   if (!request) return null;
 
-  /* ================= PREVIEW STATE ================= */
+  const safeImages = Array.isArray(request.evidenceImages)
+    ? request.evidenceImages.filter(Boolean)
+    : [];
+
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -79,11 +74,12 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
     setPreviewVisible(true);
   };
 
+  /* ================= DOWNLOAD IMAGE ================= */
   const handleDownload = async () => {
     if (!previewImage) return;
 
     try {
-      const fileName = `leave_image_${Date.now()}.jpg`;
+      const fileName = `checkin_complaint_${Date.now()}.jpg`;
       const savePath =
         Platform.OS === 'android'
           ? `${RNFS.DownloadDirectoryPath}/${fileName}`
@@ -98,12 +94,15 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
         Toast.show({
           type: 'success',
           text1: 'Thành công',
-          text2: 'Ảnh đã được lưu',
+          text2:
+            Platform.OS === 'android'
+              ? 'Ảnh đã lưu vào thư mục Download'
+              : 'Ảnh đã được lưu',
         });
       } else {
-        throw new Error();
+        throw new Error('Download failed');
       }
-    } catch {
+    } catch (e) {
       Toast.show({
         type: 'error',
         text1: 'Lỗi',
@@ -112,19 +111,17 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
     }
   };
 
-  const showActionButtons = isAdmin && request.status === 'pending';
-
-  const images = Array.isArray(request.evidenceImages)
-    ? request.evidenceImages.filter(Boolean)
-    : [];
-
-  const LEAVE_TYPE_CONFIG = {
-    annual: {label: lang.t('annualLeave'), color: '#3B82F6'},
-    sick: {label: lang.t('sickLeave'), color: '#10B981'},
-    unpaid: {label: lang.t('unpaidLeave'), color: '#6B7280'},
+  const handleApprove = () => {
+    onApprove?.();
+    onClose();
   };
 
-  const typeConfig = LEAVE_TYPE_CONFIG[request.type];
+  const handleReject = () => {
+    onReject?.();
+    onClose();
+  };
+
+  const showActionButtons = isAdmin && request.status === 'pending';
 
   return (
     <>
@@ -132,10 +129,10 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
       <CenterModal
         visible={visible}
         onClose={onClose}
-        title={lang.t('leaveRequestDetails')}
+        title="Chi tiết khiếu nại chấm công"
         theme={theme}>
-        <ScrollView style={{maxHeight: 520}}>
-          {/* EMPLOYEE INFO */}
+        <ScrollView style={{maxHeight:390}}>
+          {/* ================= EMPLOYEE INFO ================= */}
           <View style={{marginBottom: 16}}>
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
               <Image
@@ -152,9 +149,6 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
                   {request.name}
                 </Text>
                 <Text style={{color: theme.colors.mutedText}}>
-                  {request.position}
-                </Text>
-                <Text style={{color: theme.colors.mutedText}}>
                   {request.department}
                 </Text>
               </View>
@@ -162,55 +156,7 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
             </View>
           </View>
 
-          {/* REQUEST META */}
-          <View
-            style={{
-              backgroundColor: theme.colors.lightGrayBackground,
-              padding: 12,
-              borderRadius: 8,
-              marginBottom: 16,
-            }}>
-            <View style={{flexDirection: 'row'}}>
-              <View style={{flex: 1}}>
-                <Text style={{color: theme.colors.mutedText}}>
-                  {lang.t('requestCode')}
-                </Text>
-                <Text style={{fontWeight: '600'}}>
-                  {request.requestCode}
-                </Text>
-              </View>
-              <View style={{flex: 1}}>
-                <Text style={{color: theme.colors.mutedText}}>
-                  {lang.t('createdAt')}
-                </Text>
-                <Text style={{fontWeight: '600'}}>
-                  {request.createdAt}
-                </Text>
-              </View>
-            </View>
-
-            <View style={{marginTop: 12}}>
-              <View
-                style={{
-                  alignSelf: 'flex-start',
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: 999,
-                  backgroundColor: typeConfig.color + '22',
-                }}>
-                <Text
-                  style={{
-                    color: typeConfig.color,
-                    fontWeight: '600',
-                    fontSize: 12,
-                  }}>
-                  {typeConfig.label}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* LEAVE DURATION */}
+          {/* ================= CHECK INFO ================= */}
           <View
             style={{
               backgroundColor: theme.colors.lightGrayBackground,
@@ -219,34 +165,31 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
               marginBottom: 16,
             }}>
             <Text style={{fontWeight: '600', marginBottom: 8}}>
-              {lang.t('leaveDuration')}
+              Thông tin chấm công
             </Text>
 
             <View style={{flexDirection: 'row'}}>
               <View style={{flex: 1}}>
-                <Text style={{color: theme.colors.mutedText}}>
-                  {lang.t('startDate')}
-                </Text>
+                <Text style={{color: theme.colors.mutedText}}>Loại</Text>
                 <Text style={{fontWeight: '600'}}>
-                  {request.startDate}
+                  {request.action === 'check_in'
+                    ? 'Check-in'
+                    : 'Check-out'}
                 </Text>
               </View>
               <View style={{flex: 1}}>
-                <Text style={{color: theme.colors.mutedText}}>
-                  {lang.t('endDate')}
-                </Text>
-                <Text style={{fontWeight: '600'}}>
-                  {request.endDate}
-                </Text>
+                <Text style={{color: theme.colors.mutedText}}>Ngày</Text>
+                <Text style={{fontWeight: '600'}}>{request.date}</Text>
               </View>
             </View>
 
-            <Text style={{color: theme.colors.primary, marginTop: 6}}>
-              {request.numberOfDays} {lang.t('days')}
-            </Text>
+            <View style={{marginTop: 8}}>
+              <Text style={{color: theme.colors.mutedText}}>Giờ thực tế</Text>
+              <Text style={{fontWeight: '600'}}>{request.time}</Text>
+            </View>
           </View>
 
-          {/* REASON */}
+          {/* ================= REASON ================= */}
           <View
             style={{
               backgroundColor: theme.colors.lightGrayBackground,
@@ -255,13 +198,13 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
               marginBottom: 16,
             }}>
             <Text style={{fontWeight: '600', marginBottom: 8}}>
-              {lang.t('leaveReasonLabel')}
+              Lý do khiếu nại
             </Text>
             <Text>{request.reason}</Text>
           </View>
 
-          {/* EVIDENCE IMAGES */}
-          {images.length > 0 && (
+          {/* ================= EVIDENCE IMAGES ================= */}
+          {safeImages.length > 0 && (
             <View
               style={{
                 backgroundColor: theme.colors.lightGrayBackground,
@@ -270,11 +213,11 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
                 marginBottom: 16,
               }}>
               <Text style={{fontWeight: '600', marginBottom: 8}}>
-                {lang.t('evidenceImages')}
+                Ảnh minh chứng
               </Text>
 
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {images.map((url, index) => (
+                {safeImages.map((url, index) => (
                   <TouchableOpacity
                     key={index}
                     onPress={() => openPreview(url)}>
@@ -293,9 +236,27 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
               </ScrollView>
             </View>
           )}
+
+          {/* ================= APPROVER ================= */}
+          {request.status === 'approved' && request.approver && (
+            <View
+              style={{
+                backgroundColor: theme.colors.lightGrayBackground,
+                padding: 12,
+                borderRadius: 8,
+              }}>
+              <Text style={{fontWeight: '600', marginBottom: 8}}>
+                Duyệt bởi
+              </Text>
+              <Text>{request.approver.name}</Text>
+              <Text style={{color: theme.colors.mutedText}}>
+                {request.approver.date}
+              </Text>
+            </View>
+          )}
         </ScrollView>
 
-        {/* ACTIONS */}
+        {/* ================= ACTION BUTTONS ================= */}
         {showActionButtons && (
           <View
             style={{
@@ -307,7 +268,7 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
               borderTopColor: theme.colors.borderLight,
             }}>
             <TouchableOpacity
-              onPress={onReject}
+              onPress={handleReject}
               style={{
                 flex: 1,
                 paddingVertical: 12,
@@ -316,13 +277,11 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
                 borderColor: theme.colors.primary,
                 alignItems: 'center',
               }}>
-              <Text style={{color: theme.colors.primary}}>
-                {lang.t('reject')}
-              </Text>
+              <Text style={{color: theme.colors.primary}}>Từ chối</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={onApprove}
+              onPress={handleApprove}
               style={{
                 flex: 1,
                 paddingVertical: 12,
@@ -330,15 +289,13 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
                 backgroundColor: theme.colors.primary,
                 alignItems: 'center',
               }}>
-              <Text style={{color: '#fff'}}>
-                {lang.t('approve')}
-              </Text>
+              <Text style={{color: '#fff'}}>Duyệt</Text>
             </TouchableOpacity>
           </View>
         )}
       </CenterModal>
 
-      {/* IMAGE PREVIEW */}
+      {/* ================= IMAGE PREVIEW + DOWNLOAD ================= */}
       <Modal visible={previewVisible} transparent animationType="fade">
         <View
           style={{
@@ -358,18 +315,18 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
               onPress={handleDownload}
               style={{
                 paddingVertical: 10,
-                paddingHorizontal: 20,
+                paddingHorizontal: 22,
                 backgroundColor: 'rgba(0,0,0,0.6)',
                 borderRadius: 20,
               }}>
-              <Text style={{color: '#fff'}}>⬇️ Download</Text>
+              <Text style={{color: '#fff'}}>⬇️ Tải ảnh</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setPreviewVisible(false)}
               style={{
                 paddingVertical: 10,
-                paddingHorizontal: 20,
+                paddingHorizontal: 22,
                 backgroundColor: 'rgba(0,0,0,0.6)',
                 borderRadius: 20,
               }}>
@@ -382,4 +339,4 @@ const LeaveRequestDetailModal: React.FC<LeaveRequestDetailModalProps> = ({
   );
 };
 
-export default LeaveRequestDetailModal;
+export default ComplaintRequestDetailModal;

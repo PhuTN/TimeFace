@@ -34,16 +34,20 @@ export default function ManagementScreen({navigation}: any) {
       icon: require('../assets/QuanLy/day-off.png'),
       title: 'Duyệt đơn nghỉ',
       subtitle: 'Xử lý đơn xin nghỉ',
+      route: 'LeaveRequests', // 👈 route màn duyệt đơn nghỉ
     },
+
     {
       icon: require('../assets/QuanLy/overtime.png'),
       title: 'Duyệt đơn xin OT',
       subtitle: 'Xử lý đơn xin OT',
+      route: 'OTRequest',
     },
     {
       icon: require('../assets/QuanLy/working.png'),
-      title: 'Duyệt tăng ca nhân viên',
-      subtitle: 'Xác nhận đơn xin tăng ca',
+      title: 'Duyệt khiếu nại chấm công',
+      subtitle: 'Xử lý khiếu nại check-in / check-out',
+      route: 'ComplaintRequests',
     },
 
     // ⭐⭐ Cái này cần điều hướng sang EmployeeManagement
@@ -90,6 +94,7 @@ export default function ManagementScreen({navigation}: any) {
         onBack={() => navigation.goBack()}
         topInset={insets.top}
         isShowAvatar={true}
+        isShowBackButton={false}
       />
 
       {/* SEARCH */}
@@ -157,7 +162,7 @@ export default function ManagementScreen({navigation}: any) {
           if (i === 0) navigation.navigate('Home');
           else if (i === 1) navigation.navigate('Management');
           else if (i === 3) navigation.navigate('Settings');
-          else navigation.navigate('NotificationSender');
+          // else navigation.navigate('NotificationSender');
         }}
       />
     </View>

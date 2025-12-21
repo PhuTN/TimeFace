@@ -1,7 +1,8 @@
 // src/api/core/MockHttpClient.ts
 import type { IHttpClient } from './IHttpClient';
 
-type HttpMethod = 'get' | 'post' | 'put' | 'delete';
+type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch';
+
 type MockHandler = (url: string, payload?: any) => Promise<any> | any;
 
 type MockConfig = {
@@ -9,6 +10,7 @@ type MockConfig = {
   post?: MockHandler;
   put?: MockHandler;
   delete?: MockHandler;
+  patch?: MockHandler;
 };
 
 export class MockHttpClient implements IHttpClient {
@@ -18,7 +20,6 @@ export class MockHttpClient implements IHttpClient {
     if (this.handlers.get) {
       return (await this.handlers.get(url, params)) as T;
     }
-    // default: trả rỗng
     return {} as T;
   }
 
@@ -39,6 +40,14 @@ export class MockHttpClient implements IHttpClient {
   async delete<T = any>(url: string): Promise<T> {
     if (this.handlers.delete) {
       return (await this.handlers.delete(url)) as T;
+    }
+    return {} as T;
+  }
+
+  // ⭐⭐ PATCH (mới thêm giống Fetch & Axios)
+  async patch<T = any>(url: string, body?: any): Promise<T> {
+    if (this.handlers.patch) {
+      return (await this.handlers.patch(url, body)) as T;
     }
     return {} as T;
   }
