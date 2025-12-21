@@ -11,17 +11,22 @@ import {
 
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 import HeaderBar from '../../components/common/HeaderBar';
+import FilterBar from '../../components/common/FilterBar';
 import StatusToggleButtons, {
   StatusType,
 } from '../../components/common/StatusToggleButtons';
+import {useFilterSystem, FilterChipData} from '../../hooks/useFilterSystem';
 import OTRecord from '../../components/list_items/employe-list-items/OTRecord';
 import OTRecordAddModal from '../../components/modals/add-modals/OTRecordAddModal';
 
 import OTRequestDetailModal, {
   OTRequestDetail,
 } from '../../components/modals/detail-modals/OTRequestDetailModal';
+import DateRangeFilterModal, {
+  DateRangeFilters,
+} from '../../components/modals/filter-modals/DateRangeFilterModal';
 
-import {User} from '../../api/endpoint/User';
+import {User} from '../../api/endpoint/user';
 import {apiHandle} from '../../api/apihandle';
 
 /* ===================== TYPES ===================== */
@@ -58,8 +63,13 @@ const OTRecordScreen: React.FC = () => {
 
   const [selectedStatus, setSelectedStatus] = useState<StatusType>('pending');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   const [records, setRecords] = useState<OvertimeItem[]>([]);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+
+  const {activeFilters, removeFilter, setActiveFilters} = useFilterSystem();
   const [fetching, setFetching] = useState(false);
 
   /* ===== DETAIL MODAL ===== */
@@ -159,10 +169,32 @@ const OTRecordScreen: React.FC = () => {
   };
 
   /* ===================== FILTER ===================== */
-  const filteredRecords = useMemo(
-    () => records.filter(r => r.status === selectedStatus),
-    [records, selectedStatus],
-  );
+  const filteredRecords = useMemo(() => {
+    let filtered = records.filter(r => r.status === selectedStatus);
+
+    if (startDate || endDate) {
+      filtered = filtered.filter(r => {
+        const recordDate = new Date(r.date);
+        const start = startDate
+          ? new Date(startDate.setHours(0, 0, 0, 0))
+          : null;
+        const end = endDate
+          ? new Date(endDate.setHours(23, 59, 59, 999))
+          : null;
+
+        if (start && end) {
+          return recordDate >= start && recordDate <= end;
+        } else if (start) {
+          return recordDate >= start;
+        } else if (end) {
+          return recordDate <= end;
+        }
+        return true;
+      });
+    }
+
+    return filtered;
+  }, [records, selectedStatus, startDate, endDate]);
 
   /* ===================== STATS ===================== */
   const totalThisMonth = useMemo(() => {
@@ -234,6 +266,7 @@ const OTRecordScreen: React.FC = () => {
       <HeaderBar title={lang.t('otRecordTitle')} isShowBackButton />
 
       <ScrollView
+        style={{marginVertical: 16}}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
         {/* SUMMARY */}
@@ -282,6 +315,19 @@ const OTRecordScreen: React.FC = () => {
           onStatusChange={setSelectedStatus}
         />
 
+        {/* DATE FILTER */}
+        <FilterBar
+          title={lang.t('filterByDate') || 'Lọc theo ngày'}
+          onFilterPress={() => setShowFilterModal(true)}
+          activeFilters={activeFilters}
+          onRemoveFilter={id => {
+            removeFilter(id);
+            setStartDate(null);
+            setEndDate(null);
+          }}
+          theme={theme}
+        />
+
         {/* LIST */}
         {fetching ? (
           <ActivityIndicator color={theme.colors.primary} />
@@ -328,6 +374,49 @@ const OTRecordScreen: React.FC = () => {
         theme={theme}
         lang={lang}
         isAdmin={false}
+      />
+
+      {/* DATE FILTER MODAL */}
+      <DateRangeFilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApplyFilters={(filters: DateRangeFilters) => {
+          const chips = [];
+
+          if (filters.startDate) {
+            setStartDate(filters.startDate);
+          }
+          if (filters.endDate) {
+            setEndDate(filters.endDate);
+          }
+
+          if (filters.startDate && filters.endDate) {
+            chips.push({
+              id: 'dateRange',
+              label: lang.t('dateRange') || 'Khoảng thời gian',
+              subLabel: `${filters.startDate.toLocaleDateString(
+                'vi-VN',
+              )} - ${filters.endDate.toLocaleDateString('vi-VN')}`,
+              value: 'range',
+            });
+          } else if (filters.startDate) {
+            chips.push({
+              id: 'startDate',
+              label: lang.t('fromDate') || 'Từ ngày',
+              subLabel: filters.startDate.toLocaleDateString('vi-VN'),
+              value: filters.startDate.toISOString(),
+            });
+          } else if (filters.endDate) {
+            chips.push({
+              id: 'endDate',
+              label: lang.t('toDate') || 'Đến ngày',
+              subLabel: filters.endDate.toLocaleDateString('vi-VN'),
+              value: filters.endDate.toISOString(),
+            });
+          }
+
+          setActiveFilters(chips);
+        }}
       />
     </SafeAreaView>
   );
