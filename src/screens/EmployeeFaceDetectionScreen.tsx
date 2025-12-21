@@ -1,6 +1,4 @@
-import MaskedView from '@react-native-masked-view/masked-view';
-import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -11,11 +9,13 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import Svg, {Path as SvgPath} from 'react-native-svg';
-import {Camera} from 'react-native-vision-camera';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {useUIFactory} from '../ui/factory/useUIFactory';
 import HeaderBar from '../components/common/HeaderBar';
 import {RootStackParamList} from '../navigation/AppNavigator';
-import {useUIFactory} from '../ui/factory/useUIFactory';
+import MaskedView from '@react-native-masked-view/masked-view';
+import Svg, {Path as SvgPath} from 'react-native-svg';
+import {Camera} from 'react-native-vision-camera';
 import {useFaceDetectionHandle} from '../utils/FaceDetectionHandle';
 
 import {
@@ -27,12 +27,12 @@ import {
   vec,
 } from '@shopify/react-native-skia';
 
-import Toast from 'react-native-toast-message';
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/user';
+import {User} from '../api/endpoint/User';
+import Toast from 'react-native-toast-message';
 import {uploadSingle} from '../api/uploadApi';
 
-import {getFaceIdFromFile, preloadFaceIdModel} from '../utils/face-id-utils';
+import { getFaceIdFromFile, preloadFaceIdModel } from '../utils/face-id-utils';
 
 type Props = NativeStackScreenProps<
   RootStackParamList,
@@ -43,18 +43,18 @@ export default function EmployeeFaceDetectionScreen({
   navigation,
   route,
 }: Props) {
-  const {width} = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const OVAL_WIDTH = width * 0.8;
   const OVAL_HEIGHT = OVAL_WIDTH * (4.5 / 3);
   const STROKE_WIDTH = 12;
   const RING_GRADIENT = ['#2EF5D2', '#1E4DFF'];
-  const {type = 'check_in'} = route.params ?? {};
-  const {theme, lang} = useUIFactory();
+  const { type = 'check_in' } = route.params ?? {};
+  const { theme, lang } = useUIFactory();
   const stepLabel =
     lang?.t('face_step_put_face_into_frame') ?? 'Đưa khuôn mặt vào khung';
 
   useEffect(() => {
-    preloadFaceIdModel().catch(() => {});
+    preloadFaceIdModel().catch(() => { });
   }, []);
 
   // camera
@@ -67,7 +67,10 @@ export default function EmployeeFaceDetectionScreen({
     frameProcessor,
     handleFront,
     refreshPermission,
-  } = useFaceDetectionHandle({preferredDevice: 'front'});
+    handlePutFaceIntoFrame: detectFaceInFrame,
+    handleSmile: detectSmile,
+    handleBlink: detectBlink,
+  } = useFaceDetectionHandle({ preferredDevice: 'front' });
 
   // flow
   const [flowAttempt, setFlowAttempt] = useState(0);
@@ -79,9 +82,32 @@ export default function EmployeeFaceDetectionScreen({
 
   const retryRef = useRef<number | null>(null);
 
+  type StepKey = 'frame' | 'smile' | 'blink' | 'waiting';
+
+  const steps = useMemo(() => {
+    const t = lang?.t;
+    return {
+      frame: t?.('face_step_put_face_into_frame') ?? 'Đưa khuôn mặt vào khung',
+      smile: t?.('face_step_smile') ?? 'Hãy mỉm cười',
+      blink: t?.('face_step_blink') ?? 'Hãy nháy mắt',
+      waiting: t?.('face_step_waiting') ?? 'Chờ nhận diện',
+    } as Record<StepKey, string>;
+  }, [lang]);
+
+  const [currentStep, setCurrentStep] = useState<StepKey>('frame');
+
+  // random thử thách cho mỗi attempt
+  const challengeRef = useRef<'smile' | 'blink'>('smile');
+  const pickChallenge = useCallback(() => (Math.random() < 0.5 ? 'smile' : 'blink'), []);
+
   const startFlow = useCallback(() => {
+    challengeRef.current = pickChallenge(); // chốt thử thách cho lần chạy này
     setFlowAttempt(p => p + 1);
-  }, []);
+  }, [pickChallenge]);
+
+  // const startFlow = useCallback(() => {
+  //   setFlowAttempt(p => p + 1);
+  // }, []);
 
   // submit checkin
   const submitAttendance = useCallback(
@@ -93,7 +119,7 @@ export default function EmployeeFaceDetectionScreen({
           image: imageUrl,
         };
 
-        const {status} = await apiHandle
+        const { status } = await apiHandle
           .callApi(User.CheckAttendance, payload)
           .asPromise();
 
@@ -164,14 +190,37 @@ export default function EmployeeFaceDetectionScreen({
       setFlowState('running');
       setFlowError(null);
 
+      // 1) Đưa mặt vào khung
+      setCurrentStep('frame');
+      const frameRes = await detectFaceInFrame?.();
+      if (cancelled) return;
+      if (!frameRes?.ok) {
+        fail(frameRes?.reason ?? 'face_not_centered');
+        return;
+      }
+
+      // 2) Random smile hoặc blink (chỉ chạy 1 trong 2)
+      const which = challengeRef.current; // 'smile' | 'blink'
+      setCurrentStep(which);
+
+      const liveRes = which === 'smile' ? await detectSmile?.() : await detectBlink?.();
+      if (cancelled) return;
+      if (!liveRes?.ok) {
+        fail(liveRes?.reason ?? (which === 'smile' ? 'smile_not_detected' : 'blink_not_detected'));
+        return;
+      }
+
+      // 3) Capture ảnh sau khi pass thử thách
+      setCurrentStep('waiting');
       const f = await handleFront();
       if (!f?.ok || !f?.uri) {
         if (!cancelled) fail(f?.reason);
         return;
       }
 
+      // 4) FaceID + upload + submit (giữ logic cũ của bạn)
       try {
-        const emb = await getFaceIdFromFile({filePath: f.uri});
+        const emb = await getFaceIdFromFile({ filePath: f.uri });
 
         setSubmitting(true);
         const uploadRes = await uploadSingle(f.uri, 'checkin');
@@ -200,13 +249,16 @@ export default function EmployeeFaceDetectionScreen({
     hasPermission,
     isCameraReady,
     device,
+    detectFaceInFrame,
+    detectSmile,
+    detectBlink,
     handleFront,
     fail,
     submitAttendance,
   ]);
 
   // skia paths
-  const {innerOvalSvgPath, outerOvalPath, dimOutsidePath} = useMemo(() => {
+  const { innerOvalSvgPath, outerOvalPath, dimOutsidePath } = useMemo(() => {
     const inner = Skia.Path.Make();
     inner.addOval(
       Skia.XYWHRect(
@@ -243,26 +295,22 @@ export default function EmployeeFaceDetectionScreen({
   if (!theme || !lang) return null;
   const styles = makeStyles(theme);
 
-  const runningText = submitting
-    ? type === 'check_in'
-      ? 'Đang check-in...'
-      : 'Đang check-out...'
-    : stepLabel;
+  const runningText =submitting ? (type === 'check_in' ? 'Đang check-in...' : 'Đang check-out...'): steps[currentStep];
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView>
         <HeaderBar
           title={lang.t('face_detection_title')}
           onBack={() => navigation.goBack()}
-          extra={<View style={{width: 34}} />}
+          extra={<View style={{ width: 34 }} />}
         />
 
         <View style={styles.faceGuide}>
           <View
             style={[
               styles.ovalWrapper,
-              {width: OVAL_WIDTH, height: OVAL_HEIGHT},
+              { width: OVAL_WIDTH, height: OVAL_HEIGHT },
             ]}>
             <MaskedView
               style={StyleSheet.absoluteFillObject}
@@ -330,7 +378,7 @@ export default function EmployeeFaceDetectionScreen({
             <ActivityIndicator
               size="small"
               color="#1E4DFF"
-              style={{marginLeft: 8}}
+              style={{ marginLeft: 8 }}
             />
           </View>
         )}
@@ -353,22 +401,22 @@ const makeStyles = (theme: any) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    ovalWrapper: {position: 'relative'},
-    cameraSurface: {flex: 1, backgroundColor: '#000'},
+    ovalWrapper: { position: 'relative' },
+    cameraSurface: { flex: 1, backgroundColor: '#000' },
     cameraFallback: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
       padding: 20,
     },
-    cameraFallbackText: {color: '#fff', marginBottom: 10},
+    cameraFallbackText: { color: '#fff', marginBottom: 10 },
     cameraFallbackButton: {
       borderWidth: 1,
       borderColor: '#fff',
       padding: 8,
       borderRadius: 6,
     },
-    cameraFallbackButtonText: {color: '#fff'},
+    cameraFallbackButtonText: { color: '#fff' },
 
     statusRow: {
       flexDirection: 'row',
