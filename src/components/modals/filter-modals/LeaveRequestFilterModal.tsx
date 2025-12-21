@@ -29,8 +29,8 @@ export type LeaveRequestFilters = {
   positionName: string;
   department: Option | null;
   approvalStatus: Option | null;
-  createdDate: Date;
-  startDate: Date;
+  createdDate: Date | null;
+  startDate: Date | null;
   sortBy: Option | null;
 };
 
@@ -58,13 +58,14 @@ export default function LeaveRequestFilterModal({
   const [employeeName, setEmployeeName] = useState('');
   const [positionName, setPositionName] = useState('');
 
-  const [createdDate, setCreatedDate] = useState<Date>(new Date());
-  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [createdDate, setCreatedDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState<Date | null>(null);
 
   /* ===================== LOAD STATIC OPTIONS ===================== */
   useEffect(() => {
     if (!lang) return;
-    setApprovals(makeApprovalOptions(lang));
+    const approvalOpts = makeApprovalOptions(lang);
+    setApprovals([{value: 'all', label: '—'}, ...approvalOpts]);
     setSortings(makeSortingOptions(lang));
   }, [lang]);
 
@@ -94,29 +95,19 @@ export default function LeaveRequestFilterModal({
 
   /* ===================== DEFAULT SELECT ===================== */
   useEffect(() => {
-    if (approvals.length && !approvalStatus)
-      setApprovalStatus(approvals[0]);
+    if (approvals.length && !approvalStatus) setApprovalStatus(approvals[0]);
   }, [approvals, approvalStatus]);
 
   useEffect(() => {
-    if (departments.length && !department)
-      setDepartment(departments[0]);
+    if (departments.length && !department) setDepartment(departments[0]);
   }, [departments, department]);
 
   useEffect(() => {
-    if (sortings.length && !sortBy)
-      setSortBy(sortings[0]);
+    if (sortings.length && !sortBy) setSortBy(sortings[0]);
   }, [sortings, sortBy]);
 
   /* ===================== GUARD ===================== */
-  if (
-    loading ||
-    !theme ||
-    !lang ||
-    !approvalStatus ||
-    !department ||
-    !sortBy
-  ) {
+  if (loading || !theme || !lang || !approvalStatus || !department || !sortBy) {
     return null;
   }
 
@@ -131,9 +122,8 @@ export default function LeaveRequestFilterModal({
     setDepartment(departments[0]);
     setSortBy(sortings[0]);
 
-    const d = new Date();
-    setCreatedDate(d);
-    setStartDate(d);
+    setCreatedDate(null);
+    setStartDate(null);
   };
 
   const handleApplyFilters = () => {

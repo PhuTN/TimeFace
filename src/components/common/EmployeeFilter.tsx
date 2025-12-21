@@ -28,7 +28,6 @@ export type EmployeeFilterValues = {
     | 'waiting_for_changed'
     | 'do_not_change'
     | '';
-  accountActive?: 'active' | 'inactive' | '';
   profile_approved?: 'approved' | 'pending' | ''; // ✅ THÊM
   departmentId?: string;
   position: string;
@@ -69,10 +68,6 @@ export default function EmployeeFilter({
   const [passwordChangeStatus, setPasswordChangeStatus] = React.useState<
     'changed' | 'waiting_for_changed' | 'do_not_change' | ''
   >((current?.passwordChangeStatus as any) ?? '');
-
-  const [accountActive, setAccountActive] = React.useState<
-    'active' | 'inactive' | ''
-  >((current?.accountActive as any) ?? '');
 
   const [departmentId, setDepartmentId] = React.useState<string>(
     current?.departmentId ?? '',
@@ -142,21 +137,11 @@ export default function EmployeeFilter({
     [lang],
   );
 
-  const accountOptions = React.useMemo<Option[]>(
-    () => [
-      {value: '', label: '—'},
-      {value: 'active', label: lang?.t('active') ?? 'Hoạt động'},
-      {value: 'inactive', label: lang?.t('inactive') ?? 'Ngừng hoạt động'},
-    ],
-    [lang],
-  );
-
   // Resync form when modal opens
   React.useEffect(() => {
     if (visible) {
       setEmployeeName(current?.employeeName ?? '');
       setPasswordChangeStatus((current?.passwordChangeStatus as any) ?? '');
-      setAccountActive((current?.accountActive as any) ?? '');
       setDepartmentId(current?.departmentId ?? '');
       setPosition(current?.position ?? '');
       setSortBy((current?.sortBy as EmpSortValue) ?? 'created_desc');
@@ -171,7 +156,6 @@ export default function EmployeeFilter({
     onApply({
       employeeName,
       passwordChangeStatus,
-      accountActive,
       profile_approved, // ✅
       departmentId,
       position,
@@ -185,7 +169,6 @@ export default function EmployeeFilter({
     onApply({
       employeeName: '',
       passwordChangeStatus: '',
-      accountActive: '',
       profile_approved: '', // ✅
       departmentId: '',
       position: '',
@@ -225,20 +208,6 @@ export default function EmployeeFilter({
               }
               options={passwordOptions}
               onSelect={(o: Option) => setPasswordChangeStatus(o.value as any)}
-              theme={theme}
-            />
-          </View>
-
-          <View style={S.col}>
-            <Text style={S.label}>{lang.t('account_status_label')}</Text>
-            <LabeledSelect
-              label=""
-              selected={
-                accountOptions.find(o => o.value === accountActive) ??
-                accountOptions[0]
-              }
-              options={accountOptions}
-              onSelect={(o: Option) => setAccountActive(o.value as any)}
               theme={theme}
             />
           </View>

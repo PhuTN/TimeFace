@@ -21,7 +21,7 @@ import LeaveRequestFilterModal, {
   LeaveRequestFilters,
 } from '../../components/modals/filter-modals/LeaveRequestFilterModal';
 
-import {User} from '../../api/endpoint/User';
+import {User} from '../../api/endpoint/user';
 import {apiHandle} from '../../api/apihandle';
 import Toast from 'react-native-toast-message';
 
@@ -127,15 +127,8 @@ export default function LeaveRequestScreen() {
       setRawRequests(mapped);
 
       if (isFirstLoad) {
-        setDisplayed(mapped.filter(r => r.status === 'pending'));
-        setActiveFilters([
-          {
-            key: 'approvalStatus',
-            mainText: t?.('approval_status_label') || 'Trạng thái',
-            subText: 'Chờ duyệt',
-            value: 'pending',
-          },
-        ]);
+        setDisplayed(mapped); // Show all requests without default filter
+        setActiveFilters([]); // No default filters
         setIsFirstLoad(false);
       } else {
         setDisplayed(mapped);
@@ -176,10 +169,58 @@ export default function LeaveRequestScreen() {
 
         case 'ticketCode':
           next = next.filter(r =>
-            r.requestCode
-              .toLowerCase()
-              .includes(String(f.value).toLowerCase()),
+            r.requestCode.toLowerCase().includes(String(f.value).toLowerCase()),
           );
+          break;
+
+        case 'positionName':
+          next = next.filter(r =>
+            r.position.toLowerCase().includes(String(f.value).toLowerCase()),
+          );
+          break;
+
+        case 'department':
+          next = next.filter(r => r.department === f.value);
+          break;
+
+        case 'createdDate':
+          const createdFilterDate = (f.value as Date).toLocaleDateString(
+            'vi-VN',
+          );
+          next = next.filter(r => r.createdAt === createdFilterDate);
+          break;
+
+        case 'startDate':
+          const startFilterDate = (f.value as Date).toISOString().split('T')[0];
+          next = next.filter(r => r.startDate === startFilterDate);
+          break;
+
+        case 'sortBy':
+          // Apply sorting
+          switch (f.value) {
+            case 'name_asc':
+              next.sort((a, b) => a.name.localeCompare(b.name));
+              break;
+            case 'name_desc':
+              next.sort((a, b) => b.name.localeCompare(a.name));
+              break;
+            case 'date_asc':
+              next.sort(
+                (a, b) =>
+                  new Date(a.startDate).getTime() -
+                  new Date(b.startDate).getTime(),
+              );
+              break;
+            case 'date_desc':
+              next.sort(
+                (a, b) =>
+                  new Date(b.startDate).getTime() -
+                  new Date(a.startDate).getTime(),
+              );
+              break;
+            default:
+              break;
+          }
           break;
       }
     });
@@ -216,6 +257,28 @@ export default function LeaveRequestScreen() {
       });
     }
 
+    if (filters.positionName) {
+      next = next.filter(r =>
+        r.position.toLowerCase().includes(filters.positionName.toLowerCase()),
+      );
+      chips.push({
+        key: 'positionName',
+        mainText: t('position_name_label'),
+        subText: filters.positionName,
+        value: filters.positionName,
+      });
+    }
+
+    if (filters.department && filters.department.value !== 'all') {
+      next = next.filter(r => r.department === filters.department.label);
+      chips.push({
+        key: 'department',
+        mainText: t('department_label'),
+        subText: filters.department.label,
+        value: filters.department.label,
+      });
+    }
+
     if (filters.approvalStatus && filters.approvalStatus.value !== 'all') {
       next = next.filter(r => r.status === filters.approvalStatus.value);
       chips.push({
@@ -223,6 +286,64 @@ export default function LeaveRequestScreen() {
         mainText: t('approval_status_label'),
         subText: filters.approvalStatus.label,
         value: filters.approvalStatus.value,
+      });
+    }
+
+    if (filters.createdDate) {
+      const filterDate = filters.createdDate.toLocaleDateString('vi-VN');
+      next = next.filter(r => r.createdAt === filterDate);
+      chips.push({
+        key: 'createdDate',
+        mainText: t('created_date_label'),
+        subText: filterDate,
+        value: filters.createdDate,
+      });
+    }
+
+    if (filters.startDate) {
+      const filterDate = filters.startDate.toISOString().split('T')[0];
+      next = next.filter(r => r.startDate === filterDate);
+      chips.push({
+        key: 'startDate',
+        mainText: t('start_date_label'),
+        subText: filters.startDate.toLocaleDateString('vi-VN'),
+        value: filters.startDate,
+      });
+    }
+
+    // Apply sorting after filtering
+    if (filters.sortBy) {
+      switch (filters.sortBy.value) {
+        case 'name_asc':
+          next.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case 'name_desc':
+          next.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        case 'date_asc':
+          next.sort(
+            (a, b) =>
+              new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+          );
+          break;
+        case 'date_desc':
+          next.sort(
+            (a, b) =>
+              new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
+          );
+          break;
+        case 'default':
+        default:
+          // Keep original order
+          break;
+      }
+
+      // Always show sortBy chip
+      chips.push({
+        key: 'sortBy',
+        mainText: t('sort_by_label'),
+        subText: filters.sortBy.label,
+        value: filters.sortBy.value,
       });
     }
 
@@ -234,13 +355,15 @@ export default function LeaveRequestScreen() {
   const handleApprove = async () => {
     if (!selectedRequest) return;
 
-    await apiHandle.callApi(
-      User.AdminDecideLeave(
-        selectedRequest.user_id!,
-        selectedRequest.leave_id!,
-      ),
-      {status: 'approved'},
-    ).asPromise();
+    await apiHandle
+      .callApi(
+        User.AdminDecideLeave(
+          selectedRequest.user_id!,
+          selectedRequest.leave_id!,
+        ),
+        {status: 'approved'},
+      )
+      .asPromise();
 
     Toast.show({type: 'success', text1: t('approved')});
     setShowDetailModal(false);
@@ -250,13 +373,15 @@ export default function LeaveRequestScreen() {
   const handleReject = async () => {
     if (!selectedRequest) return;
 
-    await apiHandle.callApi(
-      User.AdminDecideLeave(
-        selectedRequest.user_id!,
-        selectedRequest.leave_id!,
-      ),
-      {status: 'rejected'},
-    ).asPromise();
+    await apiHandle
+      .callApi(
+        User.AdminDecideLeave(
+          selectedRequest.user_id!,
+          selectedRequest.leave_id!,
+        ),
+        {status: 'rejected'},
+      )
+      .asPromise();
 
     Toast.show({type: 'success', text1: t('rejected')});
     setShowDetailModal(false);
@@ -269,7 +394,13 @@ export default function LeaveRequestScreen() {
     <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
       <Header2 title={t('leaveRequestTitle')} theme={theme} />
 
-      <ScrollView contentContainerStyle={{padding: 16}}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 20,
+          paddingBottom: 24,
+        }}
+        showsVerticalScrollIndicator={false}>
         {/* HEADER */}
         <View
           style={{
@@ -280,12 +411,19 @@ export default function LeaveRequestScreen() {
           <Text style={{fontSize: 16, fontWeight: '600'}}>
             {t('leaveRequestTitle')}
           </Text>
-          <FilterIcon width={22} height={22} onPress={() => setShowFilter(true)} />
+          <FilterIcon
+            width={22}
+            height={22}
+            onPress={() => setShowFilter(true)}
+          />
         </View>
 
         {/* FILTER CHIPS */}
         {activeFilters.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{gap: 10, marginBottom: 12}}>
             {activeFilters.map(f => (
               <View key={f.key} style={{marginRight: 8}}>
                 <FilterChip
