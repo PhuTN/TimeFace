@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Image,
   StyleSheet,
@@ -11,7 +11,10 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {navigationRef} from '../../navigation/NavigationService';
 import {authStorage} from '../../services/authStorage';
-
+import Toast from 'react-native-toast-message';
+import {apiHandle} from '../../api/apihandle';
+import {User} from '../../api/endpoint/User';
+import messaging from '@react-native-firebase/messaging';
 type Props = {
   activeIndex: number;
   onPress: (index: number) => void;
@@ -32,7 +35,7 @@ const CENTER_RADIUS = CENTER_SIZE / 2;
 
 export default function Footer({activeIndex, onPress}: Props) {
   const insets = useSafeAreaInsets();
-
+  const [unread, setUnread] = useState(0);
   const scales = useRef([
     new Animated.Value(1),
     new Animated.Value(1),
@@ -52,6 +55,54 @@ export default function Footer({activeIndex, onPress}: Props) {
     });
   }, [activeIndex]);
 
+  const fetchNotifications = async (source: string) => {
+    try {
+      console.log(`📥 [NOTI] Fetch notifications (${source})`);
+
+      const res = await apiHandle.callApi(User.GetMyNotifications).asPromise();
+
+      const unreadCount = res?.res?.unread_count ?? 0;
+
+      console.log(
+        `📦 [NOTI] Notifications (${source})`,
+        'unread =',
+        unreadCount,
+        res?.res?.data,
+      );
+
+      setUnread(unreadCount);
+    } catch (err) {
+      console.log(`❌ [NOTI] Fetch failed (${source}):`, err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications('app_start');
+  }, []);
+
+  useEffect(() => {
+    console.log('🔔 [NOTI] Listen Firebase foreground');
+
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('📩 [NOTI] Firebase message:', remoteMessage);
+
+      const title = remoteMessage.notification?.title || 'Thông báo';
+      const body = '';
+
+      // 👉 1️⃣ Toast
+      Toast.show({
+        type: 'info',
+        text1: title,
+        text2: body,
+        position: 'top',
+      });
+
+      // 👉 2️⃣ Reload notifications
+      await fetchNotifications('firebase_push');
+    });
+
+    return () => unsubscribe();
+  }, []);
   const handlePress = async (index: number) => {
     onPress(index);
 
@@ -84,7 +135,7 @@ export default function Footer({activeIndex, onPress}: Props) {
         break;
 
       default:
-        //navigationRef.navigate('NotificationSender');
+        navigationRef.navigate('Notification');
         break;
     }
   };
@@ -159,17 +210,27 @@ export default function Footer({activeIndex, onPress}: Props) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* TAB 4 */}
+          {/*  — NOTIFICATION */}
           <Animated.View style={{transform: [{scale: scales[4]}]}}>
             <TouchableOpacity
               style={styles.tab}
               onPress={() => handlePress(4)}
               activeOpacity={0.8}>
-              <Ionicons
-                name="notifications-outline"
-                size={32}
-                color={activeIndex === 4 ? ACTIVE : INACTIVE}
-              />
+              <View style={{position: 'relative'}}>
+                <Ionicons
+                  name="notifications-outline"
+                  size={32}
+                  color={activeIndex === 4 ? ACTIVE : INACTIVE}
+                />
+
+                {unread > 0 && (
+                  <View style={styles.badge}>
+                    <Animated.Text style={styles.badgeText}>
+                      {unread > 99 ? '99+' : unread}
+                    </Animated.Text>
+                  </View>
+                )}
+              </View>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -184,6 +245,25 @@ const styles = StyleSheet.create({
     backgroundColor: SCREEN_BG,
     alignItems: 'center',
     overflow: 'visible',
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FF3B30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    zIndex: 10,
+  },
+
+  badgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   bar: {

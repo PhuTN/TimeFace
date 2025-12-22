@@ -39,4 +39,12 @@ export const CompanyEP = {
   // --------------------------
   // GET /company/checkin-info
   GetCheckinInfo: ep("GET", "company/checkin-info"),
+   GetAttendanceReportByDate: ep(
+    "GET",
+    "company/attendance-report"
+  ),
+   GetAttendanceChart: ep(
+    "GET",
+    "company/attendance-chart"
+  ),
 } as const;

@@ -1,82 +1,217 @@
-import React from 'react';
-import {SafeAreaView, ScrollView, View} from 'react-native';
-import {useUIFactory} from '../../ui/factory/useUIFactory';
-import Header2 from '../../components/common/Header2';
-import Notification from '../../components/list_items/employe-list-items/Notification';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+  TouchableOpacity,
+} from 'react-native';
+import HeaderBar from '../../components/common/HeaderBar';
+import Footer from '../../components/common/Footer';
+import {apiHandle} from '../../api/apihandle';
+import {User} from '../../api/endpoint/User';
+import messaging from '@react-native-firebase/messaging';
+import {navigationRef} from '../../navigation/NavigationService';
 
-// Fake data for demonstration
-const fakeNotifications = [
-  {
-    id: '1',
-    title: 'Đơn xin nghỉ đã được duyệt!',
-    status: 'approved' as const,
-    value: 'Đơn xin nghỉ từ ngày 25/10/2025 đến 27/10/2025',
-    approverName: 'Nguyễn Văn A',
-    time: '10:00 AM',
-  },
-  {
-    id: '2',
-    title: 'Đơn xin nghỉ đã bị từ chối!',
-    status: 'rejected' as const,
-    value: 'Đơn xin nghỉ từ ngày 28/10/2025 đến 30/10/2025',
-    approverName: 'Trần Thị B',
-    time: '2:30 PM',
-  },
-  {
-    id: '3',
-    title: 'Đơn xin OT đã được duyệt!',
-    status: 'approved' as const,
-    value: 'Đơn xin OT ngày 29/10/2025 từ 18:00 đến 20:00',
-    approverName: 'Lê Văn C',
-    time: '9:15 AM',
-  },
-  {
-    id: '4',
-    title: 'Đơn xin nghỉ đã bị từ chối!',
-    status: 'rejected' as const,
-    value: 'Đơn xin nghỉ ngày 30/10/2025',
-    approverName: 'Phạm Thị D',
-    time: 'Yesterday',
-  },
-  {
-    id: '5',
-    title: 'Đơn đổi ca làm việc đã được duyệt!',
-    status: 'approved' as const,
-    value: 'Đơn đổi ca làm việc từ ca sáng sang ca chiều',
-    approverName: 'Hoàng Văn E',
-    time: '8:00 AM',
-  },
-];
+export default function NotificationScreen() {
+  const [loading, setLoading] = useState(true);
+  const [list, setList] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState(4); // 🔔 tab notifications
 
-const NotificationScreen: React.FC = () => {
-  const {loading, theme, lang} = useUIFactory();
+  // ========================
+  // 📥 LOAD NOTIFICATIONS
+  // ========================
+  const loadNotifications = async () => {
+    try {
+      console.log('📥 [NOTI_SCREEN] load notifications');
+      setLoading(true);
 
-  if (loading || !theme || !lang) {
-    return null;
-  }
+      const res = await apiHandle
+        .callApi(User.GetMyNotifications)
+        .asPromise();
 
+      setList(res?.res?.data ?? []);
+    } catch (e) {
+      console.log('❌ [NOTI_SCREEN] loadNotifications error', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ========================
+  // 👁️ SEEN ALL
+  // ========================
+  const seenAll = async () => {
+    try {
+      console.log('👁️ [NOTI_SCREEN] seen all');
+      await apiHandle.callApi(User.SeenAllNotifications).asPromise();
+    } catch (e) {
+      console.log('❌ [NOTI_SCREEN] seenAll error', e);
+    }
+  };
+
+  // ========================
+  // 👉 VÀO MÀN: LOAD + SEEN
+  // ========================
+  useEffect(() => {
+    loadNotifications();
+    seenAll();
+  }, []);
+
+  // ========================
+  // 🔔 FIREBASE FOREGROUND
+  // ========================
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('📩 [NOTI_SCREEN] firebase message', remoteMessage);
+      await loadNotifications();
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // ========================
+  // 👉 HANDLE CLICK NOTI
+  // ========================
+  const handlePressNotification = (item: any) => {
+    try {
+      const screenName = item?.type;
+
+      console.log('➡️ [NOTI_SCREEN] navigate to:', screenName);
+
+      if (!screenName) return;
+
+      if (!navigationRef.isReady()) return;
+
+      navigationRef.navigate(screenName as never);
+    } catch (err) {
+      console.log('❌ [NOTI_SCREEN] navigate error', err);
+    }
+  };
+
+  // ========================
+  // 🎨 RENDER ITEM
+  // ========================
+  const renderItem = ({item}: any) => {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => handlePressNotification(item)}>
+        <View style={[styles.card, !item.is_read && styles.unread]}>
+          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.body}>{item.body}</Text>
+          <Text style={styles.time}>
+            {new Date(item.created_at).toLocaleString()}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // ========================
+  // 🧱 UI
+  // ========================
   return (
-    <SafeAreaView
-      style={{flex: 1, backgroundColor: theme.colors.lightGrayBackground}}>
-      <Header2 title={lang.t('notificationTitle')} theme={theme} />
+    <View style={styles.root}>
+      <HeaderBar title="Thông báo" isShowBackButton />
 
-      <ScrollView
-        contentContainerStyle={{paddingVertical: 16}}
-        showsVerticalScrollIndicator={false}>
-        {/* Notifications List */}
-        {fakeNotifications.map(notification => (
-          <Notification
-            key={notification.id}
-            title={notification.title}
-            status={notification.status}
-            value={notification.value}
-            approverName={notification.approverName}
-            time={notification.time}
-          />
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator />
+        </View>
+      ) : (
+        <FlatList
+          data={list}
+          keyExtractor={item => item._id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text style={styles.empty}>Không có thông báo</Text>
+          }
+        />
+      )}
+
+      {/* ⭐ FOOTER */}
+      <Footer
+        activeIndex={activeTab}
+        onPress={index => setActiveTab(index)}
+      />
+    </View>
   );
-};
+}
 
-export default NotificationScreen;
+// ========================
+// 🎨 STYLES
+// ========================
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#F5F6FA',
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  list: {
+    padding: 16,
+    paddingBottom: 110,
+  },
+
+  empty: {
+    textAlign: 'center',
+    color: '#9CA3AF',
+    marginTop: 40,
+    fontWeight: '700',
+  },
+
+  card: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 14,
+
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+        shadowOffset: {width: 0, height: 6},
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+
+  unread: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#3C9CDC',
+    backgroundColor: '#EEF6FF',
+  },
+
+  title: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#111827',
+  },
+
+  body: {
+    marginTop: 6,
+    fontSize: 13,
+    color: '#374151',
+    lineHeight: 18,
+  },
+
+  time: {
+    marginTop: 10,
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '600',
+  },
+});

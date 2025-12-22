@@ -24,6 +24,8 @@ export default function ManagementScreen({navigation}: any) {
       icon: require('../assets/QuanLy/report.png'),
       title: 'Báo cáo tổng hợp',
       subtitle: 'Tổng hợp số liệu thống kê',
+        route: 'Report',
+      
     },
     {
       icon: require('../assets/QuanLy/shift.png'),

@@ -173,42 +173,49 @@ const BORDER = '#E7EEF8';
 const styles = StyleSheet.create({
   wrap: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginBottom: 16,
-    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    marginBottom: 10,
+    borderRadius: 12,
   },
-  row: {flexDirection: 'row', gap: 12, alignItems: 'stretch'},
-  col: {flex: 1, gap: 10},
+
+  row: {flexDirection: 'row', gap: 8, alignItems: 'stretch'},
+  col: {flex: 1, gap: 6},
+
   separator: {
-    height: 6,
+    height: 4,
     backgroundColor: '#E6EDFA',
-    marginVertical: 12,
-    borderRadius: 3,
+    marginVertical: 8,
+    borderRadius: 2,
   },
 
   bigCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: BORDER,
-    padding: 12,
+    padding: 8,
   },
-  bigHeader: {flexDirection: 'row', alignItems: 'center', gap: 8},
-  bigTitle: {fontSize: 22, fontWeight: '700', color: '#3E4B59'},
-  bigValue: {fontSize: 48, fontWeight: '800', color: '#0F172A', marginTop: 6},
+  bigHeader: {flexDirection: 'row', alignItems: 'center', gap: 6},
+  bigTitle: {fontSize: 14, fontWeight: '600', color: '#3E4B59'},
+  bigValue: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 2,
+  },
 
   smallCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: BORDER,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   smallCardActive: {
     backgroundColor: '#E9FBFF',
@@ -219,22 +226,21 @@ const styles = StyleSheet.create({
     borderColor: '#A6ECE6',
   },
 
-  smallLeft: {flexDirection: 'row', alignItems: 'center', gap: 10},
-  smallLabel: {fontSize: 20, color: '#334155', fontWeight: '600'},
+  smallLeft: {flexDirection: 'row', alignItems: 'center', gap: 6},
+  smallLabel: {fontSize: 13, color: '#334155', fontWeight: '600'},
   smallLabelActive: {color: '#0E7490'},
 
-  // Số bên phải dạng text thuần
-  count: {fontSize: 28, fontWeight: '800', color: '#0F172A'},
+  count: {fontSize: 18, fontWeight: '800', color: '#0F172A'},
   countActive: {color: '#075985'},
 
-  iconSmall: {width: 22, height: 22, resizeMode: 'contain'},
-  iconBig: {width: 22, height: 22, resizeMode: 'contain'},
+  iconSmall: {width: 18, height: 18, resizeMode: 'contain'},
+  iconBig: {width: 18, height: 18, resizeMode: 'contain'},
 
   shadow: {
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
 });

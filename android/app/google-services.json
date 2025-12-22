@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "502069662801",
+    "project_id": "gokuune",
+    "storage_bucket": "gokuune.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:502069662801:android:56186b299e3bd935f75470",
+        "android_client_info": {
+          "package_name": "com.gokuune"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAn6FYDnJ4emOg0kFIEG25G-lZMGQ0r3Bw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

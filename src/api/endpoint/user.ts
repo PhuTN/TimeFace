@@ -1,4 +1,4 @@
-import { ep } from '../core/ApiEndpoint';
+import {ep} from '../core/ApiEndpoint';
 
 export const User = {
   /* ======================== SELF ======================== */
@@ -97,4 +97,10 @@ export const User = {
     ep('GET', 'users/chat/group', groupId),
   SendMessage: ep('POST', 'users/chat', 'send'),
   SeenMessage: ep('POST', 'users/chat', 'seen'),
+  AddOrUpdateDevice: ep('POST', 'users/me', 'devices'),
+  GetMyNotifications: ep('GET', 'users', 'me/notifications'),
+  SeenAllNotifications: ep('PATCH', 'users', 'me/notifications/seen-all'),
+  // remove device (logout)
+  RemoveDevice: (deviceId: string) =>
+    ep('DELETE', 'users/me/devices', deviceId),
 } as const;

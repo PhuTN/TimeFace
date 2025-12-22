@@ -17,7 +17,10 @@ import {useUIFactory} from '../ui/factory/useUIFactory';
 import {apiHandle} from '../api/apihandle';
 import {Auth} from '../api/endpoint/Auth';
 import {logout} from '../features/auth/authService';
+import DeviceInfo from 'react-native-device-info';
+import messaging from '@react-native-firebase/messaging';
 import Feather from 'react-native-vector-icons/Feather';
+import { User } from '../api/endpoint/User';
 
 export default function AccountSettingsScreen() {
   const {theme} = useUIFactory();
@@ -41,11 +44,9 @@ export default function AccountSettingsScreen() {
     if (!oldPass || !newPass || !confirmPass)
       return 'Vui lòng nhập đầy đủ thông tin';
 
-    if (newPass.length < 6)
-      return 'Mật khẩu mới phải ít nhất 6 ký tự';
+    if (newPass.length < 6) return 'Mật khẩu mới phải ít nhất 6 ký tự';
 
-    if (newPass !== confirmPass)
-      return 'Xác nhận mật khẩu không khớp';
+    if (newPass !== confirmPass) return 'Xác nhận mật khẩu không khớp';
 
     return null;
   };
@@ -65,7 +66,9 @@ export default function AccountSettingsScreen() {
         new_password: newPass,
       };
 
-      const res = await apiHandle.callApi(Auth.ChangePassword, payload).asPromise();
+      const res = await apiHandle
+        .callApi(Auth.ChangePassword, payload)
+        .asPromise();
       if (res.status.isError) throw new Error(res.status.errorMessage);
 
       Toast.show({
@@ -102,7 +105,6 @@ export default function AccountSettingsScreen() {
       />
 
       <ScrollView contentContainerStyle={S.container}>
-
         {/* CARD */}
         <View style={S.card}>
           <Text style={S.cardTitle}>Đổi mật khẩu</Text>
@@ -149,7 +151,23 @@ export default function AccountSettingsScreen() {
         </View>
 
         {/* LOGOUT */}
-        <TouchableOpacity style={S.logoutRow} onPress={() => logout()}>
+        <TouchableOpacity
+          style={S.logoutRow}
+          onPress={async () => {
+            try {
+             const deviceId = await DeviceInfo.getUniqueId(); // string
+
+              // ❗ gọi BE xoá device – lỗi cũng kệ
+              await apiHandle
+                .callApi(User.RemoveDevice(deviceId))
+                .asPromise();
+            } catch (e) {
+              console.log('[LOGOUT] delete device failed (ignored)', e);
+            } finally {
+              // ✅ luôn logout
+              logout();
+            }
+          }}>
           <View style={S.logoutBtn}>
             <Feather name="log-out" size={20} color="#ff6b6b" />
             <Text style={S.logoutText}>Đăng xuất</Text>

@@ -70,6 +70,7 @@ import AccountSettingsScreen from '../screens/AccountSettingsScreen';
 import MonthTimesheetScreen from '../screens/group-4-screens/MonthTimesheetScreen';
 import TimesheetScreen from '../screens/group-2-screens/TimesheetScreen';
 import DailyRecordScreen from '../screens/group-4-screens/DailyRecordScreen';
+import NotificationScreen from '../screens/group-4-screens/NotificationScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -93,7 +94,7 @@ export type RootStackParamList = {
   ChatList: undefined;
   ChatRoom: undefined;
   GroupChat: undefined;
-
+  Notification: undefined;
   JobInformation: undefined;
   PersonalInformation: { faces: any } | undefined;
   PersonalInformationFaceDetection: undefined;
@@ -190,6 +191,11 @@ const AppNavigator = ({
           component={ReportScreen}
           options={{ animation: 'none' }}
         />
+        <Stack.Screen
+  name="Notification"
+  component={NotificationScreen}
+  options={{ animation: 'none' }}
+/>
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}

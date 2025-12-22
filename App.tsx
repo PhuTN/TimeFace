@@ -1,27 +1,22 @@
 // App.tsx
-import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  View,
-  Linking,
-} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {ActivityIndicator, View, Linking, LogBox} from 'react-native';
 
 import Toast from 'react-native-toast-message';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 import AppNavigator from './src/navigation/AppNavigator';
-import { rehydrateAuth } from './src/bootstrap/rehydrateAuth';
-import { apiHandle } from './src/api/apihandle';
-import { User } from './src/api/endpoint/User';
-import { authStorage } from './src/services/authStorage';
+import {rehydrateAuth} from './src/bootstrap/rehydrateAuth';
+import {apiHandle} from './src/api/apihandle';
+import {User} from './src/api/endpoint/User';
+import {authStorage} from './src/services/authStorage';
 
-import {
-  AppReloadProvider,
-  useAppReload,
-} from './src/context/AppReloadContext';
+import {AppReloadProvider, useAppReload} from './src/context/AppReloadContext';
 
 import AppConfig from './src/appconfig/AppConfig';
-import { socketService } from './services/socketService';
+import {socketService} from './services/socketService';
+
+  LogBox.ignoreAllLogs(true);
 
 
 // ======================= ROOT APP =======================
@@ -43,12 +38,14 @@ function RootApp({
 
       // set token vào AppConfig trước khi call API
       if (session?.token) {
-        AppConfig.getInstance().setAuthToken(session.token, { rebuildAxios: true });
+        AppConfig.getInstance().setAuthToken(session.token, {
+          rebuildAxios: true,
+        });
         try {
-          const { status, res } = await apiHandle.callApi(User.GetMe).asPromise();
+          const {status, res} = await apiHandle.callApi(User.GetMe).asPromise();
           if (!status.isError && res?.success && res.data?.user) {
             user = res.data.user;
-            await authStorage.save({ token: session.token, user });
+            await authStorage.save({token: session.token, user});
           }
         } catch {}
       }
@@ -75,7 +72,7 @@ function RootApp({
     const handleStripeDeepLink = async (url: string) => {
       try {
         if (url.startsWith('timeface://stripe-success')) {
-          const { res } = await apiHandle.callApi(User.GetMe).asPromise();
+          const {res} = await apiHandle.callApi(User.GetMe).asPromise();
           if (res?.success && res.data?.user) {
             const stored = await authStorage.load();
             await authStorage.save({
@@ -104,13 +101,15 @@ function RootApp({
       } catch {}
     };
 
-    const sub = Linking.addEventListener('url', e => handleStripeDeepLink(e.url));
+    const sub = Linking.addEventListener('url', e =>
+      handleStripeDeepLink(e.url),
+    );
     return () => sub.remove();
   }, []);
 
   if (!ready) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -119,16 +118,16 @@ function RootApp({
   return <AppNavigator initialRouteName={initialRoute} />;
 }
 
-
-
 // ======================= APP MAIN =======================
 function AppContent() {
   const [initialRoute, setInitialRoute] =
-    useState<keyof import('./src/navigation/AppNavigator').RootStackParamList>('Login');
+    useState<keyof import('./src/navigation/AppNavigator').RootStackParamList>(
+      'Login',
+    );
 
   const [checking, setChecking] = useState(true);
 
-  const { reloadKey } = useAppReload(); // 🔥 CHỈ DÙNG reloadKey
+  const {reloadKey} = useAppReload(); // 🔥 CHỈ DÙNG reloadKey
 
   useEffect(() => {
     (async () => {
@@ -137,12 +136,14 @@ function AppContent() {
 
       if (session?.token) {
         // đảm bảo axios có token trước khi GetMe
-        AppConfig.getInstance().setAuthToken(session.token, { rebuildAxios: true });
+        AppConfig.getInstance().setAuthToken(session.token, {
+          rebuildAxios: true,
+        });
         try {
-          const { res } = await apiHandle.callApi(User.GetMe).asPromise();
+          const {res} = await apiHandle.callApi(User.GetMe).asPromise();
           if (res?.success && res.data?.user) {
             user = res.data.user;
-            await authStorage.save({ token: session.token, user });
+            await authStorage.save({token: session.token, user});
           }
         } catch {}
       }
@@ -153,15 +154,11 @@ function AppContent() {
 
         if (role === 'admin') {
           setInitialRoute(
-            subscriptionStatus !== 'active'
-              ? 'SubscriptionPlans'
-              : 'Home'
+            subscriptionStatus !== 'active' ? 'SubscriptionPlans' : 'Home',
           );
         } else if (role === 'user') {
           setInitialRoute(
-            subscriptionStatus !== 'active'
-              ? 'SubscriptionBlocked'
-              : 'Home'
+            subscriptionStatus !== 'active' ? 'SubscriptionBlocked' : 'Home',
           );
         } else {
           setInitialRoute('Home');
@@ -176,19 +173,15 @@ function AppContent() {
 
   if (checking) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" />
       </View>
     );
   }
 
   // ❗ Không có ScrollView nữa → RootApp sẽ remount đúng khi reloadKey đổi
-  return (
-    <RootApp initialRoute={initialRoute} reloadKey={reloadKey} />
-  );
+  return <RootApp initialRoute={initialRoute} reloadKey={reloadKey} />;
 }
-
-
 
 // ======================= WRAPPER =======================
 export default function App() {
