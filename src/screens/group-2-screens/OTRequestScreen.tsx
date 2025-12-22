@@ -14,9 +14,9 @@ import OTRequestFilterModal, {
 import FilterIcon from '../../assets/icons/filter_icon.svg';
 import FilterChip from '../../components/common/FilterChip';
 
-import Toast from 'react-native-toast-message';
-import {apiHandle} from '../../api/apihandle';
 import {User} from '../../api/endpoint/user';
+import {apiHandle} from '../../api/apihandle';
+import Toast from 'react-native-toast-message';
 
 /* ===================== UTILS ===================== */
 const addHours = (start: string, hours: number) => {
@@ -61,24 +61,15 @@ export default function OTRequestScreen() {
     employeeName: '',
     positionName: '',
     department: null,
-    approvalStatus: {
-      value: 'pending',
-      label: t?.('pending') ?? 'Đang chờ',
-    },
-    createdDate: new Date(),
-    otDate: new Date(),
+    approvalStatus: null,
+    createdDate: null,
+    otDate: null,
     sortBy: null,
   });
 
   const [activeFilters, setActiveFilters] = useState<
     {key: string; mainText: string; subText: string}[]
-  >([
-    {
-      key: 'approvalStatus',
-      mainText: t?.('approval_status_label') ?? 'Trạng thái',
-      subText: t?.('pending') ?? 'Đang chờ',
-    },
-  ]);
+  >([]);
 
   /* ===================== LOAD DATA ===================== */
   const loadOT = async () => {
@@ -135,7 +126,7 @@ export default function OTRequestScreen() {
     });
 
     setRawRequests(mapped);
-    setDisplayed(mapped.filter(r => r.status === 'pending'));
+    setDisplayed(mapped);
   };
 
   useEffect(() => {
@@ -173,13 +164,13 @@ export default function OTRequestScreen() {
     }
 
     // ⭐ CREATED DATE
-    if (!isSameDay(values.createdDate, new Date())) {
+    if (values.createdDate) {
       const d = values.createdDate.toLocaleDateString('vi-VN');
       next = next.filter(r => r.createdAt === d);
     }
 
     // ⭐ OT DATE (FIX TIMEZONE)
-    if (!isSameDay(values.otDate, new Date())) {
+    if (values.otDate) {
       const d = formatDateLocal(values.otDate);
       next = next.filter(r => r.date === d);
     }
@@ -253,14 +244,14 @@ export default function OTRequestScreen() {
         subText: values.approvalStatus.label,
       });
 
-    if (!isSameDay(values.createdDate, new Date()))
+    if (values.createdDate)
       chips.push({
         key: 'createdDate',
         mainText: t('created_date_label'),
         subText: values.createdDate.toLocaleDateString('vi-VN'),
       });
 
-    if (!isSameDay(values.otDate, new Date()))
+    if (values.otDate)
       chips.push({
         key: 'otDate',
         mainText: t('otDate'),
@@ -280,7 +271,7 @@ export default function OTRequestScreen() {
   const handleRemoveFilter = (key: string) => {
     const next = {...criteria} as any;
 
-    if (key === 'createdDate' || key === 'otDate') next[key] = new Date();
+    if (key === 'createdDate' || key === 'otDate') next[key] = null;
     else if (key === 'sortBy') next.sortBy = null;
     else next[key] = null;
 

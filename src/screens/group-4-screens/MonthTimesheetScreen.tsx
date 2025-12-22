@@ -6,6 +6,8 @@ import {
   Text,
   View,
 } from 'react-native';
+import {useUIFactory} from '../../ui/factory/useUIFactory';
+import HeaderBar from '../../components/common/HeaderBar';
 import FilterBar from '../../components/common/FilterBar';
 import Header2 from '../../components/common/Header2';
 import MonthTimesheet from '../../components/list_items/employe-list-items/MonthTimesheet';
@@ -13,11 +15,10 @@ import MonthFilterModal, {
   MonthFilters,
 } from '../../components/modals/filter-modals/MonthFilterModal';
 import {FilterChipData, useFilterSystem} from '../../hooks/useFilterSystem';
-import {useUIFactory} from '../../ui/factory/useUIFactory';
 
 // ✅ API
-import {apiHandle} from '../../api/apihandle';
 import {User} from '../../api/endpoint/user';
+import {apiHandle} from '../../api/apihandle';
 
 type MonthTimesheetItem = {
   id?: string;
@@ -134,7 +135,7 @@ const MonthTimesheetScreen: React.FC<any> = ({route, navigation}: any) => {
 
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
-      <Header2 title={headerTitle} theme={theme} />
+      <HeaderBar title={lang.t('monthTimesheetTitle')} isShowBackButton />
 
       <ScrollView
         contentContainerStyle={{

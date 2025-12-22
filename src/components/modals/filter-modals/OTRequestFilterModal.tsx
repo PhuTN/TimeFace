@@ -29,8 +29,8 @@ export type OTRequestFilters = {
   positionName: string;
   department: Option | null;
   approvalStatus: Option | null;
-  createdDate: Date;
-  otDate: Date;
+  createdDate: Date | null;
+  otDate: Date | null;
   sortBy: Option | null;
 };
 
@@ -58,8 +58,8 @@ export default function OTRequestFilterModal({
   const [employeeName, setEmployeeName] = useState('');
   const [positionName, setPositionName] = useState('');
 
-  const [createdDate, setCreatedDate] = useState<Date>(new Date());
-  const [otDate, setOtDate] = useState<Date>(new Date());
+  const [createdDate, setCreatedDate] = useState<Date | null>(null);
+  const [otDate, setOtDate] = useState<Date | null>(null);
 
   /* ===================== LOAD STATIC OPTIONS ===================== */
   useEffect(() => {
@@ -106,14 +106,7 @@ export default function OTRequestFilterModal({
   }, [sortings, sortBy]);
 
   /* ===================== GUARD ===================== */
-  if (
-    loading ||
-    !theme ||
-    !lang ||
-    !approvalStatus ||
-    !department ||
-    !sortBy
-  ) {
+  if (loading || !theme || !lang || !approvalStatus || !department || !sortBy) {
     return null;
   }
 
@@ -124,13 +117,12 @@ export default function OTRequestFilterModal({
     setTicketCode('');
     setEmployeeName('');
     setPositionName('');
-    setApprovalStatus(approvals[0]);
-    setDepartment(departments[0]);
-    setSortBy(sortings[0]);
+    setApprovalStatus(null);
+    setDepartment(null);
+    setSortBy(null);
 
-    const d = new Date();
-    setCreatedDate(d);
-    setOtDate(d);
+    setCreatedDate(null);
+    setOtDate(null);
   };
 
   const handleApplyFilters = () => {

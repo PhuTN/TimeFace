@@ -13,8 +13,10 @@ import {authStorage} from './src/services/authStorage';
 
 import {AppReloadProvider, useAppReload} from './src/context/AppReloadContext';
 
-import {socketService} from './services/socketService';
 import AppConfig from './src/appconfig/AppConfig';
+import { socketService } from './services/socketService';
+import { navigationRef } from './src/navigation/NavigationService';
+
 
 // ======================= ROOT APP =======================
 function RootApp({
@@ -86,6 +88,11 @@ function RootApp({
 
           // sau khi cập nhật user -> đảm bảo socket còn sống
           await socketService.connect();
+
+          // ✅ Navigate to Home after successful payment
+          if (navigationRef.isReady()) {
+            navigationRef.navigate('Home');
+          }
         }
 
         if (url.startsWith('timeface://stripe-cancel')) {
@@ -94,6 +101,8 @@ function RootApp({
             text1: 'Thanh toán bị hủy',
             text2: 'Bạn có thể thử lại sau.',
           });
+          
+          // ✅ User stays on SubscriptionPlans screen (no navigation needed)
         }
       } catch {}
     };
