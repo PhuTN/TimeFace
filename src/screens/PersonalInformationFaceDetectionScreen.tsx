@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -9,19 +9,19 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {useUIFactory} from '../ui/factory/useUIFactory';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useUIFactory } from '../ui/factory/useUIFactory';
 import HeaderBar from '../components/common/HeaderBar.tsx';
 import GradientButton from '../components/common/GradientButton';
-import {RootStackParamList} from '../navigation/AppNavigator';
+import { RootStackParamList } from '../navigation/AppNavigator';
 import MaskedView from '@react-native-masked-view/masked-view';
-import Svg, {Path as SvgPath} from 'react-native-svg';
-import {Camera} from 'react-native-vision-camera';
+import Svg, { Path as SvgPath } from 'react-native-svg';
+import { Camera } from 'react-native-vision-camera';
 import {
   useFaceDetectionHandle,
   FaceDetectionStep,
 } from '../utils/FaceDetectionHandle';
-import {uploadSingle} from '../api/uploadApi';
+import { uploadSingle } from '../api/uploadApi';
 // === THÊM IMPORT CỦA SKIA ===
 import {
   Canvas,
@@ -32,12 +32,13 @@ import {
   PathOp,
 } from '@shopify/react-native-skia';
 
+import Exif from 'react-native-exif';
 import ImageResizer from 'react-native-image-resizer';
-import {Image} from 'react-native';
-import {getFaceIdFromFile, preloadFaceIdModel} from '../utils/face-id-utils.ts';
+import { Image } from 'react-native';
+import { getFaceIdFromFile, preloadFaceIdModel } from '../utils/face-id-utils.ts';
 
 type StepKey = FaceDetectionStep;
-type StepDefinition = {key: StepKey; label: string};
+type StepDefinition = { key: StepKey; label: string };
 
 type Props = NativeStackScreenProps<
   RootStackParamList,
@@ -47,7 +48,7 @@ type Props = NativeStackScreenProps<
 export default function PersonalInformationFaceDetectionScreen({
   navigation,
 }: Props) {
-  const {width} = useWindowDimensions();
+  const { width } = useWindowDimensions();
   // === ĐỊNH NGHĨA KÍCH THƯỚC OVAL MONG MUỐN ===
   const OVAL_WIDTH = width * 0.8;
   const OVAL_HEIGHT = OVAL_WIDTH * (4.5 / 3);
@@ -57,17 +58,16 @@ export default function PersonalInformationFaceDetectionScreen({
   const BUTTON_GRADIENT = ['#BCD9FF', '#488EEB'];
   const BUTTON_RADIUS = 12;
 
-  const {loading, theme, lang} = useUIFactory();
+  const { loading, theme, lang } = useUIFactory();
   const t = lang?.t;
 
   const steps = useMemo<StepDefinition[]>(
     () => [
-      {
-        key: 'front',
-        label: t?.('face_step_front') ?? 'Đưa mặt thẳng vào khung',
-      },
-      {key: 'left', label: t?.('face_step_left') ?? 'Nghiêng mặt sang phải'},
-      {key: 'right', label: t?.('face_step_right') ?? 'Nghiêng mặt sang trái'},
+      { key: 'front', label: t?.('face_step_front') ?? 'Đưa mặt thẳng vào khung', },
+      { key: 'left', label: t?.('face_step_left') ?? 'Nghiêng mặt sang phải' },
+      { key: 'right', label: t?.('face_step_right') ?? 'Nghiêng mặt sang trái' },
+      { key: 'smile' as any, label: t?.('face_step_smile') ?? 'Hãy mỉm cười' },
+      { key: 'blink' as any, label: t?.('face_step_blink') ?? 'Hãy nháy mắt' },
     ],
     [t],
   );
@@ -92,6 +92,8 @@ export default function PersonalInformationFaceDetectionScreen({
     handleFront,
     handleLeft,
     handleRight,
+    handleSmile,
+    handleBlink,
     refreshPermission,
   } = useFaceDetectionHandle();
 
@@ -115,7 +117,17 @@ export default function PersonalInformationFaceDetectionScreen({
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const startFlow = useCallback(() => setFlowAttempt(prev => prev + 1), []);
+  const challengeRef = useRef<'smile' | 'blink'>('smile');
+  const pickChallenge = useCallback(() => (Math.random() < 0.5 ? 'smile' : 'blink'), []);
+
+  const [challengeStep, setChallengeStep] = useState<'smile' | 'blink'>('smile');
+
+  const startFlow = useCallback(() => {
+    const c = pickChallenge();
+    challengeRef.current = c;
+    setChallengeStep(c);
+    setFlowAttempt(prev => prev + 1);
+  }, [pickChallenge]);
 
   const cancelRetry = useCallback(() => {
     if (retryTimeoutRef.current) {
@@ -136,6 +148,15 @@ export default function PersonalInformationFaceDetectionScreen({
     },
     [device, hasPermission, isCameraReady, startFlow],
   );
+
+  function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+    let t: any;
+    const timeout = new Promise<never>((_, reject) => {
+      t = setTimeout(() => reject(new Error(`Timeout ${label} after ${ms}ms`)), ms);
+    });
+
+    return Promise.race([p, timeout]).finally(() => clearTimeout(t));
+  }
 
   useEffect(() => () => cancelRetry(), [cancelRetry]);
   useEffect(() => {
@@ -179,26 +200,89 @@ export default function PersonalInformationFaceDetectionScreen({
   const addFilePrefix = (u: string) =>
     /^((file|content|https?):)\/\//.test(u) ? u : `file://${u}`;
 
-  async function rotateImage(uri) {
+  // async function rotateImage(uri) {
+  //   const normalized = addFilePrefix(uri);
+
+  //   const {width, height} = await new Promise(res => {
+  //     Image.getSize(
+  //       normalized,
+  //       (w, h) => res({width: w, height: h}),
+  //       () => res({width: 1080, height: 1080}),
+  //     );
+  //   });
+
+  //   const out = await ImageResizer.createResizedImage(
+  //     normalized,
+  //     width,
+  //     height,
+  //     'JPEG',
+  //     100,
+  //     0, // chỉ rotation, không được truyền false
+  //   );
+
+  //   return addFilePrefix(out.uri);
+  // }
+
+  async function getSize(uri: string) {
     const normalized = addFilePrefix(uri);
 
-    const {width, height} = await new Promise(res => {
-      Image.getSize(
-        normalized,
-        (w, h) => res({width: w, height: h}),
-        () => res({width: 1080, height: 1080}),
-      );
-    });
+    return await withTimeout(
+      new Promise<{ width: number; height: number }>((resolve) => {
+        Image.getSize(
+          normalized,
+          (w, h) => resolve({ width: w, height: h }),
+          () => resolve({ width: 1080, height: 1920 }), // fallback
+        );
+      }),
+      4000,
+      `Image.getSize(${normalized})`,
+    );
+  }
 
-    const out = await ImageResizer.createResizedImage(
-      normalized,
-      width,
-      height,
-      'JPEG',
-      100,
-      0, // chỉ rotation, không được truyền false
+  async function getExifRotation(uri: string): Promise<number> {
+    const normalized = addFilePrefix(uri);
+
+    try {
+      const exif: any = await withTimeout(
+        new Promise((resolve) => {
+          // ⚠️ exif lib hay treo => luôn resolve fallback
+          Exif.getExif(normalized, (_err, data) => resolve(data ?? null));
+        }),
+        2500,
+        `Exif.getExif(${normalized})`,
+      );
+
+      const o = Number(exif?.Orientation ?? exif?.orientation ?? 1);
+      if (o === 3) return 180;
+      if (o === 6) return 90;
+      if (o === 8) return 270;
+      return 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  async function normalizeBeforeUpload(uri: string) {
+    const normalized = addFilePrefix(uri);
+
+    console.log('[Normalize] start:', normalized);
+
+    const { width, height } = await getSize(uri);
+    const rotation = await getExifRotation(uri);
+
+    const swap = rotation === 90 || rotation === 270;
+    const targetW = swap ? height : width;
+    const targetH = swap ? width : height;
+
+    console.log('[Normalize] size:', width, height, 'rot:', rotation, '->', targetW, targetH);
+
+    const out = await withTimeout(
+      ImageResizer.createResizedImage(normalized, targetW, targetH, 'JPEG', 95, rotation),
+      15000,
+      `ImageResizer(${normalized})`,
     );
 
+    console.log('[Normalize] done:', out?.uri);
     return addFilePrefix(out.uri);
   }
 
@@ -222,16 +306,16 @@ export default function PersonalInformationFaceDetectionScreen({
         );
         return;
       }
-      setCapturedFaces(prev => ({...prev, front: frontRes.uri}));
+      setCapturedFaces(prev => ({ ...prev, front: frontRes.uri }));
       try {
-        const emb = await getFaceIdFromFile({filePath: frontRes.uri});
+        const emb = await getFaceIdFromFile({ filePath: frontRes.uri });
         frontEmbeddingRef.current = emb;
 
         console.log('[FaceID] ✅ Embedding length:', emb.length);
         console.log('[FaceID] Sample:', emb.slice(0, 8)); // in thử vài giá trị đầu
         // nếu cần dùng embedding sau đó (gửi BE hay lưu local)
 
-        setCapturedFaces(prev => ({...prev, frontEmbedding: emb}));
+        setCapturedFaces(prev => ({ ...prev, frontEmbedding: emb }));
         console.log('frontEmbedding', emb);
 
         console.log('capturedFaces', capturedFaces);
@@ -245,7 +329,7 @@ export default function PersonalInformationFaceDetectionScreen({
         handleFlowFailure(leftRes?.reason, 'left');
         return;
       }
-      setCapturedFaces(prev => ({...prev, left: leftRes.uri}));
+      setCapturedFaces(prev => ({ ...prev, left: leftRes.uri }));
 
       // 3) Right
       setCurrentStep('right');
@@ -254,7 +338,23 @@ export default function PersonalInformationFaceDetectionScreen({
         handleFlowFailure(rightRes?.reason, 'right');
         return;
       }
-      setCapturedFaces(prev => ({...prev, right: rightRes.uri}));
+      setCapturedFaces(prev => ({ ...prev, right: rightRes.uri }));
+
+      // 4) Random challenge: smile hoặc blink (sau khi chụp đủ 3 ảnh)
+      const which = challengeRef.current; // 'smile' | 'blink'
+      setCurrentStep(which as any);
+
+      const liveRes =
+        which === 'smile' ? await handleSmile?.() : await handleBlink?.();
+
+      if (!liveRes?.ok) {
+        handleFlowFailure(
+          liveRes?.reason,
+          which as any,
+          liveRes?.reason !== 'camera_not_ready',
+        );
+        return;
+      }
 
       // ✅ Dùng biến cục bộ, KHÔNG dùng state capturedFaces khi navigate
       if (!cancelled) {
@@ -264,18 +364,21 @@ export default function PersonalInformationFaceDetectionScreen({
         try {
           // 1) XOAY 3 ẢNH
           const [frontUri, leftUri, rightUri] = await Promise.all([
-            rotateImage(frontRes.uri),
-            rotateImage(leftRes.uri),
-            rotateImage(rightRes.uri),
+            normalizeBeforeUpload(frontRes.uri),
+            normalizeBeforeUpload(leftRes.uri),
+            normalizeBeforeUpload(rightRes.uri),
           ]);
 
           // 2) UPLOAD 3 ẢNH LÊN BE → CLOUDFLARE
           // folder tuỳ bạn đặt; ví dụ "faces"
-          const [frontUp, leftUp, rightUp] = await Promise.all([
-            uploadSingle(frontUri, 'faces'),
-            uploadSingle(leftUri, 'faces'),
-            uploadSingle(rightUri, 'faces'),
-          ]);
+          const frontUp = await withTimeout(uploadSingle(frontUri, 'faces'), 30000, 'upload front');
+          console.log('[Upload] front:', frontUp);
+
+          const leftUp = await withTimeout(uploadSingle(leftUri, 'faces'), 30000, 'upload left');
+          console.log('[Upload] left:', leftUp);
+
+          const rightUp = await withTimeout(uploadSingle(rightUri, 'faces'), 30000, 'upload right');
+          console.log('[Upload] right:', rightUp);
 
           const frontUrl = frontUp?.url || frontUri;
           const leftUrl = leftUp?.url || leftUri;
@@ -317,6 +420,8 @@ export default function PersonalInformationFaceDetectionScreen({
     handleFront,
     handleLeft,
     handleRight,
+    handleSmile,
+    handleBlink,
     handleFlowFailure,
     cancelRetry,
   ]);
@@ -324,7 +429,7 @@ export default function PersonalInformationFaceDetectionScreen({
   // === TẠO PATH CHO SKIA ===
   // 1. Path cho nền xám bên trong
 
-  const {innerOvalPath, innerOvalSvgPath, outerOvalPath, dimOutsidePath} =
+  const { innerOvalPath, innerOvalSvgPath, outerOvalPath, dimOutsidePath } =
     useMemo(() => {
       const innerRect = Skia.XYWHRect(
         STROKE_WIDTH / 2,
@@ -371,12 +476,12 @@ export default function PersonalInformationFaceDetectionScreen({
   const styles = makeStyles(theme);
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView>
         <HeaderBar
           title={lang.t('face_detection_title')}
           onBack={() => navigation?.goBack?.()}
-          extra={<View style={{width: 34}} />}
+          extra={<View style={{ width: 34 }} />}
         />
 
         {/* Khung oval (THAY BẰNG SKIA CANVAS) */}
@@ -384,7 +489,7 @@ export default function PersonalInformationFaceDetectionScreen({
           <View
             style={[
               styles.ovalWrapper,
-              {width: OVAL_WIDTH, height: OVAL_HEIGHT},
+              { width: OVAL_WIDTH, height: OVAL_HEIGHT },
             ]}>
             <MaskedView
               style={StyleSheet.absoluteFillObject}
@@ -460,7 +565,7 @@ export default function PersonalInformationFaceDetectionScreen({
             </Text>
           </TouchableOpacity>
         )}
-        <View style={{alignItems: 'center', marginBottom: 50}}>
+        <View style={{ alignItems: 'center', marginBottom: 50 }}>
           <GradientButton
             onPress={() => {
               if (flowState === 'running' || uploading) return;
@@ -475,11 +580,11 @@ export default function PersonalInformationFaceDetectionScreen({
             colors={BUTTON_GRADIENT}
             borderRadius={BUTTON_RADIUS}
             textColor="#0B1A39"
-            style={{width: '80%'}}>
+            style={{ width: '80%' }}>
             {uploading ? (
               <ActivityIndicator size="small" color="#0B1A39" />
             ) : (
-              <Text style={{color: '#0B1A39', fontWeight: '600'}}>
+              <Text style={{ color: '#0B1A39', fontWeight: '600' }}>
                 {stepMap[currentStep].label}
               </Text>
             )}
@@ -502,7 +607,7 @@ const makeStyles = (theme: any) =>
       // Thêm shadow/elevation vào đây nếu bạn muốn
       shadowColor: '#1E4DFF',
       shadowOpacity: 0.15,
-      shadowOffset: {width: 0, height: 4},
+      shadowOffset: { width: 0, height: 4 },
       shadowRadius: 8,
       elevation: 2,
     },

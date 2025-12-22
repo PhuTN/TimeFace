@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   TextInput,
@@ -10,62 +10,88 @@ import {
   ToastAndroid,
 } from 'react-native';
 
-import MapView, {Marker, Circle} from 'react-native-maps';
+import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import HeaderBar from '../components/common/HeaderBar';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LocationPickerModal from '../components/common/LocationPickerModal';
 
-import {apiHandle} from '../api/apihandle';
-import {CompanyEP} from '../api/endpoint/Company';
+import { apiHandle } from '../api/apihandle';
+import { CompanyEP } from '../api/endpoint/Company';
 
 type LatLng = {
   latitude: number;
   longitude: number;
 };
 
-export default function CompanyLocationConfigScreen({navigation}: any) {
+export default function CompanyLocationConfigScreen({ navigation }: any) {
   const [locationText, setLocationText] = useState('');
   const [radiusM, setRadiusM] = useState('100');
 
-  // ✅ marker chỉ giữ lat/lng
   const [markerCoord, setMarkerCoord] = useState<LatLng | null>(null);
-
   const [showPicker, setShowPicker] = useState(false);
+
   const mapRef = useRef<MapView>(null);
+  const [mapReady, setMapReady] = useState(false);
+
+  // ✅ Normalize coord + radius để tránh NaN + ép object "fresh"
+  const safeCoord = useMemo(() => {
+    if (!markerCoord) return null;
+    const lat = Number(markerCoord.latitude);
+    const lng = Number(markerCoord.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { latitude: lat, longitude: lng };
+  }, [markerCoord]);
+
+  const safeRadius = useMemo(() => {
+    const r = Number(radiusM);
+    return Math.max(1, Number.isFinite(r) ? r : 100);
+  }, [radiusM]);
 
   /* =============================
      LOAD CONFIG
   ==============================*/
   const loadConfig = async () => {
-    const {status, res} = await apiHandle
-      .callApi(CompanyEP.GetCheckinConfig)
-      .asPromise();
+    try {
+      const { status, res } = await apiHandle
+        .callApi(CompanyEP.GetCheckinConfig)
+        .asPromise();
 
-    if (status.isError) return;
+      if (status.isError) return;
 
-    const loc = res?.checkin_location;
+      // res có thể là object trực tiếp hoặc bọc trong data
+      const data: any = (res as any)?.data ?? res;
 
-    if (typeof loc?.lat === 'number' && typeof loc?.lng === 'number') {
-      const coord = {
-        latitude: loc.lat,
-        longitude: loc.lng,
-      };
+      const loc =
+        data?.checkin_location ??
+        data?.data?.checkin_location ??
+        data?.result?.checkin_location;
 
-      setMarkerCoord(coord);
+      const radius =
+        data?.checkin_radius ??
+        data?.data?.checkin_radius ??
+        data?.result?.checkin_radius;
 
-      // ✅ ưu tiên address, không có thì fallback tọa độ
-      console.log("LOG",loc)
-      if (loc.address) {
-        setLocationText(loc.address);
+      const lat = Number(loc?.lat);
+      const lng = Number(loc?.lng);
+
+      console.log('[GetCheckinConfig] loc:', loc, 'radius:', radius);
+
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        const coord = { latitude: lat, longitude: lng };
+        setMarkerCoord(coord);
+
+        if (loc?.address && String(loc.address).trim()) {
+          setLocationText(String(loc.address));
+        } else {
+          setLocationText(`Vị trí (${lat.toFixed(5)}, ${lng.toFixed(5)})`);
+        }
       } else {
-        setLocationText(
-          `Vị trí (${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)})`,
-        );
+        console.warn('❌ Invalid lat/lng from API:', loc?.lat, loc?.lng);
       }
-    }
 
-    if (res?.checkin_radius != null) {
-      setRadiusM(String(res.checkin_radius));
+      if (radius != null) setRadiusM(String(radius));
+    } catch (e) {
+      console.error('Error loading config:', e);
     }
   };
 
@@ -74,51 +100,48 @@ export default function CompanyLocationConfigScreen({navigation}: any) {
   }, []);
 
   /* =============================
-     MOVE MAP WHEN MARKER CHANGES
+     MOVE MAP WHEN COORD CHANGES
   ==============================*/
   useEffect(() => {
-    if (!markerCoord || !mapRef.current) return;
+    if (!safeCoord || !mapRef.current || !mapReady) return;
 
-    mapRef.current.animateToRegion(
-      {
-        ...markerCoord,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      },
-      500,
-    );
-  }, [markerCoord]);
+    const move = () => {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: safeCoord.latitude,
+          longitude: safeCoord.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        400,
+      );
+    };
+
+    // gọi 2 nhịp để chắc chắn ăn layout + render xong children
+    requestAnimationFrame(move);
+    const t = setTimeout(move, 300);
+    return () => clearTimeout(t);
+  }, [safeCoord, mapReady]);
 
   /* =============================
      CONFIRM FROM MODAL
   ==============================*/
   const confirmLocation = (picked: any) => {
-    if (
-      typeof picked?.latitude !== 'number' ||
-      typeof picked?.longitude !== 'number'
-    ) {
+    const lat = Number(picked?.latitude);
+    const lng = Number(picked?.longitude);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       Alert.alert('Lỗi', 'Tọa độ không hợp lệ');
       return;
     }
 
-    const coord = {
-      latitude: picked.latitude,
-      longitude: picked.longitude,
-    };
-
+    const coord = { latitude: lat, longitude: lng };
     setMarkerCoord(coord);
 
-    // ✅ có address thì hiện address
-    // ❌ không có thì hiện tọa độ
-    console.log("pick",picked)
-    if (picked.address && picked.address.trim()) {
-      setLocationText(picked.address);
+    if (picked?.address && String(picked.address).trim()) {
+      setLocationText(String(picked.address));
     } else {
-      setLocationText(
-        `Vị trí (${picked.latitude.toFixed(5)}, ${picked.longitude.toFixed(
-          5,
-        )})`,
-      );
+      setLocationText(`Vị trí (${lat.toFixed(5)}, ${lng.toFixed(5)})`);
     }
 
     setShowPicker(false);
@@ -128,19 +151,19 @@ export default function CompanyLocationConfigScreen({navigation}: any) {
      SAVE
   ==============================*/
   const saveConfig = async () => {
-    if (!markerCoord) {
+    if (!safeCoord) {
       Alert.alert('Thiếu tọa độ', 'Vui lòng chọn vị trí');
       return;
     }
 
     const payload = {
-      lat: markerCoord.latitude,
-      lng: markerCoord.longitude,
-      address: locationText, // ✅ luôn có text
-      radius: Number(radiusM),
+      lat: safeCoord.latitude,
+      lng: safeCoord.longitude,
+      address: locationText,
+      radius: safeRadius,
     };
 
-    const {status} = await apiHandle
+    const { status } = await apiHandle
       .callApi(CompanyEP.UpdateCheckinConfig, payload)
       .asPromise();
 
@@ -154,8 +177,15 @@ export default function CompanyLocationConfigScreen({navigation}: any) {
       : Alert.alert('Thành công', 'Đã lưu');
   };
 
+  // ✅ Force remount map khi có tọa độ để tránh Android "nuốt marker"
+  const mapKey = safeCoord
+    ? `map-${safeCoord.latitude}-${safeCoord.longitude}`
+    : 'map-default';
+
+  console.log('RENDER safeCoord=', safeCoord, 'safeRadius=', safeRadius);
+
   return (
-    <View style={{flex: 1}}>
+    <View style={{ flex: 1 }}>
       <HeaderBar title="Tọa độ công ty" onBack={() => navigation.goBack()} />
 
       {/* FORM */}
@@ -169,8 +199,9 @@ export default function CompanyLocationConfigScreen({navigation}: any) {
             multiline
             style={[
               styles.input,
-              {flex: 1, height: 100, textAlignVertical: 'top'},
+              { flex: 1, height: 100, textAlignVertical: 'top' },
             ]}
+            placeholder="Chưa chọn vị trí"
           />
 
           <TouchableOpacity onPress={() => setShowPicker(true)}>
@@ -178,13 +209,14 @@ export default function CompanyLocationConfigScreen({navigation}: any) {
           </TouchableOpacity>
         </View>
 
-        <Text style={[styles.label, {marginTop: 12}]}>Bán kính (m)</Text>
+        <Text style={[styles.label, { marginTop: 12 }]}>Bán kính (m)</Text>
 
         <TextInput
           value={radiusM}
           onChangeText={setRadiusM}
           keyboardType="numeric"
           style={styles.input}
+          placeholder="Bán kính"
         />
 
         <TouchableOpacity style={styles.saveBtn} onPress={saveConfig}>
@@ -194,24 +226,40 @@ export default function CompanyLocationConfigScreen({navigation}: any) {
 
       {/* MAP */}
       <MapView
+        key={mapKey}
         ref={mapRef}
-        provider="google"
+        provider={PROVIDER_GOOGLE}
         style={styles.map}
+        onMapReady={() => setMapReady(true)}
+        onLayout={() => {
+          if (!mapReady) setMapReady(true);
+        }}
         initialRegion={{
-          latitude: 10.7626,
-          longitude: 106.6601,
+          latitude: safeCoord?.latitude ?? 10.7626,
+          longitude: safeCoord?.longitude ?? 106.6601,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
-        }}>
-        {markerCoord && (
+        }}
+      >
+        {safeCoord && (
           <>
-            <Marker coordinate={markerCoord} />
+            <Marker
+              key={`mk-${safeCoord.latitude}-${safeCoord.longitude}`}
+              coordinate={{ ...safeCoord }} // ✅ object mới
+              title="Vị trí công ty"
+              description={locationText}
+              tracksViewChanges={false}
+              zIndex={999}
+            />
+
             <Circle
-              center={markerCoord}
-              radius={Number(radiusM)}
+              key={`cr-${safeCoord.latitude}-${safeCoord.longitude}-${safeRadius}`}
+              center={{ ...safeCoord }} // ✅ object mới
+              radius={safeRadius}
               strokeColor="rgba(0,122,255,0.8)"
               fillColor="rgba(0,122,255,0.2)"
               strokeWidth={2}
+              zIndex={1}
             />
           </>
         )}
@@ -219,7 +267,7 @@ export default function CompanyLocationConfigScreen({navigation}: any) {
 
       <LocationPickerModal
         visible={showPicker}
-        initialMarker={markerCoord}
+        initialMarker={safeCoord}
         onClose={() => setShowPicker(false)}
         onConfirm={confirmLocation}
       />
@@ -234,7 +282,8 @@ const styles = StyleSheet.create({
   panel: {
     padding: 16,
     backgroundColor: '#fff',
-    elevation: 4,
+    // Nếu Android bị layering kỳ, thử comment dòng dưới:
+    // elevation: 4,
   },
   label: {
     fontSize: 14,

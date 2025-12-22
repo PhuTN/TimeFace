@@ -12,19 +12,13 @@ import CheckinComplaintFilterModal, {
   CheckinComplaintFilters,
 } from '../../components/modals/filter-modals/CheckinComplaintFilterModal';
 
-import {User} from '../../api/endpoint/User';
+import {User} from '../../api/endpoint/user';
 import {apiHandle} from '../../api/apihandle';
 import Toast from 'react-native-toast-message';
 
-/* ===== FILTER MẶC ĐỊNH ===== */
-const DEFAULT_FILTERS: CheckinComplaintFilters = {
-  employeeName: '',
-  type: {label: 'Tất cả', value: 'all'},
-  status: {label: 'Chờ duyệt', value: 'pending'},
-};
-
 export default function ComplaintRequestScreen() {
   const {loading, theme, lang} = useUIFactory();
+  const t = lang?.t;
 
   const [raw, setRaw] = useState<any[]>([]);
   const [displayed, setDisplayed] = useState<any[]>([]);
@@ -33,9 +27,18 @@ export default function ComplaintRequestScreen() {
   const [showFilter, setShowFilter] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
 
-  // ✅ KHÔNG để null nữa
-  const [activeFilters, setActiveFilters] =
-    useState<CheckinComplaintFilters>(DEFAULT_FILTERS);
+  const [criteria, setCriteria] = useState<CheckinComplaintFilters>({
+    employeeName: '',
+    department: null,
+    type: null,
+    status: null,
+    createdDate: null,
+    sortBy: null,
+  });
+
+  const [activeFilters, setActiveFilters] = useState<
+    {key: string; mainText: string; subText: string}[]
+  >([]);
 
   /* ================= LOAD ================= */
   const loadData = async () => {
@@ -66,40 +69,118 @@ export default function ComplaintRequestScreen() {
       evidenceImages: item.complaint.evidence_images,
     }));
 
-    setRaw(list); // ❗ CHỈ SET RAW
+    setRaw(list);
+    setDisplayed(list);
   };
-
-  /* ===== APPLY FILTER SAU KHI RAW CÓ DATA ===== */
-  useEffect(() => {
-    if (raw.length > 0) {
-      applyFilter(activeFilters);
-    }
-  }, [raw]);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  /* ================= FILTER ================= */
-  const applyFilter = (filters: CheckinComplaintFilters) => {
+  /* ===================== FILTER CORE ===================== */
+  const filterData = (values: CheckinComplaintFilters) => {
     let next = [...raw];
 
-    if (filters.employeeName) {
+    if (values.employeeName) {
       next = next.filter(i =>
-        i.name.toLowerCase().includes(filters.employeeName.toLowerCase()),
+        i.name.toLowerCase().includes(values.employeeName.toLowerCase()),
       );
     }
 
-    if (filters.type?.value !== 'all') {
-      next = next.filter(i => i.action === filters.type.value);
+    if (values.department && values.department.value !== 'all') {
+      next = next.filter(i => i.department === values.department!.label);
     }
 
-    if (filters.status?.value !== 'all') {
-      next = next.filter(i => i.status === filters.status.value);
+    if (values.type && values.type.value !== 'all') {
+      next = next.filter(i => i.action === values.type!.value);
     }
 
-    setDisplayed(next);
-    setActiveFilters(filters);
+    if (values.status && values.status.value !== 'all') {
+      next = next.filter(i => i.status === values.status!.value);
+    }
+
+    if (values.createdDate) {
+      const filterDate = values.createdDate.toLocaleDateString('vi-VN');
+      next = next.filter(i => {
+        const itemDate = new Date(i.date).toLocaleDateString('vi-VN');
+        return itemDate === filterDate;
+      });
+    }
+
+    // Apply sorting
+    if (values.sortBy?.value) {
+      next.sort((a, b) => {
+        const aTime = new Date(a.date).getTime();
+        const bTime = new Date(b.date).getTime();
+        return values.sortBy!.value === 'newest' ? bTime - aTime : aTime - bTime;
+      });
+    }
+
+    return next;
+  };
+
+  /* ===================== APPLY FILTER ===================== */
+  const applyFilter = (values: CheckinComplaintFilters) => {
+    setCriteria(values);
+    setDisplayed(filterData(values));
+
+    const chips: {key: string; mainText: string; subText: string}[] = [];
+
+    if (values.employeeName)
+      chips.push({
+        key: 'employeeName',
+        mainText: 'Tên nhân viên',
+        subText: values.employeeName,
+      });
+
+    if (values.department && values.department.value !== 'all')
+      chips.push({
+        key: 'department',
+        mainText: 'Phòng ban',
+        subText: values.department.label,
+      });
+
+    if (values.type && values.type.value !== 'all')
+      chips.push({
+        key: 'type',
+        mainText: 'Loại',
+        subText: values.type.label,
+      });
+
+    if (values.status && values.status.value !== 'all')
+      chips.push({
+        key: 'status',
+        mainText: 'Trạng thái',
+        subText: values.status.label,
+      });
+
+    if (values.createdDate)
+      chips.push({
+        key: 'createdDate',
+        mainText: 'Ngày tạo',
+        subText: values.createdDate.toLocaleDateString('vi-VN'),
+      });
+
+    if (values.sortBy)
+      chips.push({
+        key: 'sortBy',
+        mainText: 'Sắp xếp',
+        subText: values.sortBy.label,
+      });
+
+    setActiveFilters(chips);
+  };
+
+  const handleRemoveFilter = (key: string) => {
+    const next = {...criteria} as any;
+
+    if (key === 'createdDate') next[key] = null;
+    else if (key === 'sortBy') next.sortBy = null;
+    else next[key] = null;
+
+    setCriteria(next);
+    setDisplayed(filterData(next));
+    setActiveFilters(prev => prev.filter(c => c.key !== key));
   };
 
   /* ================= DECIDE ================= */
@@ -141,27 +222,23 @@ export default function ComplaintRequestScreen() {
         </View>
 
         {/* FILTER CHIPS */}
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 10,
-            marginTop: 12,
-          }}>
-          {activeFilters.status.value !== 'all' && (
-            <FilterChip
-              mainText="Trạng thái"
-              subText="Chờ duyệt"
-              theme={theme}
-              onRemove={() =>
-                applyFilter({
-                  ...activeFilters,
-                  status: {label: 'Tất cả', value: 'all'},
-                })
-              }
-            />
-          )}
-        </View>
+        {activeFilters.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{marginTop: 12}}
+            contentContainerStyle={{gap: 8}}>
+            {activeFilters.map(f => (
+              <FilterChip
+                key={f.key}
+                mainText={f.mainText}
+                subText={f.subText}
+                theme={theme}
+                onRemove={() => handleRemoveFilter(f.key)}
+              />
+            ))}
+          </ScrollView>
+        )}
 
         {/* LIST */}
         <View style={{gap: 12, marginTop: 14}}>

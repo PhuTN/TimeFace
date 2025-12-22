@@ -16,10 +16,6 @@ export function useUIFactory() {
     const theme = factory.createTheme();
     const lang = factory.createLanguage();
     setState({loading: false, theme, lang});
-
-    // Debug log cho bạn kiểm tra:
-    console.log('[UIFactory] theme =', theme.name, theme.colors);
-    console.log('[UIFactory] lang  =', lang.code);
   }, []);
 
   React.useEffect(() => {

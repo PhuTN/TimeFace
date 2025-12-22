@@ -1,26 +1,31 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {
+  ActivityIndicator,
   SafeAreaView,
   ScrollView,
-  View,
   StyleSheet,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
+  View,
 } from 'react-native';
 
 import {useUIFactory} from '../../ui/factory/useUIFactory';
+import FilterBar from '../../components/common/FilterBar';
 import StatusToggleButtons, {
   StatusType,
 } from '../../components/common/StatusToggleButtons';
+import {useFilterSystem, FilterChipData} from '../../hooks/useFilterSystem';
 import LeaveRecord from '../../components/list_items/employe-list-items/LeaveRecord';
 import LeaveRequestAddModal from '../../components/modals/add-modals/LeaveRequestAddModal';
 import LeaveRequestDetailModal from '../../components/modals/detail-modals/LeaveRequestDetailModal';
+import DateRangeFilterModal, {
+  DateRangeFilters,
+} from '../../components/modals/filter-modals/DateRangeFilterModal';
 
-import {CompanyEP} from '../../api/endpoint/Company';
-import {User} from '../../api/endpoint/User';
-import {apiHandle} from '../../api/apihandle';
 import Toast from 'react-native-toast-message';
+import {apiHandle} from '../../api/apihandle';
+import {CompanyEP} from '../../api/endpoint/Company';
+import {User} from '../../api/endpoint/user';
 import HeaderBar from '../../components/common/HeaderBar';
 
 /* ===================== TYPES ===================== */
@@ -47,8 +52,13 @@ const LeaveRecordScreen: React.FC = () => {
 
   const [selectedStatus, setSelectedStatus] = useState<StatusType>('pending');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   const [records, setRecords] = useState<LeaveItem[]>([]);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+
+  const {activeFilters, removeFilter, setActiveFilters} = useFilterSystem();
   const [fetching, setFetching] = useState(false);
 
   /* ===== USER ===== */
@@ -112,10 +122,32 @@ const LeaveRecordScreen: React.FC = () => {
   }, []);
 
   /* ===================== FILTER ===================== */
-  const filteredRecords = useMemo(
-    () => records.filter(r => r.status === selectedStatus),
-    [records, selectedStatus],
-  );
+  const filteredRecords = useMemo(() => {
+    let filtered = records.filter(r => r.status === selectedStatus);
+
+    if (startDate || endDate) {
+      filtered = filtered.filter(r => {
+        const recordDate = new Date(r.start_date);
+        const start = startDate
+          ? new Date(startDate.setHours(0, 0, 0, 0))
+          : null;
+        const end = endDate
+          ? new Date(endDate.setHours(23, 59, 59, 999))
+          : null;
+
+        if (start && end) {
+          return recordDate >= start && recordDate <= end;
+        } else if (start) {
+          return recordDate >= start;
+        } else if (end) {
+          return recordDate <= end;
+        }
+        return true;
+      });
+    }
+
+    return filtered;
+  }, [records, selectedStatus, startDate, endDate]);
 
   /* ===================== SUMMARY ===================== */
   const remainingLeave = Math.max(annualTotal - annualLeaveUsed, 0);
@@ -196,7 +228,10 @@ const LeaveRecordScreen: React.FC = () => {
     <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
       <HeaderBar title={lang.t('leaveRecordTitle')} isShowBackButton />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={{marginVertical: 16}}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
         {/* ===== SUMMARY ===== */}
         <View
           style={[
@@ -244,6 +279,19 @@ const LeaveRecordScreen: React.FC = () => {
         <StatusToggleButtons
           selectedStatus={selectedStatus}
           onStatusChange={setSelectedStatus}
+        />
+
+        {/* DATE FILTER */}
+        <FilterBar
+          title={lang.t('filterByDate') || 'Lọc theo ngày'}
+          onFilterPress={() => setShowFilterModal(true)}
+          activeFilters={activeFilters}
+          onRemoveFilter={id => {
+            removeFilter(id);
+            setStartDate(null);
+            setEndDate(null);
+          }}
+          theme={theme}
         />
 
         {fetching ? (
@@ -337,6 +385,48 @@ const LeaveRecordScreen: React.FC = () => {
           lang={lang}
         />
       )}
+
+      <DateRangeFilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApplyFilters={(filters: DateRangeFilters) => {
+          const chips = [];
+
+          if (filters.startDate) {
+            setStartDate(filters.startDate);
+          }
+          if (filters.endDate) {
+            setEndDate(filters.endDate);
+          }
+
+          if (filters.startDate && filters.endDate) {
+            chips.push({
+              id: 'dateRange',
+              label: lang.t('dateRange') || 'Kho\u1ea3ng th\u1eddi gian',
+              subLabel: `${filters.startDate.toLocaleDateString(
+                'vi-VN',
+              )} - ${filters.endDate.toLocaleDateString('vi-VN')}`,
+              value: 'range',
+            });
+          } else if (filters.startDate) {
+            chips.push({
+              id: 'startDate',
+              label: lang.t('fromDate') || 'T\u1eeb ng\u00e0y',
+              subLabel: filters.startDate.toLocaleDateString('vi-VN'),
+              value: filters.startDate.toISOString(),
+            });
+          } else if (filters.endDate) {
+            chips.push({
+              id: 'endDate',
+              label: lang.t('toDate') || '\u0110\u1ebfn ng\u00e0y',
+              subLabel: filters.endDate.toLocaleDateString('vi-VN'),
+              value: filters.endDate.toISOString(),
+            });
+          }
+
+          setActiveFilters(chips);
+        }}
+      />
     </SafeAreaView>
   );
 };

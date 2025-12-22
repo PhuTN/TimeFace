@@ -50,7 +50,6 @@ export const Lang = {
   requestCode: ['Mã nhân viên', 'Employee code'],
   createdAt: ['Ngày tạo đơn', 'Created at'],
   time: ['Thời gian', 'Time'],
-  otRequestTitle: ['DUYỆT ĐƠN XIN OT', 'APPROVE OT REQUEST'],
 
   date: ['ngày', 'date'],
   approved: ['Đã duyệt', 'Approved'],
@@ -425,4 +424,7 @@ export const Lang = {
   overtime_feature: ['Overtime', 'Overtime'],
   leave_request_feature: ['Nghỉ phép', 'Leave Request'],
   work_schedule: ['Lịch làm việc', 'Work Schedule'],
+  dateRange: ['Khoảng thời gian', 'Date range'],
+  fromDate: ['Từ ngày', 'From date'],
+  toDate: ['Đến ngày', 'To date'],
 } as const;

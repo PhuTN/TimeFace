@@ -1,23 +1,23 @@
-import React, {useEffect, useState, useCallback} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
+import {useCallback, useEffect, useState} from 'react';
 import {
   FlatList,
+  Image,
+  RefreshControl,
   StatusBar,
   StyleSheet,
-  View,
   Text,
-  Image,
   TouchableOpacity,
-  RefreshControl,
+  View,
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
-import HeaderBar from '../components/common/HeaderBar';
-import SearchBar from '../components/chat/SearchBar';
-import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/User';
 import Toast from 'react-native-toast-message';
 import {socketService} from '../../services/socketService';
+import {apiHandle} from '../api/apihandle';
+import {User} from '../api/endpoint/user';
+import SearchBar from '../components/chat/SearchBar';
+import HeaderBar from '../components/common/HeaderBar';
 import {authStorage} from '../services/authStorage';
-import {useFocusEffect} from '@react-navigation/native';
 
 const GROUP_AVATAR = 'https://cdn-icons-png.flaticon.com/512/6387/6387947.png';
 

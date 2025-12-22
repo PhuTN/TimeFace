@@ -1,13 +1,13 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {
+  ActivityIndicator,
+  Image,
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  View,
   Text,
-  Image,
-  ActivityIndicator,
   TouchableOpacity,
+  View,
 } from 'react-native';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -16,12 +16,12 @@ import LabeledTextInput from '../components/common/LabeledTextInput';
 
 import Toast from 'react-native-toast-message';
 
-import {useUIFactory} from '../ui/factory/useUIFactory';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../navigation/AppNavigator';
+import {useUIFactory} from '../ui/factory/useUIFactory';
 
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/User';
+import {User} from '../api/endpoint/user';
 
 import {Country, State} from 'country-state-city';
 

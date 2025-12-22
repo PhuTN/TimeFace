@@ -1,26 +1,20 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useCallback,
-} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  ActivityIndicator,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   ScrollView,
   StyleSheet,
-  View,
-  Image,
-  TouchableOpacity,
-  Modal,
   Text,
-  Platform,
-  KeyboardAvoidingView,
-  Keyboard,
-  ActivityIndicator,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import {useFocusEffect} from '@react-navigation/native';
-import * as ImagePicker from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
+import * as ImagePicker from 'react-native-image-picker';
 import Toast from 'react-native-toast-message';
 
 import ComposerBar from '../components/chatroom/ComposerBar';
@@ -28,10 +22,10 @@ import DateDivider from '../components/chatroom/DateDivider';
 import Header from '../components/chatroom/Header';
 import MessageBubble from '../components/chatroom/MessageBubble';
 
-import {uploadSingle} from '../api/uploadApi';
-import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/User';
 import {socketService} from '../../services/socketService';
+import {apiHandle} from '../api/apihandle';
+import {User} from '../api/endpoint/user';
+import {uploadSingle} from '../api/uploadApi';
 
 const INPUT_HEIGHT = 56;
 
@@ -253,7 +247,7 @@ export default function ChatRoomScreen({route, navigation}: any) {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{
             paddingTop: 12,
-            paddingBottom:  12,
+            paddingBottom: 12,
           }}>
           {dataWithDividers.map(item =>
             item.type === 'date' ? (
@@ -298,7 +292,10 @@ export default function ChatRoomScreen({route, navigation}: any) {
       {/* PREVIEW + DOWNLOAD */}
       <Modal visible={!!previewImage} transparent>
         <View style={styles.previewContainer}>
-          <Image source={{uri: previewImage || ''}} style={styles.previewImage} />
+          <Image
+            source={{uri: previewImage || ''}}
+            style={styles.previewImage}
+          />
 
           {downloading ? (
             <ActivityIndicator color="#fff" />

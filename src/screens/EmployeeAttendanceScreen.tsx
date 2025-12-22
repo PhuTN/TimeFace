@@ -1,40 +1,40 @@
 // ⭐ GIỮ NGUYÊN IMPORT
-import React, {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
   FlatList,
   ListRenderItem,
-  TouchableOpacity,
-  ScrollView,
-  Platform,
   PermissionsAndroid,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {useUIFactory} from '../ui/factory/useUIFactory';
-import HeaderBar from '../components/common/HeaderBar.tsx';
 import Footer from '../components/common/Footer';
 import GradientButton from '../components/common/GradientButton';
+import HeaderBar from '../components/common/HeaderBar.tsx';
+import {useUIFactory} from '../ui/factory/useUIFactory';
 
-import FilterChip from '../components/common/FilterChip.tsx';
 import EmployeeAttendanceFilterModal, {
   AttendanceFilterValues,
 } from '../components/common/EmployeeAttendanceFilterModal';
+import FilterChip from '../components/common/FilterChip.tsx';
 
-import FilterIcon from '../assets/icons/filter_icon.svg';
 import CalendarIcon from '../assets/icons/calendar_icon.svg';
 import ClockIcon from '../assets/icons/clock_icon.svg';
+import FilterIcon from '../assets/icons/filter_icon.svg';
 
-import {RootStackParamList} from '../navigation/AppNavigator';
 import Geolocation from '@react-native-community/geolocation';
 import Toast from 'react-native-toast-message';
 import {apiHandle} from '../api/apihandle.ts';
-import {User} from '../api/endpoint/User.ts';
 import {CompanyEP} from '../api/endpoint/Company.ts';
+import {User} from '../api/endpoint/user.ts';
 import CheckinComplaintAddModal from '../components/modals/add-modals/CheckinComplaintAddModal.tsx';
+import {RootStackParamList} from '../navigation/AppNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EmployeeAttendance'>;
 
@@ -367,54 +367,53 @@ const EmployeeAttendanceScreen = ({navigation}: Props) => {
     return true;
   };
 
-const getCurrentLocation = async (ok, fail) => {
-  try {
-    // ⚠️ Android cần xin cả FINE + COARSE
-    if (Platform.OS === 'android') {
-      const fine = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      );
+  const getCurrentLocation = async (ok, fail) => {
+    try {
+      // ⚠️ Android cần xin cả FINE + COARSE
+      if (Platform.OS === 'android') {
+        const fine = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
 
-      const coarse = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-      );
+        const coarse = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+        );
 
-      if (
-        fine !== PermissionsAndroid.RESULTS.GRANTED &&
-        coarse !== PermissionsAndroid.RESULTS.GRANTED
-      ) {
-        console.log('❌ Location permission denied');
-        fail({message: 'Permission denied'});
-        return;
+        if (
+          fine !== PermissionsAndroid.RESULTS.GRANTED &&
+          coarse !== PermissionsAndroid.RESULTS.GRANTED
+        ) {
+          console.log('❌ Location permission denied');
+          fail({message: 'Permission denied'});
+          return;
+        }
       }
-    }
 
-    Geolocation.getCurrentPosition(
-      pos => {
-        console.log('📍 GPS OK:', pos.coords);
-        ok(pos.coords);
-      },
-      err => {
-        console.log('❌ GPS ERROR:', err);
-        fail(err);
-      },
-      {
-        enableHighAccuracy: false, // 🔥 QUAN TRỌNG NHẤT
-        timeout: 30000,            // 🔥 tăng timeout
-        maximumAge: 10000,
-      },
-    );
-  } catch (e) {
-    console.log('❌ GPS EXCEPTION:', e);
-    fail(e);
-  }
-};
+      Geolocation.getCurrentPosition(
+        pos => {
+          console.log('📍 GPS OK:', pos.coords);
+          ok(pos.coords);
+        },
+        err => {
+          console.log('❌ GPS ERROR:', err);
+          fail(err);
+        },
+        {
+          enableHighAccuracy: false, // 🔥 QUAN TRỌNG NHẤT
+          timeout: 30000, // 🔥 tăng timeout
+          maximumAge: 10000,
+        },
+      );
+    } catch (e) {
+      console.log('❌ GPS EXCEPTION:', e);
+      fail(e);
+    }
+  };
 
   // ============================
   // ⭐ CHECK-IN
   // ============================
   const handleCheckIn = async () => {
- 
     try {
       // 1️⃣ Xin quyền GPS
       const hasPermission = await requestLocationPermission();
@@ -481,6 +480,9 @@ const getCurrentLocation = async (ok, fail) => {
     (sum, log) => sum + (log.total_hours ?? 0),
     0,
   );
+
+  // Format giờ 2 chữ số thập phân (ví dụ 0 -> 0.00)
+  const formatHours = (val: number) => Number(val || 0).toFixed(2);
 
   const handleCheckOut = async () => {
     try {
@@ -558,12 +560,17 @@ const getCurrentLocation = async (ok, fail) => {
         )
       : null;
 
-    return history.filter(item => {
+    const filtered = history.filter(item => {
       const d = new Date(item.date); // item.date = yyyy-MM-dd
       if (start && d < start) return false;
       if (endInclusive && d > endInclusive) return false;
       return true;
     });
+
+    // Sắp xếp ngày mới nhất ở trên
+    return filtered.sort(
+      (a, b) => +new Date(b.date) - +new Date(a.date),
+    );
   }, [history, filters]);
 
   if (loading || !theme || !lang) return null;
@@ -593,7 +600,8 @@ const getCurrentLocation = async (ok, fail) => {
 
                 <Text
                   style={[styles.summaryStatValue, {color: theme.colors.text}]}>
-                  {todayHours} <Text style={styles.gradientText}>Giờ</Text>
+                  {formatHours(todayHours)}{' '}
+                  <Text style={styles.gradientText}>Giờ</Text>
                 </Text>
               </View>
 
@@ -608,7 +616,7 @@ const getCurrentLocation = async (ok, fail) => {
                 </View>
                 <Text
                   style={[styles.summaryStatValue, {color: theme.colors.text}]}>
-                  {monthHours.toFixed(2)}{' '}
+                  {formatHours(monthHours)}{' '}
                   <Text style={{fontSize: 13}}>Giờ</Text>
                 </Text>
               </View>
@@ -665,7 +673,7 @@ const getCurrentLocation = async (ok, fail) => {
                   return (
                     <View style={styles.reportedBox}>
                       <Text style={styles.reportedText}>
-                        Liên hệ admin duyệt hồ sơ của bạn 
+                        Liên hệ admin duyệt hồ sơ của bạn
                       </Text>
                     </View>
                   );

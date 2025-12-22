@@ -1,26 +1,20 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  ActivityIndicator,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   ScrollView,
   StyleSheet,
-  View,
-  Image,
-  TouchableOpacity,
-  Modal,
   Text,
-  ActivityIndicator,
-  Platform,
-  KeyboardAvoidingView,
-  Keyboard,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import {useFocusEffect} from '@react-navigation/native';
-import * as ImagePicker from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
+import * as ImagePicker from 'react-native-image-picker';
 import Toast from 'react-native-toast-message';
 
 import ComposerBar from '../components/chatroom/ComposerBar';
@@ -28,10 +22,10 @@ import DateDivider from '../components/chatroom/DateDivider';
 import GroupHeader from '../components/chatroom/GroupHeader';
 import MessageBubble from '../components/chatroom/MessageBubble';
 
-import {uploadSingle} from '../api/uploadApi';
-import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/User';
 import {socketService} from '../../services/socketService';
+import {apiHandle} from '../api/apihandle';
+import {User} from '../api/endpoint/user';
+import {uploadSingle} from '../api/uploadApi';
 import {authStorage} from '../services/authStorage';
 
 const INPUT_HEIGHT = 56;
@@ -114,10 +108,12 @@ export default function GroupChatScreen({route, navigation}: any) {
   const markSeen = useCallback(async () => {
     if (!meId || messages.length === 0) return;
     try {
-      await apiHandle.callApi(User.SeenMessage, {
-        type: 'group',
-        id: groupId,
-      }).asPromise();
+      await apiHandle
+        .callApi(User.SeenMessage, {
+          type: 'group',
+          id: groupId,
+        })
+        .asPromise();
     } catch {}
   }, [groupId, meId, messages.length]);
 
@@ -137,11 +133,13 @@ export default function GroupChatScreen({route, navigation}: any) {
   const sendMessage = useCallback(
     async (payload: {text?: string; image_urls?: string[]}) => {
       try {
-        await apiHandle.callApi(User.SendMessage, {
-          type: 'group',
-          id: groupId,
-          ...payload,
-        }).asPromise();
+        await apiHandle
+          .callApi(User.SendMessage, {
+            type: 'group',
+            id: groupId,
+            ...payload,
+          })
+          .asPromise();
 
         setText('');
         scrollToBottom(true);
@@ -268,7 +266,7 @@ export default function GroupChatScreen({route, navigation}: any) {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{
             paddingTop: 12,
-            paddingBottom:  12,
+            paddingBottom: 12,
           }}>
           {dataWithDividers.map(item => {
             if (item.type === 'date') {
@@ -281,10 +279,7 @@ export default function GroupChatScreen({route, navigation}: any) {
               return item.image_urls.map((uri: string, i: number) => (
                 <TouchableOpacity
                   key={`${item._id}_${i}`}
-                  style={[
-                    styles.imgWrap,
-                    fromMe ? styles.right : styles.left,
-                  ]}
+                  style={[styles.imgWrap, fromMe ? styles.right : styles.left]}
                   onPress={() => setPreviewImage(uri)}>
                   <Image source={{uri}} style={styles.imageMsg} />
                 </TouchableOpacity>
@@ -315,7 +310,10 @@ export default function GroupChatScreen({route, navigation}: any) {
       {/* PREVIEW */}
       <Modal visible={!!previewImage} transparent>
         <View style={styles.previewContainer}>
-          <Image source={{uri: previewImage || ''}} style={styles.previewImage} />
+          <Image
+            source={{uri: previewImage || ''}}
+            style={styles.previewImage}
+          />
 
           {downloading ? (
             <ActivityIndicator color="#fff" />

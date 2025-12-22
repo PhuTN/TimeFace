@@ -24,7 +24,7 @@ export type CheckinComplaintFilters = {
   department: Option | null;
   status: Option | null;
   type: Option | null; // check_in | check_out
-  createdDate: Date;
+  createdDate: Date | null;
   sortBy: Option | null;
 };
 
@@ -65,7 +65,7 @@ export default function CheckinComplaintFilterModal({
   const [status, setStatus] = useState<Option | null>(null);
   const [type, setType] = useState<Option | null>(null);
   const [sortBy, setSortBy] = useState<Option | null>(null);
-  const [createdDate, setCreatedDate] = useState<Date>(new Date());
+  const [createdDate, setCreatedDate] = useState<Date | null>(null);
 
   /* ===================== LOAD DEPARTMENTS ===================== */
   useEffect(() => {
@@ -117,11 +117,11 @@ export default function CheckinComplaintFilterModal({
   /* ===================== HANDLERS ===================== */
   const handleClear = () => {
     setEmployeeName('');
-    setDepartment(departments[0]);
-    setStatus(statusOptions[0]);
-    setType(typeOptions[0]);
-    setSortBy(sortOptions[0]);
-    setCreatedDate(new Date());
+    setDepartment(null);
+    setStatus(null);
+    setType(null);
+    setSortBy(null);
+    setCreatedDate(null);
   };
 
   const handleApply = () => {

@@ -1,16 +1,16 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {View, SafeAreaView, ScrollView} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useFocusEffect} from '@react-navigation/native';
+import {useCallback, useMemo, useState} from 'react';
+import {SafeAreaView, ScrollView, View} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import HeaderBar from '../components/common/HeaderBar';
 import Footer from '../components/common/Footer';
+import HeaderBar from '../components/common/HeaderBar';
 import FeatureItem from '../components/list_items/FeatureItem';
 
-import {useUIFactory} from '../ui/factory/useUIFactory';
-import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/User';
 import {socketService} from '../../services/socketService';
+import {apiHandle} from '../api/apihandle';
+import {User} from '../api/endpoint/user';
+import {useUIFactory} from '../ui/factory/useUIFactory';
 
 export default function FeaturesScreen({navigation}: any) {
   /* =======================
@@ -90,6 +90,14 @@ export default function FeaturesScreen({navigation}: any) {
         icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4.243-1.33A2 2 0 0 1 13 4.562Z"/></svg>`,
         color: '#0890FE',
         onPress: () => navigation.navigate('LeaveRecord'),
+      },
+
+      {
+        text: 'Khiếu nại chấm công',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 2-2-2-2"/><path d="M11 13h4"/><path d="M7 17h4"/><path d="M14 19h1a3 3 0 0 0 3-3V5a2 2 0 0 0-2-2h-4.6a2 2 0 0 0-1.6.8l-2.8 3.2a2 2 0 0 0-.5 1.3V16a3 3 0 0 0 3 3h1"/></svg>`,
+        color: '#FF6B6B',
+        onPress: () =>
+          navigation.navigate('ComplaintRequests', {mode: 'user'}),
       },
 
       {

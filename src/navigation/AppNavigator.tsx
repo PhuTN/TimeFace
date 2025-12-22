@@ -55,6 +55,7 @@ import EmployeeWorkScheduleScreen from '../screens/EmployeeWorkScheduleScreen';
 
 // ⭐ COMPANY RULES
 import CompanyRulesScreen from '../screens/CompanyRulesScreen';
+import CompanyScreen from '../screens/CompanyScreen';
 
 import { navigationRef } from './NavigationService';
 import CompanyLocationConfigScreen from '../screens/CompanyLocationConfigScreen';
@@ -83,7 +84,7 @@ export type RootStackParamList = {
 
   DepartmentManagement: undefined;
   DepartmentDetail: { departmentDetail: any } | undefined;
-  EmployeeManagement: undefined;
+  EmployeeManagement: { mode?: 'timesheet' } | undefined;
   EmployeeAttendance: undefined;
   EmployeeFaceDetection: undefined;
 
@@ -122,6 +123,7 @@ export type RootStackParamList = {
     employeeId?: string;
     month: number;
     year: number;
+    employeeName?: string;
   };
 
   // ⭐ OT
@@ -133,13 +135,14 @@ export type RootStackParamList = {
   LeaveRequests: undefined;
 
   // ⭐ COMPLAINT
-  ComplaintRequests: undefined;
+  ComplaintRequests: { mode?: 'user' | 'admin' } | undefined;
 
   // ⭐ WORK SCHEDULE
   EmployeeWorkSchedule: undefined;
 
   // ⭐ COMPANY RULES
   CompanyRules: undefined;
+  Company: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -232,6 +235,11 @@ const AppNavigator = ({
         <Stack.Screen
           name="CompanyRules"
           component={CompanyRulesScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="Company"
+          component={CompanyScreen}
           options={{ animation: 'slide_from_right' }}
         />
 
