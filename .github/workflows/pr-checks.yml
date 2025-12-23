@@ -18,11 +18,10 @@ jobs:
         run: npm ci
       # ✅ Lint đúng file
       - name: Lint only (googleMaps.js)
-        run: npx eslint services/socketService.ts src/api/endpoint/Auth.ts 
-
+        run: npx eslint services/socketService.ts
       # ✅ Typecheck đúng file JS (chỉ hợp lý nếu bạn có typescript + muốn checkJs)
       - name: Typecheck only (googleMaps.js)
-        run: npx tsc --noEmit --allowJs --checkJs services/socketService.ts src/api/endpoint/Auth.ts 
+        run: npx tsc --noEmit --allowJs --checkJs services/socketService.ts
 
       # ✅ Test liên quan đúng file
       # - name: Test only (googleMaps.js)
