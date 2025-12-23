@@ -32,7 +32,7 @@ import Geolocation from '@react-native-community/geolocation';
 import Toast from 'react-native-toast-message';
 import {apiHandle} from '../api/apihandle.ts';
 import {CompanyEP} from '../api/endpoint/Company.ts';
-import {User} from '../api/endpoint/User.ts';
+import {User} from '../api/endpoint/User';
 import CheckinComplaintAddModal from '../components/modals/add-modals/CheckinComplaintAddModal.tsx';
 import {RootStackParamList} from '../navigation/AppNavigator';
 

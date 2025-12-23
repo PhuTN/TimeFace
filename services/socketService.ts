@@ -10,7 +10,9 @@ export const socketService = {
     try {
       const session = await authStorage.load();
       const userId = session?.user?._id;
-      if (!userId) return console.log('⚠️ No user found for socket init');
+      if (!userId) {
+        return console.log('⚠️ No user found for socket init');
+      }
 
       if (socket && socket.connected) {
         console.log('🔌 Socket already connected');

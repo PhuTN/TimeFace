@@ -31,7 +31,7 @@ import {useUIFactory} from '../ui/factory/useUIFactory';
 import Toast from 'react-native-toast-message';
 import {apiHandle} from '../api/apihandle';
 import {DepartmentEP} from '../api/endpoint/Department';
-import {User} from '../api/endpoint/User.ts';
+import {User} from '../api/endpoint/User';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DepartmentDetail'>;
 

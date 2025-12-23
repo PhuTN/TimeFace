@@ -1,21 +1,17 @@
-name: Android Release (Tag - APK)
+name: Android Staging (Firebase)
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches: [ staging ]
+  workflow_dispatch:
 
 jobs:
   build-apk:
-    # ✅ BUILD TRÊN SELF-HOSTED (GIỐNG android-staging-firebase)
+    # CHẠY TRÊN LAPTOP (WSL)
     runs-on: self-hosted
-    environment: production
-    timeout-minutes: 60
-    permissions:
-      contents: write
+    environment: staging
     outputs:
       artifact-name: app-release-apk
-
     steps:
       - uses: actions/checkout@v4
 
@@ -34,13 +30,23 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # (Optional) Inject model giống workflow staging (nếu bạn đang cần nhúng ONNX khi build)
-      - name: Write .env (production)
+      # - name: Cache Gradle
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: |
+      #       ~/.gradle/caches
+      #       ~/.gradle/wrapper
+      #       ~/.gradle/caches/build-cache-*
+      #     key: gradle-${{ runner.os }}-${{ hashFiles('**/gradle-wrapper.properties') }}
+      #     restore-keys: |
+      #       gradle-${{ runner.os }}-
+
+      - name: Write .env (staging)
         shell: bash
         run: |
           set -e
           printf "API_URL=%s\n" "${{ secrets.API_URL }}" > .env
-          echo "[ENV] Using API_URL from GitHub Environment: production"
+          echo "[ENV] Using API_URL from GitHub Environment: staging"
 
       - name: Inject ONNX face model (not committed)
         shell: bash
@@ -55,10 +61,12 @@ jobs:
             exit 1
           fi
 
+          # Tạo thư mục đích
           mkdir -p ios/TimeFace/models
           mkdir -p android/app/src/main/assets
           mkdir -p android/app/src/main/assets/models
 
+          # Copy vào các path bạn đang dùng
           cp "$MODEL_SRC" ios/TimeFace/models/glintr100.onnx
           cp "$MODEL_SRC" android/app/src/main/assets/glintr100.onnx
           cp "$MODEL_SRC" android/app/src/main/assets/models/glintr100.onnx
@@ -68,55 +76,41 @@ jobs:
           ls -lh android/app/src/main/assets/glintr100.onnx
           ls -lh android/app/src/main/assets/models/glintr100.onnx
 
-      # (Optional) Decode keystore nếu bạn muốn ký APK release
-      - name: Decode keystore
-        if: env.SHOULD_SIGN == 'true'
-        env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          echo "$KEYSTORE_B64" | base64 -d > android/app/release.keystore
-
-      - name: Set signing env
-        if: env.SHOULD_SIGN == 'true'
-        run: |
-          echo "SIGNING_STORE_FILE=release.keystore" >> $GITHUB_ENV
-          echo "SIGNING_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "SIGNING_STORE_PASSWORD=${{ secrets.ANDROID_STORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "SIGNING_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
-
-      - name: Build release APK (only)
+      - name: Build release APK
         working-directory: android
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon --stacktrace --build-cache --parallel assembleRelease
+          # hoặc assembleDebug nếu chỉ test nội bộ
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          name: app-staging-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          # hoặc debug: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-  create-github-release:
+  upload-to-firebase:
     needs: build-apk
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-      - name: Download APK artifact
+      - uses: actions/checkout@v4
+
+      - name: Download APK from build job
         uses: actions/download-artifact@v4
         with:
-          name: app-release-apk
+          name: app-staging-apk
           path: ./dist
 
-      - name: List artifacts
+      - name: List APKs
         run: ls -R ./dist
 
-      - name: Create GitHub Release (attach APK)
-        uses: softprops/action-gh-release@v2
+      - name: Upload to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1.7.1
         with:
-          files: |
-            ./dist/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          file: ./dist/app-release.apk    # hoặc app-debug.apk tuỳ bạn upload gì
+          groups: testers
+          releaseNotes: "Staging build - ${{ github.sha }}"

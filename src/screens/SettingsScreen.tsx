@@ -18,7 +18,7 @@ import {setUIState} from '../ui/factory/selector';
 import {useUIFactory} from '../ui/factory/useUIFactory';
 
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/user';
+import {User} from '../api/endpoint/User';
 
 export default function SettingsScreen() {
   const {theme, lang} = useUIFactory();

@@ -21,7 +21,7 @@ import {RootStackParamList} from '../navigation/AppNavigator';
 import {useUIFactory} from '../ui/factory/useUIFactory';
 
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/user';
+import {User} from '../api/endpoint/User';
 
 import {Country, State} from 'country-state-city';
 

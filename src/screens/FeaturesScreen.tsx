@@ -9,7 +9,7 @@ import FeatureItem from '../components/list_items/FeatureItem';
 
 import {socketService} from '../../services/socketService';
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/user';
+import {User} from '../api/endpoint/User';
 import {useUIFactory} from '../ui/factory/useUIFactory';
 
 export default function FeaturesScreen({navigation}: any) {

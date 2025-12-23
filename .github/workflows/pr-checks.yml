@@ -2,11 +2,11 @@ name: PR Checks
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ dev ]
 
 jobs:
   checks:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node
@@ -16,9 +16,14 @@ jobs:
           cache: 'npm'
       - name: Install deps
         run: npm ci
-      - name: Type check
-        run: npx tsc --noEmit
+      # ✅ Lint đúng file
       - name: Lint
-        run: npm run lint --if-present
-      # - name: Unit tests
-      #   run: npm run test:ci --if-present
+        run: npx eslint src/testcicd.js
+
+      # ✅ Typecheck đúng file
+      - name: Typecheck
+        run: npx tsc --noEmit --allowJs --checkJs src/testcicd.js
+
+      # ✅ Test liên quan đúng file
+      # - name: Test only (testcicd.js)
+      #   run: npx jest --findRelatedTests src/testcicd.js

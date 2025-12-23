@@ -24,7 +24,7 @@ import LabeledTextInput from './LabeledTextInput';
 
 import Toast from 'react-native-toast-message';
 import {apiHandle} from '../../api/apihandle';
-import {User} from '../../api/endpoint/User.ts';
+import {User} from '../../api/endpoint/User';
 
 export type AddDepartmentModal = {
   name: string;

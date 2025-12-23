@@ -28,7 +28,7 @@ import {RootStackParamList} from '../navigation/AppNavigator';
 import {useUIFactory} from '../ui/factory/useUIFactory';
 
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/user';
+import {User} from '../api/endpoint/User';
 
 import {launchImageLibrary} from 'react-native-image-picker';
 import {uploadSingle} from '../api/uploadApi';

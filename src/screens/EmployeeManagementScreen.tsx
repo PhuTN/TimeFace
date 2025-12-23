@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import {apiHandle} from '../api/apihandle.ts';
-import {User} from '../api/endpoint/User.ts';
+import {User} from '../api/endpoint/User.js';
 import FilterIcon from '../assets/icons/filter_icon.svg';
 import AddButton from '../components/common/AddButton';
 import AddEmployeeModal from '../components/common/AddEmployeeModal';
