@@ -17,11 +17,11 @@ jobs:
       - name: Install deps
         run: npm ci
       # ✅ Lint đúng file
-      - name: Lint only (testcicd.js)
+      - name: Lint
         run: npx eslint src/testcicd.js
 
       # ✅ Typecheck đúng file
-      - name: Typecheck only (testcicd.js)
+      - name: Typecheck
         run: npx tsc --noEmit --allowJs --checkJs src/testcicd.js
 
       # ✅ Test liên quan đúng file
