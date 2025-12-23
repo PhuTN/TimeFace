@@ -50,7 +50,7 @@ class AppConfig {
 
   private constructor() {
     this.cfg = {
-      apiUrl: Config.API_URL,
+      apiUrl: (Config.API_URL || 'https://befe.io.vn/api/'),
       appName: 'GOKUUNE',
       version: '1.0.0',
       debug: true,
