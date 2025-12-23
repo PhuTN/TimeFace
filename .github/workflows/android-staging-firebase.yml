@@ -53,7 +53,7 @@ jobs:
           set -e
 
           # Đổi đường dẫn này thành nơi bạn lưu model trên máy self-hosted
-          MODEL_SRC="\\wsl.localhost\Ubuntu\home\wsladmin\timeface-models\glintr100.onnx"
+          MODEL_SRC="/home/wsladmin/timeface-models/glintr100.onnx"
 
           if [ ! -f "$MODEL_SRC" ]; then
             echo "Missing model at: $MODEL_SRC"
