@@ -21,7 +21,7 @@ import LeaveRequestFilterModal, {
   LeaveRequestFilters,
 } from '../../components/modals/filter-modals/LeaveRequestFilterModal';
 
-import {User} from '../../api/endpoint/user';
+import {User} from '../../api/endpoint/User';
 import {apiHandle} from '../../api/apihandle';
 import Toast from 'react-native-toast-message';
 

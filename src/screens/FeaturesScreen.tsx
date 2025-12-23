@@ -112,6 +112,7 @@ export default function FeaturesScreen({navigation}: any) {
         color: '#66FF33', // 🔵 xanh sky – hợp kiểu quy định
         onPress: () => navigation.navigate('CompanyRules'),
       },
+      
       {
         text: 'Chat / Nhắn tin',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 

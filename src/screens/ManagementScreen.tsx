@@ -22,9 +22,30 @@ export default function ManagementScreen({navigation}: any) {
   const menuItems = [
     {
       icon: require('../assets/QuanLy/report.png'),
+      title: 'Kế hoạch',
+      subtitle: 'Tổng hợp số liệu thống kê',
+        route: 'SubscriptionPlanList',
+      
+    },
+    {
+      icon: require('../assets/QuanLy/report.png'),
+      title: 'DÂSSHG',
+      subtitle: 'Tổng hợp số liệu thống kê',
+        route: 'CompanyDashboard',
+      
+    },
+     {
+      icon: require('../assets/QuanLy/report.png'),
       title: 'Báo cáo tổng hợp',
       subtitle: 'Tổng hợp số liệu thống kê',
         route: 'Report',
+      
+    },
+      {
+      icon: require('../assets/QuanLy/report.png'),
+      title: 'Công ty',
+      subtitle: 'Tổng hợp số liệu thống kê',
+        route: 'CompanyAdmin',
       
     },
     {

@@ -1,5 +1,5 @@
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 // Core
 import AuthScreen from '../screens/AuthScreen';
@@ -27,7 +27,6 @@ import EmployeeFaceDetectionScreen from '../screens/EmployeeFaceDetectionScreen'
 import PersonalInformationFaceDetectionScreen from '../screens/PersonalInformationFaceDetectionScreen';
 
 // ⭐ TIMESHEET (NEW)
-
 
 // ⭐ OT
 import OTRecordScreen from '../screens/group-4-screens/OTRecordScreen';
@@ -57,7 +56,7 @@ import EmployeeWorkScheduleScreen from '../screens/EmployeeWorkScheduleScreen';
 import CompanyRulesScreen from '../screens/CompanyRulesScreen';
 import CompanyScreen from '../screens/CompanyScreen';
 
-import { navigationRef } from './NavigationService';
+import {navigationRef} from './NavigationService';
 import CompanyLocationConfigScreen from '../screens/CompanyLocationConfigScreen';
 
 // Attendance
@@ -72,19 +71,26 @@ import MonthTimesheetScreen from '../screens/group-4-screens/MonthTimesheetScree
 import TimesheetScreen from '../screens/group-2-screens/TimesheetScreen';
 import DailyRecordScreen from '../screens/group-4-screens/DailyRecordScreen';
 import NotificationScreen from '../screens/group-4-screens/NotificationScreen';
+import SubscriptionPlanListScreen from '../screens/SubscriptionPlanListScreen';
+import SubscriptionPlanFormScreen from '../screens/SubscriptionPlanFormScreen';
+import CompanyAdminScreen from '../screens/CompanyAdminScreen';
+import CompanyDetailAdminScreen from '../screens/CompanyDetailAdminScreen';
+import CompanyPlanHistoryScreen from '../screens/CompanyPlanHistoryScreen';
+import CompanyUserStatsScreen from '../screens/CompanyUserStatsScreen';
+import CompanyDashboardScreen from '../screens/CompanyDashboardScreen';
 
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
-  ResetPassword: { email?: string } | undefined;
+  ResetPassword: {email?: string} | undefined;
 
   Home: undefined;
   Settings: undefined;
 
   DepartmentManagement: undefined;
-  DepartmentDetail: { departmentDetail: any } | undefined;
-  EmployeeManagement: { mode?: 'timesheet' } | undefined;
+  DepartmentDetail: {departmentDetail: any} | undefined;
+  EmployeeManagement: {mode?: 'timesheet'} | undefined;
   EmployeeAttendance: undefined;
   EmployeeFaceDetection: undefined;
 
@@ -97,7 +103,7 @@ export type RootStackParamList = {
   GroupChat: undefined;
   Notification: undefined;
   JobInformation: undefined;
-  PersonalInformation: { faces: any } | undefined;
+  PersonalInformation: {faces: any} | undefined;
   PersonalInformationFaceDetection: undefined;
   PersonalInformationView: undefined;
 
@@ -133,16 +139,22 @@ export type RootStackParamList = {
   // ⭐ LEAVE
   LeaveRecord: undefined;
   LeaveRequests: undefined;
-
+  CompanyAdmin: undefined;
+  CompanyDetailAdmin: {company: any};
+  CompanyPlanHistory: {companyId: string};
+  CompanyUserStats: {companyId: string};
   // ⭐ COMPLAINT
-  ComplaintRequests: { mode?: 'user' | 'admin' } | undefined;
+  ComplaintRequests: {mode?: 'user' | 'admin'} | undefined;
 
   // ⭐ WORK SCHEDULE
   EmployeeWorkSchedule: undefined;
-
+  CompanyDashboard: undefined;
   // ⭐ COMPANY RULES
   CompanyRules: undefined;
   Company: undefined;
+
+  SubscriptionPlanList: undefined;
+  SubscriptionPlanForm: {plan?: any} | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -156,8 +168,7 @@ const AppNavigator = ({
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         initialRouteName={initialRouteName}
-        screenOptions={{ headerShown: false }}
-      >
+        screenOptions={{headerShown: false}}>
         {/* AUTH */}
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
@@ -167,80 +178,119 @@ const AppNavigator = ({
           name="SubscriptionPlans"
           component={SubscriptionPlansScreen}
         />
+        {/* ===== SYS ADMIN ===== */}
+        <Stack.Screen
+          name="CompanyAdmin"
+          component={CompanyAdminScreen}
+          options={{animation: 'slide_from_right'}}
+        />
+        <Stack.Screen
+          name="CompanyDashboard"
+          component={CompanyDashboardScreen}
+          options={{animation: 'slide_from_right'}}
+        />
+        <Stack.Screen
+          name="CompanyDetailAdmin"
+          component={CompanyDetailAdminScreen}
+          options={{animation: 'slide_from_right'}}
+        />
+
+        <Stack.Screen
+          name="CompanyPlanHistory"
+          component={CompanyPlanHistoryScreen}
+          options={{animation: 'slide_from_right'}}
+        />
+
+        <Stack.Screen
+          name="CompanyUserStats"
+          component={CompanyUserStatsScreen}
+          options={{animation: 'slide_from_right'}}
+        />
 
         {/* ===== FOOTER SCREENS (NO ANIMATION) ===== */}
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{ animation: 'none' }}
+          options={{animation: 'none'}}
         />
         <Stack.Screen
           name="ChatList"
           component={ChatListScreen}
-          options={{ animation: 'none' }}
+          options={{animation: 'none'}}
         />
         <Stack.Screen
           name="EmployeeAttendance"
           component={EmployeeAttendanceScreen}
-          options={{ animation: 'none' }}
+          options={{animation: 'none'}}
+        />
+        <Stack.Screen
+          name="SubscriptionPlanList"
+          component={SubscriptionPlanListScreen}
+          options={{animation: 'slide_from_right'}}
+        />
+
+        <Stack.Screen
+          name="SubscriptionPlanForm"
+          component={SubscriptionPlanFormScreen}
+          options={{animation: 'slide_from_right'}}
         />
         <Stack.Screen
           name="Management"
           component={ManagementScreen}
-          options={{ animation: 'none' }}
+          options={{animation: 'none'}}
         />
         <Stack.Screen
           name="Report"
           component={ReportScreen}
-          options={{ animation: 'none' }}
+          options={{animation: 'none'}}
         />
         <Stack.Screen
-  name="Notification"
-  component={NotificationScreen}
-  options={{ animation: 'none' }}
-/>
+          name="Notification"
+          component={NotificationScreen}
+          options={{animation: 'none'}}
+        />
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
-          options={{ animation: 'none' }}
+          options={{animation: 'none'}}
         />
         <Stack.Screen
           name="Features"
           component={FeaturesScreen}
-          options={{ animation: 'none' }}
+          options={{animation: 'none'}}
         />
 
         {/* ===== PUSH / DETAIL SCREENS ===== */}
         <Stack.Screen
           name="Timesheet"
           component={TimesheetScreen}
-          options={{ animation: 'slide_from_right' }}
+          options={{animation: 'slide_from_right'}}
         />
         <Stack.Screen
           name="MonthTimesheet"
           component={MonthTimesheetScreen}
-          options={{ animation: 'slide_from_right' }}
+          options={{animation: 'slide_from_right'}}
         />
         <Stack.Screen
           name="DailyRecord"
           component={DailyRecordScreen}
-          options={{ animation: 'slide_from_right' }}
+          options={{animation: 'slide_from_right'}}
         />
 
         <Stack.Screen
           name="EmployeeWorkSchedule"
           component={EmployeeWorkScheduleScreen}
-          options={{ animation: 'slide_from_right' }}
+          options={{animation: 'slide_from_right'}}
         />
         <Stack.Screen
           name="CompanyRules"
           component={CompanyRulesScreen}
-          options={{ animation: 'slide_from_right' }}
+          options={{animation: 'slide_from_right'}}
         />
         <Stack.Screen
           name="Company"
           component={CompanyScreen}
-          options={{ animation: 'slide_from_right' }}
+          options={{animation: 'slide_from_right'}}
         />
 
         {/* OT */}
@@ -303,10 +353,7 @@ const AppNavigator = ({
         <Stack.Screen name="CommonScreen2" component={CommonScreen2} />
 
         {/* PERSONAL */}
-        <Stack.Screen
-          name="JobInformation"
-          component={JobInformationScreen}
-        />
+        <Stack.Screen name="JobInformation" component={JobInformationScreen} />
         <Stack.Screen
           name="PersonalInformation"
           component={PersonalInformationScreen}

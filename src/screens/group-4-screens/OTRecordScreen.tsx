@@ -26,7 +26,7 @@ import DateRangeFilterModal, {
   DateRangeFilters,
 } from '../../components/modals/filter-modals/DateRangeFilterModal';
 
-import {User} from '../../api/endpoint/user';
+import {User} from '../../api/endpoint/User';
 import {apiHandle} from '../../api/apihandle';
 
 /* ===================== TYPES ===================== */

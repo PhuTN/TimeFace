@@ -9,7 +9,7 @@ import Toast from 'react-native-toast-message';
 
 
 import {apiHandle} from './src/api/apihandle';
-import {User} from './src/api/endpoint/user';
+import {User} from './src/api/endpoint/User';
 import {rehydrateAuth} from './src/bootstrap/rehydrateAuth';
 import AppNavigator from './src/navigation/AppNavigator';
 

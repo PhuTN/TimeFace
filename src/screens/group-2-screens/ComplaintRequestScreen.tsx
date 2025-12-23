@@ -12,7 +12,7 @@ import CheckinComplaintFilterModal, {
   CheckinComplaintFilters,
 } from '../../components/modals/filter-modals/CheckinComplaintFilterModal';
 
-import {User} from '../../api/endpoint/user';
+import {User} from '../../api/endpoint/User';
 import {apiHandle} from '../../api/apihandle';
 import Toast from 'react-native-toast-message';
 

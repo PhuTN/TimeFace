@@ -17,7 +17,7 @@ import MonthFilterModal, {
 import {FilterChipData, useFilterSystem} from '../../hooks/useFilterSystem';
 
 // ✅ API
-import {User} from '../../api/endpoint/user';
+import {User} from '../../api/endpoint/User';
 import {apiHandle} from '../../api/apihandle';
 
 type MonthTimesheetItem = {

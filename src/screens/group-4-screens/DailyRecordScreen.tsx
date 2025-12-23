@@ -21,7 +21,7 @@ import {FilterChipData, useFilterSystem} from '../../hooks/useFilterSystem';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 // ✅ API
 import {apiHandle} from '../../api/apihandle';
-import {User} from '../../api/endpoint/user';
+import {User} from '../../api/endpoint/User';
 
 // ✅ EXPORT EXCEL
 

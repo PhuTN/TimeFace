@@ -18,7 +18,7 @@ import {useUIFactory} from '../ui/factory/useUIFactory';
 // ✅ API
 import {apiHandle} from '../api/apihandle';
 import {CompanyEP} from '../api/endpoint/Company';
-import {User} from '../api/endpoint/user';
+import {User} from '../api/endpoint/User';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
