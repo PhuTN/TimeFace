@@ -3,7 +3,6 @@ name: Android Staging (Firebase)
 on:
   push:
     branches: [ staging-FE ]
-  workflow_dispatch:
 
 jobs:
   build-apk:
