@@ -1,240 +1,398 @@
-import {View, ScrollView, SafeAreaView, Text, Switch} from 'react-native';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
+import {SafeAreaView, ScrollView, Text, View} from 'react-native';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
-import {useFilterSystem} from '../../hooks/useFilterSystem';
-import FilterBar from '../../components/common/FilterBar';
-import OTRequestFilterModal, {
-  OTRequestFilters,
-} from '../../components/modals/filter-modals/OTRequestFilterModal';
+
+import HeaderBar from '../../components/common/HeaderBar';
 import OTRequest from '../../components/list_items/OTRequest';
-import Header2 from '../../components/common/Header2';
 import OTRequestDetailModal, {
   OTRequestDetail,
 } from '../../components/modals/detail-modals/OTRequestDetailModal';
+import OTRequestFilterModal, {
+  OTRequestFilters,
+} from '../../components/modals/filter-modals/OTRequestFilterModal';
+
+import FilterIcon from '../../assets/icons/filter_icon.svg';
+import FilterChip from '../../components/common/FilterChip';
+
+import {User} from '../../api/endpoint/User';
+import {apiHandle} from '../../api/apihandle';
+import Toast from 'react-native-toast-message';
+
+/* ===================== UTILS ===================== */
+const addHours = (start: string, hours: number) => {
+  if (!start) return '--:--';
+  const [h, m] = start.split(':').map(Number);
+  const d = new Date();
+  d.setHours(h);
+  d.setMinutes(m + hours * 60);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(
+    d.getMinutes(),
+  ).padStart(2, '0')}`;
+};
+
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+/** ⭐ FIX TIMEZONE – format YYYY-MM-DD theo local */
+const formatDateLocal = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 export default function OTRequestScreen() {
   const {loading, theme, lang} = useUIFactory();
-  const {
-    activeFilters,
-    isModalVisible,
-    openModal,
-    closeModal,
-    applyFilters,
-    removeFilter,
-  } = useFilterSystem<OTRequestFilters>();
+  const t = lang?.t;
 
+  /* ===================== STATE ===================== */
+  const [rawRequests, setRawRequests] = useState<OTRequestDetail[]>([]);
+  const [displayed, setDisplayed] = useState<OTRequestDetail[]>([]);
+
+  const [showFilter, setShowFilter] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedRequest, setSelectedRequest] =
     useState<OTRequestDetail | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
 
-  console.log('OTRequestScreen - isModalVisible:', isModalVisible);
+  const [criteria, setCriteria] = useState<OTRequestFilters>({
+    ticketCode: '',
+    employeeName: '',
+    positionName: '',
+    department: null,
+    approvalStatus: null,
+    createdDate: null,
+    otDate: null,
+    sortBy: null,
+  });
 
-  if (loading || !theme || !lang) {
-    return null;
-  }
+  const [activeFilters, setActiveFilters] = useState<
+    {key: string; mainText: string; subText: string}[]
+  >([]);
 
-  // Enhanced mock data with full details
-  const mockRequests: OTRequestDetail[] = [
-    {
-      avatarSource: require('../../assets/images/examples/avatar1.png'),
-      name: 'Nguyễn Văn A',
-      position: 'Developer',
-      department: 'Phòng IT',
-      status: 'approved',
-      code: 'OT-001',
-      date: '12/10/2024',
-      time: '18:00 - 20:00',
-      hours: 2,
-      reason:
-        'Làm thêm giờ để hoàn thành dự án trước deadline. Cần deploy hệ thống production.',
-      createdAt: '10/10/2024',
-      approver: {
-        name: 'Lê Văn D',
-        date: '11/10/2024',
-      },
-    },
-    {
-      avatarSource: require('../../assets/images/examples/avatar2.png'),
-      name: 'Trần Thị B',
-      position: 'Designer',
-      department: 'Phòng Thiết Kế',
-      status: 'pending',
-      code: 'OT-002',
-      date: '15/10/2024',
-      time: '19:00 - 21:00',
-      hours: 2,
-      reason: 'Hoàn thiện design cho campaign mới của khách hàng.',
-      createdAt: '13/10/2024',
-    },
-    {
-      avatarSource: require('../../assets/images/examples/avatar3.png'),
-      name: 'Lê Văn C',
-      position: 'Manager',
-      department: 'Phòng Quản Lý',
-      status: 'rejected',
-      code: 'OT-003',
-      date: '18/10/2024',
-      time: '17:00 - 19:00',
-      hours: 2,
-      reason: 'Họp với đối tác nước ngoài.',
-      createdAt: '16/10/2024',
-    },
-  ];
+  /* ===================== LOAD DATA ===================== */
+  const loadOT = async () => {
+    const {status, res} = await apiHandle
+      .callApi(User.AdminGetAllOvertime)
+      .asPromise();
 
-  const handleRequestPress = (request: OTRequestDetail) => {
-    setSelectedRequest(request);
-    setShowDetailModal(true);
+    if (status.isError) return;
+
+    const raw = res?.data?.overtime_requests ?? [];
+
+    const mapped: OTRequestDetail[] = raw.map((item: any) => {
+      const {user, ot} = item;
+
+      const startTime = ot.start_time ?? '--:--';
+      const endTime =
+        ot.start_time && ot.hours ? addHours(ot.start_time, ot.hours) : '--:--';
+
+      return {
+        avatarSource: user.avatar
+          ? {uri: user.avatar}
+          : {uri: 'https://cdn-icons-png.freepik.com/512/6858/6858504.png'},
+
+        user_id: user.user_id,
+        ot_id: ot.ot_id,
+
+        name: user.full_name,
+        position: user.job_title || '—',
+        department: user.department?.name || '—',
+
+        status: ot.status,
+        code: user.employee_code || ot.ot_id,
+
+        date: ot.date, // YYYY-MM-DD (backend)
+        time: `${startTime} - ${endTime}`,
+        hours: ot.hours,
+        reason: ot.reason,
+
+        createdAt: ot.created_at
+          ? new Date(ot.created_at).toLocaleDateString('vi-VN')
+          : '',
+
+        images: ot.evidence_images ?? [],
+
+        approver: ot.approved_by?.full_name
+          ? {
+              name: ot.approved_by.full_name,
+              date: ot.approved_at
+                ? new Date(ot.approved_at).toLocaleDateString('vi-VN')
+                : '',
+            }
+          : undefined,
+      };
+    });
+
+    setRawRequests(mapped);
+    setDisplayed(mapped);
   };
 
-  const handleCloseDetailModal = () => {
+  useEffect(() => {
+    loadOT();
+  }, []);
+
+  /* ===================== FILTER CORE ===================== */
+  const filterData = (values: OTRequestFilters) => {
+    let next = [...rawRequests];
+
+    if (values.ticketCode) {
+      next = next.filter(r =>
+        r.code.toLowerCase().includes(values.ticketCode.toLowerCase()),
+      );
+    }
+
+    if (values.employeeName) {
+      next = next.filter(r =>
+        r.name.toLowerCase().includes(values.employeeName.toLowerCase()),
+      );
+    }
+
+    if (values.positionName) {
+      next = next.filter(r =>
+        r.position.toLowerCase().includes(values.positionName.toLowerCase()),
+      );
+    }
+
+    if (values.department && values.department.value !== 'all') {
+      next = next.filter(r => r.department === values.department.label);
+    }
+
+    if (values.approvalStatus && values.approvalStatus.value !== 'all') {
+      next = next.filter(r => r.status === values.approvalStatus.value);
+    }
+
+    // ⭐ CREATED DATE
+    if (values.createdDate) {
+      const d = values.createdDate.toLocaleDateString('vi-VN');
+      next = next.filter(r => r.createdAt === d);
+    }
+
+    // ⭐ OT DATE (FIX TIMEZONE)
+    if (values.otDate) {
+      const d = formatDateLocal(values.otDate);
+      next = next.filter(r => r.date === d);
+    }
+
+    // ⭐ SORT
+    if (values.sortBy?.value) {
+      switch (values.sortBy.value) {
+        case 'created_desc':
+          next.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          );
+          break;
+        case 'created_asc':
+          next.sort(
+            (a, b) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+          );
+          break;
+        case 'name_asc':
+          next.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case 'name_desc':
+          next.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+      }
+    }
+
+    return next;
+  };
+
+  /* ===================== APPLY FILTER ===================== */
+  const applyFilter = (values: OTRequestFilters) => {
+    setCriteria(values);
+    setDisplayed(filterData(values));
+
+    const chips: {key: string; mainText: string; subText: string}[] = [];
+
+    if (values.ticketCode)
+      chips.push({
+        key: 'ticketCode',
+        mainText: t('id_form_label'),
+        subText: values.ticketCode,
+      });
+
+    if (values.employeeName)
+      chips.push({
+        key: 'employeeName',
+        mainText: t('employee_name_label'),
+        subText: values.employeeName,
+      });
+
+    if (values.positionName)
+      chips.push({
+        key: 'positionName',
+        mainText: t('position_name_label'),
+        subText: values.positionName,
+      });
+
+    if (values.department && values.department.value !== 'all')
+      chips.push({
+        key: 'department',
+        mainText: t('department_label'),
+        subText: values.department.label,
+      });
+
+    if (values.approvalStatus && values.approvalStatus.value !== 'all')
+      chips.push({
+        key: 'approvalStatus',
+        mainText: t('approval_status_label'),
+        subText: values.approvalStatus.label,
+      });
+
+    if (values.createdDate)
+      chips.push({
+        key: 'createdDate',
+        mainText: t('created_date_label'),
+        subText: values.createdDate.toLocaleDateString('vi-VN'),
+      });
+
+    if (values.otDate)
+      chips.push({
+        key: 'otDate',
+        mainText: t('otDate'),
+        subText: values.otDate.toLocaleDateString('vi-VN'),
+      });
+
+    if (values.sortBy)
+      chips.push({
+        key: 'sortBy',
+        mainText: t('sort_by_label'),
+        subText: values.sortBy.label,
+      });
+
+    setActiveFilters(chips);
+  };
+
+  const handleRemoveFilter = (key: string) => {
+    const next = {...criteria} as any;
+
+    if (key === 'createdDate' || key === 'otDate') next[key] = null;
+    else if (key === 'sortBy') next.sortBy = null;
+    else next[key] = null;
+
+    setCriteria(next);
+    setDisplayed(filterData(next));
+    setActiveFilters(prev => prev.filter(c => c.key !== key));
+  };
+
+  /* ===================== APPROVE / REJECT ===================== */
+  const handleApprove = async () => {
+    if (!selectedRequest) return;
+
+    const {status} = await apiHandle
+      .callApi(
+        User.AdminDecideOvertime(
+          selectedRequest.user_id,
+          selectedRequest.ot_id,
+        ),
+        {status: 'approved'},
+      )
+      .asPromise();
+
+    if (!status.isError) Toast.show({type: 'success', text1: t('approved')});
     setShowDetailModal(false);
-    setSelectedRequest(null);
+    loadOT();
   };
 
-  const handleApprove = () => {
-    console.log('Approving OT request:', selectedRequest?.code);
-    // TODO: Add API call to approve request
+  const handleReject = async () => {
+    if (!selectedRequest) return;
+
+    const {status} = await apiHandle
+      .callApi(
+        User.AdminDecideOvertime(
+          selectedRequest.user_id,
+          selectedRequest.ot_id,
+        ),
+        {status: 'rejected'},
+      )
+      .asPromise();
+
+    if (!status.isError) Toast.show({type: 'success', text1: t('rejected')});
+    setShowDetailModal(false);
+    loadOT();
   };
 
-  const handleReject = () => {
-    console.log('Rejecting OT request:', selectedRequest?.code);
-    // TODO: Add API call to reject request
-  };
+  if (loading || !theme || !lang) return null;
 
-  const handleApplyFilters = (filters: OTRequestFilters) => {
-    // Format filters into FilterChipData
-    const formattedFilters = [];
-
-    if (filters.ticketCode) {
-      formattedFilters.push({
-        id: 'ticketCode',
-        label: lang.t('id_form_label'),
-        subLabel: filters.ticketCode,
-        value: 'ticketCode',
-      });
-    }
-
-    if (filters.employeeName) {
-      formattedFilters.push({
-        id: 'employeeName',
-        label: lang.t('employee_name_label'),
-        subLabel: filters.employeeName,
-        value: 'employeeName',
-      });
-    }
-
-    if (filters.positionName) {
-      formattedFilters.push({
-        id: 'positionName',
-        label: lang.t('position_name_label'),
-        subLabel: filters.positionName,
-        value: 'positionName',
-      });
-    }
-
-    if (filters.department && filters.department.value !== 'all') {
-      formattedFilters.push({
-        id: 'department',
-        label: lang.t('department_label'),
-        subLabel: filters.department.label,
-        value: 'department',
-      });
-    }
-
-    if (filters.approvalStatus && filters.approvalStatus.value !== 'all') {
-      formattedFilters.push({
-        id: 'approvalStatus',
-        label: lang.t('approval_status_label'),
-        subLabel: filters.approvalStatus.label,
-        value: 'approvalStatus',
-      });
-    }
-
-    if (filters.createdDate) {
-      const dateStr = filters.createdDate.toLocaleDateString('vi-VN');
-      formattedFilters.push({
-        id: 'createdDate',
-        label: lang.t('created_date_label'),
-        subLabel: dateStr,
-        value: 'createdDate',
-      });
-    }
-
-    if (filters.otDate) {
-      const dateStr = filters.otDate.toLocaleDateString('vi-VN');
-      formattedFilters.push({
-        id: 'otDate',
-        label: lang.t('otDate'),
-        subLabel: dateStr,
-        value: 'otDate',
-      });
-    }
-
-    if (filters.sortBy && filters.sortBy.value !== 'default') {
-      formattedFilters.push({
-        id: 'sortBy',
-        label: lang.t('sort_by_label'),
-        subLabel: filters.sortBy.label,
-        value: 'sortBy',
-      });
-    }
-
-    applyFilters(filters, formattedFilters);
-  };
-
-  const isDark = theme.name === 'dark';
-  const isEnglish = lang.code === 'en';
-
+  /* ===================== UI ===================== */
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}}>
-      <Header2 title={lang.t('otRequestTitle')} theme={theme} />
+      <HeaderBar title={t('otRequestTitle')} isShowBackButton />
 
       <ScrollView
         contentContainerStyle={{
-          padding: 16,
-          gap: 12,
+          paddingHorizontal: 16,
+          paddingTop: 20,
+          paddingBottom: 24,
         }}
         showsVerticalScrollIndicator={false}>
-        <FilterBar
-          title={lang.t('recentOTDate')}
-          onFilterPress={openModal}
-          theme={theme}
-          activeFilters={activeFilters}
-          onRemoveFilter={removeFilter}
-        />
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+          }}>
+          <Text
+            style={{fontSize: 16, fontWeight: '600', color: theme.colors.text}}>
+            {'Danh sách phiếu OT'}
+          </Text>
+          <FilterIcon
+            width={22}
+            height={22}
+            onPress={() => setShowFilter(true)}
+          />
+        </View>
 
-        {/* Request List */}
-        <View style={{gap: 12, marginTop: 8}}>
-          {mockRequests.map((request, index) => (
+        {activeFilters.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{gap: 10, marginBottom: 12}}>
+            {activeFilters.map(f => (
+              <FilterChip
+                key={f.key}
+                mainText={f.mainText}
+                subText={f.subText}
+                theme={theme}
+                onRemove={() => handleRemoveFilter(f.key)}
+              />
+            ))}
+          </ScrollView>
+        )}
+
+        <View style={{gap: 12}}>
+          {displayed.map((r, i) => (
             <OTRequest
-              key={index}
-              avatarSource={request.avatarSource}
-              name={request.name}
-              position={request.position}
-              status={request.status}
-              code={request.code}
-              date={request.date}
-              time={request.time}
-              createdAt={request.createdAt}
-              onPress={() => handleRequestPress(request)}
+              key={i}
+              {...r}
+              onPress={() => {
+                setSelectedRequest(r);
+                setShowDetailModal(true);
+              }}
             />
           ))}
         </View>
       </ScrollView>
 
       <OTRequestFilterModal
-        visible={isModalVisible}
-        onClose={closeModal}
-        onApplyFilters={handleApplyFilters}
+        visible={showFilter}
+        onClose={() => setShowFilter(false)}
+        onApplyFilters={applyFilter}
       />
 
       <OTRequestDetailModal
         visible={showDetailModal}
-        onClose={handleCloseDetailModal}
+        onClose={() => setShowDetailModal(false)}
         request={selectedRequest}
         theme={theme}
         lang={lang}
-        isAdmin={true}
+        isAdmin
         onApprove={handleApprove}
         onReject={handleReject}
       />

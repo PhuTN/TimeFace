@@ -5,8 +5,10 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Linking,
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
+import { useNavigation } from '@react-navigation/native';
 
 export type Employee =
   | {
@@ -16,19 +18,42 @@ export type Employee =
       avatar: {uri: string} | number;
       lateCount: number;
       latePercent: number;
-      notePrefix?: string; // e.g. 'Số phút đi trễ:' | 'Số phút về sớm:'
+      notePrefix?: string;
+      phone?: string;
+      email?: string;
     }
   | {
       id: number | string;
       name: string;
       role: string;
       avatar: {uri: string} | number;
-      status: string; // e.g. 'Xin nghỉ lý do: Bị cảm sốt'
+      status: string;
+      phone?: string;
+      email?: string;
     };
 
 type Props = {employees: Employee[]; title?: string};
 
 export default function EmployeeList({employees, title}: Props) {
+  const navigation = useNavigation<any>();
+
+  const callPhone = (phone?: string) => {
+    if (!phone) return;
+    Linking.openURL(`tel:${phone}`);
+  };
+
+  const sendMail = (email?: string) => {
+    if (!email) return;
+    Linking.openURL(`mailto:${email}`);
+  };
+
+  const goToChat = (emp: any) => {
+    navigation.navigate('ChatRoom', {
+      userId: emp.id,
+      name: emp.name,
+    });
+  };
+
   return (
     <View style={styles.wrapper}>
       {/* Header pill */}
@@ -59,22 +84,68 @@ export default function EmployeeList({employees, title}: Props) {
         <View key={emp.id} style={styles.card}>
           {/* ---- TOP AREA ---- */}
           <View style={styles.topArea}>
-            <Image source={emp.avatar} style={styles.avatar} />
+            <Image
+              source={
+                emp.avatar
+                  ? typeof emp.avatar === 'string'
+                    ? {uri: emp.avatar}
+                    : emp.avatar
+                  : {
+                      uri: 'https://cdn-icons-png.flaticon.com/512/6858/6858504.png',
+                    }
+              }
+              style={styles.avatar}
+            />
+
             <View style={{flex: 1}}>
               <Text style={styles.name}>{emp.name}</Text>
               <Text style={styles.role}>{emp.role}</Text>
             </View>
 
+            {/* ACTIONS */}
             <View style={styles.actions}>
-              {['phone', 'message-square', 'mail'].map((ic, i) => (
-                <TouchableOpacity key={i} style={styles.actionBtn}>
-                  <Feather name={ic as any} size={16} color="#1A1A1A" />
-                </TouchableOpacity>
-              ))}
+              {/* 📞 CALL */}
+              <TouchableOpacity
+                style={[
+                  styles.actionBtn,
+                  !emp.phone && styles.actionDisabled,
+                ]}
+                disabled={!emp.phone}
+                onPress={() => callPhone(emp.phone)}
+              >
+                <Feather
+                  name="phone"
+                  size={14}
+                  color={emp.phone ? '#1A1A1A' : '#9CA3AF'}
+                />
+              </TouchableOpacity>
+
+              {/* 💬 CHAT → NAVIGATE */}
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => goToChat(emp)}
+              >
+                <Feather name="message-square" size={14} color="#1A1A1A" />
+              </TouchableOpacity>
+
+              {/* ✉️ MAIL */}
+              <TouchableOpacity
+                style={[
+                  styles.actionBtn,
+                  !emp.email && styles.actionDisabled,
+                ]}
+                disabled={!emp.email}
+                onPress={() => sendMail(emp.email)}
+              >
+                <Feather
+                  name="mail"
+                  size={14}
+                  color={emp.email ? '#1A1A1A' : '#9CA3AF'}
+                />
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* divider */}
           <View style={styles.midDivider} />
 
           {/* ---- BOTTOM NOTE ---- */}
@@ -83,7 +154,8 @@ export default function EmployeeList({employees, title}: Props) {
               <Text style={styles.stats}>
                 {(emp.notePrefix ?? 'Số phút đi trễ:') + ' '}
                 <Text style={styles.hl}>{emp.lateCount}</Text>. Chiếm{' '}
-                <Text style={styles.hl}>{emp.latePercent}%</Text> thời gian ca làm việc
+                <Text style={styles.hl}>{emp.latePercent}%</Text> thời gian ca làm
+                việc
               </Text>
             ) : (
               (() => {
@@ -186,27 +258,37 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 12,
   },
-  avatar: {width: 56, height: 56, borderRadius: 28, marginRight: 12},
-  name: {fontSize: 18, fontWeight: '700', color: '#1A1A1A'},
-  role: {fontSize: 14, color: '#6B7280', marginTop: 2},
 
-  actions: {flexDirection: 'row', gap: 10, marginLeft: 10},
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 10,
+  },
+
+  name: {fontSize: 16, fontWeight: '700', color: '#1A1A1A'},
+  role: {fontSize: 13, color: '#6B7280', marginTop: 2},
+
+  actions: {flexDirection: 'row', gap: 6, marginLeft: 8},
   actionBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: BORDER,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  actionDisabled: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
+  },
 
   midDivider: {height: 1, backgroundColor: '#E5E7EB'},
 
   bottomArea: {paddingHorizontal: 12, paddingVertical: 10},
   stats: {fontSize: 14, color: '#6B7280', lineHeight: 20},
-  leave: {fontSize: 16, color: '#6B7280', lineHeight: 22, fontWeight: '600'},
+  leave: {fontSize: 15, color: '#6B7280', lineHeight: 22, fontWeight: '600'},
   hl: {color: '#E11D48', fontWeight: '700'},
 });
-

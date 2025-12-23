@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,10 @@ import {
   TextInputProps,
 } from 'react-native';
 
-type Props = {
+type InputType = 'text' | 'number' | 'money';
+
+/* ================== EDITABLE ================== */
+type EditableProps = {
   label: string;
   value: string;
   onChangeText: (text: string) => void;
@@ -20,23 +23,70 @@ type Props = {
   numberOfLines?: number;
   containerStyle?: StyleProp<ViewStyle>;
   inputProps?: TextInputProps;
-  editable?: boolean; // ⭐ ADD
+  editable?: true;
+  type?: InputType;   // ⭐ NEW
 };
 
-const LabeledTextInput: React.FC<Props> = ({
+/* ================= READONLY ================== */
+type ReadonlyProps = {
+  label: string;
+  value: string;
+  placeholder?: string;
+  theme: any;
+  multiline?: boolean;
+  numberOfLines?: number;
+  containerStyle?: StyleProp<ViewStyle>;
+  inputProps?: TextInputProps;
+  editable: false;
+  type?: InputType;   // ⭐ có nhưng không dùng
+};
+
+type Props = EditableProps | ReadonlyProps;
+
+export default function LabeledTextInput({
   label,
   value,
-  onChangeText,
   placeholder,
   theme,
   multiline = false,
   numberOfLines,
   containerStyle,
   inputProps,
-  editable = true, // ⭐ DEFAULT
-}) => {
+  editable = true,
+  type = 'text',
+  ...rest
+}: Props) {
   const S = themedStyles(theme);
   const {style: inputStyle, ...restInputProps} = inputProps ?? {};
+
+  // ⭐ Handler cho type money / number
+  const formatMoney = useCallback((num: string) => {
+    const cleaned = num.replace(/[^\d]/g, '');
+    if (!cleaned) return '';
+
+    return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }, []);
+
+  const onChangeText =
+    editable && 'onChangeText' in rest
+      ? (text: string) => {
+          let final = text;
+
+          if (type === 'number') {
+            final = text.replace(/[^\d]/g, '');
+          }
+
+          if (type === 'money') {
+            final = formatMoney(text);
+          }
+
+          rest.onChangeText(final);
+        }
+      : undefined;
+
+  // ⭐ value hiển thị: nếu type = money → format luôn
+  const displayValue =
+    type === 'money' ? formatMoney(value ?? '') : value ?? '';
 
   return (
     <View style={[S.field, containerStyle]}>
@@ -46,20 +96,23 @@ const LabeledTextInput: React.FC<Props> = ({
         style={[
           S.inputBox,
           multiline ? S.multilineBox : null,
-          !editable && S.disabledBox, // ⭐ style disable
+          !editable && S.disabledBox,
         ]}>
         <TextInput
-          value={value}
+          value={displayValue}
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={theme.colors.placeholder}
           multiline={multiline}
           numberOfLines={multiline ? numberOfLines ?? 3 : 1}
-          editable={editable} // ⭐ Enable/Disable
+          editable={editable}
+          keyboardType={
+            type === 'number' || type === 'money' ? 'numeric' : 'default'
+          }
           style={[
             S.input,
             multiline ? S.multilineInput : null,
-            !editable && S.disabledInput, // ⭐ input mờ
+            !editable && S.disabledInput,
             inputStyle as StyleProp<TextStyle>,
           ]}
           {...restInputProps}
@@ -67,7 +120,9 @@ const LabeledTextInput: React.FC<Props> = ({
       </View>
     </View>
   );
-};
+}
+
+/* ================== THEME ================== */
 
 const themedStyles = (theme: any) =>
   StyleSheet.create({
@@ -85,7 +140,6 @@ const themedStyles = (theme: any) =>
       justifyContent: 'center',
     },
 
-    // ⭐ Khi disable → nền xám nhẹ
     disabledBox: {
       backgroundColor: '#E5E7EB',
       borderColor: '#D1D5DB',
@@ -97,7 +151,6 @@ const themedStyles = (theme: any) =>
 
     input: {fontSize: 16, color: theme.colors.text},
 
-    // ⭐ Text mờ khi disable
     disabledInput: {
       color: '#6B7280',
     },
@@ -107,5 +160,3 @@ const themedStyles = (theme: any) =>
       minHeight: 80,
     },
   });
-
-export default React.memo(LabeledTextInput);

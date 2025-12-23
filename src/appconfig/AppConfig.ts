@@ -1,6 +1,7 @@
 // src/appconfig/AppConfig.ts
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { authStorage } from '../services/authStorage';
+import Config from 'react-native-config';
 
 
 export type AppConfigOptions = {
@@ -49,7 +50,7 @@ class AppConfig {
 
   private constructor() {
     this.cfg = {
-      apiUrl: 'https://photel.io.vn/api/', // đổi theo env của bạn
+      apiUrl: (Config.API_URL || 'https://befe.io.vn/api/'),
       appName: 'GOKUUNE',
       version: '1.0.0',
       debug: true,

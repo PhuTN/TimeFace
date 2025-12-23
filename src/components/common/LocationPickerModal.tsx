@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   TextInput,
@@ -9,11 +9,18 @@ import {
   StyleSheet,
   PermissionsAndroid,
   Platform,
-} from "react-native";
-import MapView, { Marker } from "react-native-maps";
-import Geolocation from "@react-native-community/geolocation"; // ⭐ cần cài lib này
-import { apiHandle } from "../../api/apihandle";
-import { MapEP } from "../../api/endpoint/Map";
+  Keyboard,
+} from 'react-native';
+
+import MapView, {
+  Marker,
+  PROVIDER_GOOGLE,
+  LatLng,
+} from 'react-native-maps';
+
+import Geolocation from '@react-native-community/geolocation';
+import {apiHandle} from '../../api/apihandle';
+import {MapEP} from '../../api/endpoint/Map';
 
 export default function LocationPickerModal({
   visible,
@@ -21,30 +28,71 @@ export default function LocationPickerModal({
   onClose,
   onConfirm,
 }) {
-  const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
+  const mapRef = useRef<MapView>(null);
+  const inputRef = useRef<TextInput>(null); // ✅ THÊM
 
-  const [marker, setMarker] = useState(
-    initialMarker ?? {
-      latitude: 10.76262,
-      longitude: 106.66017,
-    }
-  );
+  const [mapReady, setMapReady] = useState(false);
 
-  const [region, setRegion] = useState({
-    latitude: marker.latitude,
-    longitude: marker.longitude,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
+  const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  const [marker, setMarker] = useState<LatLng>({
+    latitude: initialMarker?.latitude ?? 10.76262,
+    longitude: initialMarker?.longitude ?? 106.66017,
   });
 
-  // 🔍 SEARCH
-  const searchLocation = async (text) => {
-    setQuery(text);
-    if (!text.trim()) return setSuggestions([]);
+  const [pickedAddress, setPickedAddress] = useState<string | null>(null);
 
-    const { status, res } = await apiHandle
-      .callApi(MapEP.Search, { q: text })
+  /* =============================
+     OPEN MODAL → RESET
+  ==============================*/
+  useEffect(() => {
+    if (!visible) return;
+
+    const coord = initialMarker ?? {
+      latitude: 10.76262,
+      longitude: 106.66017,
+    };
+
+    setMarker(coord);
+    setPickedAddress(null);
+    setQuery('');
+    setSuggestions([]);
+    setMapReady(false);
+  }, [visible, initialMarker]);
+
+  /* =============================
+     MOVE MAP WHEN READY
+  ==============================*/
+  useEffect(() => {
+    if (!mapReady) return;
+
+    requestAnimationFrame(() => {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: marker.latitude,
+          longitude: marker.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        300,
+      );
+    });
+  }, [mapReady]);
+
+  /* =============================
+     SEARCH
+  ==============================*/
+  const searchLocation = async (text: string) => {
+    setQuery(text);
+
+    if (!text.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    const {status, res} = await apiHandle
+      .callApi(MapEP.Search, {q: text})
       .asPromise();
 
     if (!status.isError) {
@@ -52,59 +100,113 @@ export default function LocationPickerModal({
     }
   };
 
-  // 📍 CHỌN GỢI Ý
-  const choosePlace = async (place_id) => {
-    const { status, res } = await apiHandle
-      .callApi(MapEP.Detail, { place_id })
+  /* =============================
+     CHOOSE PLACE (FIX Ở ĐÂY)
+  ==============================*/
+  const choosePlace = async (place_id: string) => {
+    const {res} = await apiHandle
+      .callApi(MapEP.Detail, {place_id})
       .asPromise();
 
-    if (!status.isError && res?.data) {
-      const { lat, lng, address } = res.data;
+    if (!res?.data) return;
 
-      const m = { latitude: lat, longitude: lng, address };
-      setMarker(m);
-      setRegion({ ...region, latitude: lat, longitude: lng });
+    const coord = {
+      latitude: Number(res.data.lat),
+      longitude: Number(res.data.lng),
+    };
 
-      setQuery(address);
-      setSuggestions([]);
-    }
-  };
+    setMarker(coord);
+    setPickedAddress(res.data.address ?? null);
+    setQuery(res.data.address ?? '');
+    setSuggestions([]);
 
-  // 🖱 CLICK MAP
-  const handleMapPress = (e) => {
-    const { latitude, longitude } = e.nativeEvent.coordinate;
-    setMarker({ latitude, longitude, address: null });
-  };
+    // ✅ FIX: focus lại search
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
 
-  // 📌 LẤY VỊ TRÍ HIỆN TẠI
-  const getCurrentLocation = async () => {
-    try {
-      if (Platform.OS === "android") {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) return;
-      }
-
-      Geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-
-          const m = { latitude, longitude, address: null };
-
-          setMarker(m);
-          setRegion({
-            ...region,
-            latitude,
-            longitude,
-          });
+    requestAnimationFrame(() => {
+      mapRef.current?.animateToRegion(
+        {
+          ...coord,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
         },
-        (err) => console.log("Location error:", err),
-        { enableHighAccuracy: true, timeout: 15000 }
+        300,
       );
-    } catch (error) {
-      console.log("Location error:", error);
+    });
+  };
+
+  /* =============================
+     CLICK MAP
+  ==============================*/
+  const handleMapPress = (e: any) => {
+    console.log("EE",e)
+     Keyboard.dismiss();          // ✅ QUAN TRỌNG
+  inputRef.current?.blur();   // ✅ QUAN TRỌNG
+    const coord = e.nativeEvent.coordinate;
+
+    setMarker(coord);
+    setPickedAddress(null);
+
+    requestAnimationFrame(() => {
+      mapRef.current?.animateToRegion(
+        {
+          ...coord,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        200,
+      );
+    });
+  };
+
+  /* =============================
+     CURRENT LOCATION
+  ==============================*/
+  const getCurrentLocation = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      );
+      if (granted !== PermissionsAndroid.RESULTS.GRANTED) return;
     }
+
+    Geolocation.getCurrentPosition(
+      pos => {
+        const coord = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        };
+
+        setMarker(coord);
+        setPickedAddress(null);
+
+        requestAnimationFrame(() => {
+          mapRef.current?.animateToRegion(
+            {
+              ...coord,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            },
+            300,
+          );
+        });
+      },
+      err => console.log('❌ GPS error:', err),
+      {enableHighAccuracy: false, timeout: 30000},
+    );
+  };
+
+  /* =============================
+     CONFIRM
+  ==============================*/
+  const handleConfirm = () => {
+    onConfirm({
+      latitude: marker.latitude,
+      longitude: marker.longitude,
+      address: pickedAddress,
+    });
   };
 
   return (
@@ -113,25 +215,38 @@ export default function LocationPickerModal({
         <View style={styles.box}>
           <Text style={styles.title}>Chọn vị trí công ty</Text>
 
-          {/* Search + Suggest */}
-          <View style={{ position: "relative", marginBottom: 6 }}>
+          {/* SEARCH */}
+          <View style={{position: 'relative', marginBottom: 6}}>
             <TextInput
+              ref={inputRef} // ✅ GẮN REF
               placeholder="Nhập để tìm kiếm…"
               value={query}
               onChangeText={searchLocation}
               style={styles.search}
             />
 
+            {query.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  setQuery('');
+                  setSuggestions([]);
+                  setPickedAddress(null);
+                }}
+                style={styles.clearBtn}>
+                <Text style={{fontSize: 16, color: '#999'}}>✕</Text>
+              </TouchableOpacity>
+            )}
+
             {suggestions.length > 0 && (
               <FlatList
+              
                 style={styles.suggestBox}
                 data={suggestions}
-                keyExtractor={(i) => i.place_id}
-                renderItem={({ item }) => (
+                keyExtractor={(i: any) => i.place_id}
+                renderItem={({item}: any) => (
                   <TouchableOpacity
                     style={styles.suggestItem}
-                    onPress={() => choosePlace(item.place_id)}
-                  >
+                    onPress={() => choosePlace(item.place_id)}>
                     <Text>{item.description}</Text>
                   </TouchableOpacity>
                 )}
@@ -140,23 +255,29 @@ export default function LocationPickerModal({
           </View>
 
           {/* MAP */}
-          <View>
-            <MapView style={styles.map} region={region} onPress={handleMapPress}>
-              {marker && (
-                <Marker
-                  draggable
-                  coordinate={marker}
-                  onDragEnd={(e) => {
-                    const { latitude, longitude } = e.nativeEvent.coordinate;
-                    setMarker({ ...marker, latitude, longitude });
-                  }}
-                />
-              )}
-            </MapView>
+          <View onLayout={() => !mapReady && setMapReady(true)}>
+            {mapReady && (
+              <MapView
+                ref={mapRef}
+                provider={PROVIDER_GOOGLE}
+                style={styles.map}
+                initialRegion={{
+                  latitude: marker.latitude,
+                  longitude: marker.longitude,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+                onPress={handleMapPress}>
+                <Marker coordinate={marker} draggable />
+              </MapView>
+            )}
 
-            {/* ⭐ BUTTON LẤY VỊ TRÍ HIỆN TẠI */}
-            <TouchableOpacity style={styles.myLocationBtn} onPress={getCurrentLocation}>
-              <Text style={{ color: "#fff", fontWeight: "600" }}>Vị trí của tôi</Text>
+            <TouchableOpacity
+              style={styles.myLocationBtn}
+              onPress={getCurrentLocation}>
+              <Text style={{color: '#fff', fontWeight: '600'}}>
+                Vị trí của tôi
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -166,10 +287,7 @@ export default function LocationPickerModal({
               <Text style={styles.btnText}>Hủy</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.btnOk}
-              onPress={() => onConfirm(marker)}
-            >
+            <TouchableOpacity style={styles.btnOk} onPress={handleConfirm}>
               <Text style={styles.btnText}>Xác nhận</Text>
             </TouchableOpacity>
           </View>
@@ -179,87 +297,90 @@ export default function LocationPickerModal({
   );
 }
 
+/* =============================
+   STYLES
+==============================*/
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
     padding: 12,
   },
   box: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 14,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   title: {
-    textAlign: "center",
+    textAlign: 'center',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
     paddingVertical: 10,
   },
   search: {
-    backgroundColor: "#f8f8f8",
+    backgroundColor: '#f8f8f8',
     padding: 10,
+    paddingRight: 36,
     marginHorizontal: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
   },
-
+  clearBtn: {
+    position: 'absolute',
+    right: 22,
+    top: 12,
+  },
   suggestBox: {
-    position: "absolute",
+    position: 'absolute',
     top: 50,
     left: 12,
     right: 12,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 10,
     maxHeight: 200,
     borderWidth: 1,
-    borderColor: "#eee",
+    borderColor: '#eee',
     zIndex: 200,
     elevation: 6,
   },
-
   suggestItem: {
     padding: 10,
     borderBottomWidth: 1,
-    borderColor: "#eee",
+    borderColor: '#eee',
   },
-
   map: {
     height: 380,
     marginTop: 10,
   },
-
-  /* ⭐ Button lấy vị trí hiện tại */
   myLocationBtn: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 20,
     right: 20,
-    backgroundColor: "#007AFF",
+    backgroundColor: '#007AFF',
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 10,
     elevation: 5,
   },
-
   row: {
-    flexDirection: "row",
+    flexDirection: 'row',
   },
   btnCancel: {
     flex: 1,
     padding: 14,
-    backgroundColor: "#999",
-    alignItems: "center",
+    backgroundColor: '#999',
+    alignItems: 'center',
   },
   btnOk: {
     flex: 1,
     padding: 14,
-    backgroundColor: "#007AFF",
-    alignItems: "center",
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
   },
   btnText: {
-    color: "#fff",
-    fontWeight: "600",
+    color: '#fff',
+    fontWeight: '600',
   },
 });

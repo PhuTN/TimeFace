@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Image,
   StyleSheet,
@@ -7,11 +7,14 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { navigationRef } from '../../navigation/NavigationService';
-import { authStorage } from '../../services/authStorage';
-
+import {navigationRef} from '../../navigation/NavigationService';
+import {authStorage} from '../../services/authStorage';
+import Toast from 'react-native-toast-message';
+import {apiHandle} from '../../api/apihandle';
+import {User} from '../../api/endpoint/User';
+import messaging from '@react-native-firebase/messaging';
 type Props = {
   activeIndex: number;
   onPress: (index: number) => void;
@@ -30,9 +33,9 @@ const CENTER_ICON_INACTIVE = require('../../assets/Footer/Icon2.png');
 const CENTER_SIZE = 68;
 const CENTER_RADIUS = CENTER_SIZE / 2;
 
-export default function Footer({ activeIndex, onPress }: Props) {
+export default function Footer({activeIndex, onPress}: Props) {
   const insets = useSafeAreaInsets();
-
+  const [unread, setUnread] = useState(0);
   const scales = useRef([
     new Animated.Value(1),
     new Animated.Value(1),
@@ -44,49 +47,98 @@ export default function Footer({ activeIndex, onPress }: Props) {
   useEffect(() => {
     scales.forEach((val, index) => {
       Animated.spring(val, {
-        toValue: index === activeIndex ? 1.2 : 1,
+        toValue: index === activeIndex ? 1.08 : 1,
+
         friction: 5,
         useNativeDriver: true,
       }).start();
     });
   }, [activeIndex]);
 
+  const fetchNotifications = async (source: string) => {
+    try {
+      console.log(`📥 [NOTI] Fetch notifications (${source})`);
+
+      const res = await apiHandle.callApi(User.GetMyNotifications).asPromise();
+
+      const unreadCount = res?.res?.unread_count ?? 0;
+
+      console.log(
+        `📦 [NOTI] Notifications (${source})`,
+        'unread =',
+        unreadCount,
+        res?.res?.data,
+      );
+
+      setUnread(unreadCount);
+    } catch (err) {
+      console.log(`❌ [NOTI] Fetch failed (${source}):`, err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications('app_start');
+  }, []);
+
+  useEffect(() => {
+    console.log('🔔 [NOTI] Listen Firebase foreground');
+
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('📩 [NOTI] Firebase message:', remoteMessage);
+
+      const title = remoteMessage.notification?.title || 'Thông báo';
+      const body = '';
+
+      // 👉 1️⃣ Toast
+      Toast.show({
+        type: 'info',
+        text1: title,
+        text2: body,
+        position: 'top',
+      });
+
+      // 👉 2️⃣ Reload notifications
+      await fetchNotifications('firebase_push');
+    });
+
+    return () => unsubscribe();
+  }, []);
   const handlePress = async (index: number) => {
-  onPress(index);
+    onPress(index);
 
-  if (!navigationRef.isReady()) return;
+    if (!navigationRef.isReady()) return;
 
-  // ⭐ Load user từ authStorage
-  const user = await authStorage.getUser();
-  const role = user?.role || 'user';
+    // ⭐ Load user từ authStorage
+    const user = await authStorage.getUser();
+    const role = user?.role || 'user';
 
-  switch (index) {
-    case 0:
-      navigationRef.navigate('Home');
-      break;
+    switch (index) {
+      case 0:
+        navigationRef.navigate('Home');
+        break;
 
-    case 1: 
-      // ⭐ Nếu admin → Management
-      if (role === 'admin') {
-        navigationRef.navigate('Management');
-      } else {
-        navigationRef.navigate('Features');
-      }
-      break;
+      case 1:
+        // ⭐ Nếu admin → Management
+        if (role === 'admin') {
+          navigationRef.navigate('Management');
+        } else {
+          navigationRef.navigate('Features');
+        }
+        break;
 
-    case 3:
-      navigationRef.navigate('Settings');
-      break;
+      case 3:
+        navigationRef.navigate('Settings');
+        break;
 
-    case 2:
-      navigationRef.navigate('NotificationSender');
-      break;
+      case 2:
+        navigationRef.navigate('EmployeeAttendance');
+        break;
 
-    default:
-      navigationRef.navigate('NotificationSender');
-      break;
-  }
-};
+      default:
+        navigationRef.navigate('Notification');
+        break;
+    }
+  };
 
   return (
     <View style={styles.root}>
@@ -96,17 +148,12 @@ export default function Footer({ activeIndex, onPress }: Props) {
           {
             paddingBottom: 16 + insets.bottom,
           },
-        ]}
-      >
+        ]}>
         <View pointerEvents="none" style={styles.centerBorder} />
 
         {/* ⭐ CENTER BUTTON */}
         <Animated.View
-          style={[
-            styles.centerButton,
-            { transform: [{ scale: scales[2] }] },
-          ]}
-        >
+          style={[styles.centerButton, {transform: [{scale: scales[2]}]}]}>
           <TouchableOpacity activeOpacity={0.9} onPress={() => handlePress(2)}>
             <Image
               source={
@@ -120,12 +167,11 @@ export default function Footer({ activeIndex, onPress }: Props) {
 
         <View style={styles.tabsRow}>
           {/* TAB 0 */}
-          <Animated.View style={{ transform: [{ scale: scales[0] }] }}>
+          <Animated.View style={{transform: [{scale: scales[0]}]}}>
             <TouchableOpacity
               style={styles.tab}
               onPress={() => handlePress(0)}
-              activeOpacity={0.8}
-            >
+              activeOpacity={0.8}>
               <Ionicons
                 name="home-outline"
                 size={32}
@@ -135,12 +181,11 @@ export default function Footer({ activeIndex, onPress }: Props) {
           </Animated.View>
 
           {/* ⭐ TAB 1 — chuyển sang màn FEATURES */}
-          <Animated.View style={{ transform: [{ scale: scales[1] }] }}>
+          <Animated.View style={{transform: [{scale: scales[1]}]}}>
             <TouchableOpacity
               style={styles.tab}
               onPress={() => handlePress(1)}
-              activeOpacity={0.8}
-            >
+              activeOpacity={0.8}>
               <Ionicons
                 name="checkbox-outline"
                 size={32}
@@ -152,12 +197,11 @@ export default function Footer({ activeIndex, onPress }: Props) {
           <View style={styles.tabSpacer} />
 
           {/* TAB 3 */}
-          <Animated.View style={{ transform: [{ scale: scales[3] }] }}>
+          <Animated.View style={{transform: [{scale: scales[3]}]}}>
             <TouchableOpacity
               style={styles.tab}
               onPress={() => handlePress(3)}
-              activeOpacity={0.8}
-            >
+              activeOpacity={0.8}>
               <Ionicons
                 name="settings-outline"
                 size={32}
@@ -166,18 +210,27 @@ export default function Footer({ activeIndex, onPress }: Props) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* TAB 4 */}
-          <Animated.View style={{ transform: [{ scale: scales[4] }] }}>
+          {/*  — NOTIFICATION */}
+          <Animated.View style={{transform: [{scale: scales[4]}]}}>
             <TouchableOpacity
               style={styles.tab}
               onPress={() => handlePress(4)}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name="notifications-outline"
-                size={32}
-                color={activeIndex === 4 ? ACTIVE : INACTIVE}
-              />
+              activeOpacity={0.8}>
+              <View style={{position: 'relative'}}>
+                <Ionicons
+                  name="notifications-outline"
+                  size={32}
+                  color={activeIndex === 4 ? ACTIVE : INACTIVE}
+                />
+
+                {unread > 0 && (
+                  <View style={styles.badge}>
+                    <Animated.Text style={styles.badgeText}>
+                      {unread > 99 ? '99+' : unread}
+                    </Animated.Text>
+                  </View>
+                )}
+              </View>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -192,6 +245,25 @@ const styles = StyleSheet.create({
     backgroundColor: SCREEN_BG,
     alignItems: 'center',
     overflow: 'visible',
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FF3B30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    zIndex: 10,
+  },
+
+  badgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   bar: {
@@ -210,7 +282,7 @@ const styles = StyleSheet.create({
         shadowColor: '#000',
         shadowOpacity: 0.18,
         shadowRadius: 18,
-        shadowOffset: { width: 0, height: -6 },
+        shadowOffset: {width: 0, height: -6},
       },
       android: {
         elevation: 0,
@@ -231,7 +303,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  tabSpacer: { width: 44 },
+  tabSpacer: {width: 44},
 
   centerButton: {
     position: 'absolute',

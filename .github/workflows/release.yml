@@ -1,4 +1,4 @@
-name: Android Release (Tag)
+name: Android Release (Tag - APK)
 
 on:
   push:
@@ -6,11 +6,15 @@ on:
       - 'v*.*.*'
 
 jobs:
-  android-release:
+  build-apk:
+    # ✅ BUILD TRÊN SELF-HOSTED (GIỐNG android-staging-firebase)
+    runs-on: self-hosted
+    environment: production
+    timeout-minutes: 60
     permissions:
       contents: write
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    outputs:
+      artifact-name: app-release-apk
 
     steps:
       - uses: actions/checkout@v4
@@ -30,29 +34,41 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Cache Gradle (wrapper + caches)
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
+      # (Optional) Inject model giống workflow staging (nếu bạn đang cần nhúng ONNX khi build)
+      - name: Write .env (production)
+        shell: bash
+        run: |
+          set -e
+          printf "API_URL=%s\n" "${{ secrets.API_URL }}" > .env
+          echo "[ENV] Using API_URL from GitHub Environment: production"
 
-      - name: Cache Gradle build-cache dir
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/caches/build-cache-1
-          key: gradle-buildcache-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            gradle-buildcache-${{ runner.os }}-
+      - name: Inject ONNX face model (not committed)
+        shell: bash
+        run: |
+          set -e
 
-      - name: Ensure gradlew executable
-        working-directory: android
-        run: chmod +x ./gradlew
+          # Đổi đường dẫn này thành nơi bạn lưu model trên máy self-hosted
+          MODEL_SRC="/home/wsladmin/timeface-models/glintr100.onnx"
 
-      # (Optional) Decode keystore if you want signing
+          if [ ! -f "$MODEL_SRC" ]; then
+            echo "Missing model at: $MODEL_SRC"
+            exit 1
+          fi
+
+          mkdir -p ios/TimeFace/models
+          mkdir -p android/app/src/main/assets
+          mkdir -p android/app/src/main/assets/models
+
+          cp "$MODEL_SRC" ios/TimeFace/models/glintr100.onnx
+          cp "$MODEL_SRC" android/app/src/main/assets/glintr100.onnx
+          cp "$MODEL_SRC" android/app/src/main/assets/models/glintr100.onnx
+
+          echo "Model injected:"
+          ls -lh ios/TimeFace/models/glintr100.onnx
+          ls -lh android/app/src/main/assets/glintr100.onnx
+          ls -lh android/app/src/main/assets/models/glintr100.onnx
+
+      # (Optional) Decode keystore nếu bạn muốn ký APK release
       - name: Decode keystore
         if: env.SHOULD_SIGN == 'true'
         env:
@@ -68,27 +84,39 @@ jobs:
           echo "SIGNING_STORE_PASSWORD=${{ secrets.ANDROID_STORE_PASSWORD }}" >> $GITHUB_ENV
           echo "SIGNING_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
 
-      # GỘP TASK + BẬT CACHE/PARALLEL
-      # Nếu chỉ cần 1 định dạng, giữ lại 1 task cho nhanh hơn nữa
-      - name: Build Release (APK + AAB, one shot)
+      - name: Build release APK (only)
         working-directory: android
         run: |
-          ./gradlew assembleRelease bundleRelease --build-cache --parallel --stacktrace
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace --build-cache --parallel assembleRelease
 
-      - name: Upload Release Artifacts
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-release
-          path: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
-      - name: Create GitHub Release
+  create-github-release:
+    needs: build-apk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-release-apk
+          path: ./dist
+
+      - name: List artifacts
+        run: ls -R ./dist
+
+      - name: Create GitHub Release (attach APK)
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+            ./dist/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

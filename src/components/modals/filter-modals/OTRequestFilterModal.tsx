@@ -1,18 +1,22 @@
 import React, {useEffect, useState} from 'react';
-import {View, StyleSheet, ScrollView} from 'react-native';
+import {View, StyleSheet, ScrollView, Platform} from 'react-native';
 import {useUIFactory} from '../../../ui/factory/useUIFactory';
-import {
-  makeApprovalOptions,
-  makeDepartmentOptions,
-  makeSortingOptions,
-} from '../../../fake_data/Dien/fake_data';
+
 import LabeledDate from '../../common/LabeledDate';
 import LabeledSelect from '../../common/LabeledSelect';
 import LabeledTextInput from '../../common/LabeledTextInput';
 import ButtonFilter from '../../common/ButtonFilter';
 import BottomSheetModal from '../../common/BottomSheetModal';
-import type {Option} from '../../../types/common';
 
+import type {Option} from '../../../types/common';
+import {apiHandle} from '../../../api/apihandle';
+import {DepartmentEP} from '../../../api/endpoint/Department';
+import {
+  makeApprovalOptions,
+  makeSortingOptions,
+} from '../../../fake_data/Dien/fake_data';
+
+/* ===================== TYPES ===================== */
 type OTRequestFilterModalProps = {
   visible: boolean;
   onClose: () => void;
@@ -25,11 +29,12 @@ export type OTRequestFilters = {
   positionName: string;
   department: Option | null;
   approvalStatus: Option | null;
-  createdDate: Date;
-  otDate: Date;
+  createdDate: Date | null;
+  otDate: Date | null;
   sortBy: Option | null;
 };
 
+/* ===================== COMPONENT ===================== */
 export default function OTRequestFilterModal({
   visible,
   onClose,
@@ -37,10 +42,14 @@ export default function OTRequestFilterModal({
 }: OTRequestFilterModalProps) {
   const {loading, theme, lang} = useUIFactory();
 
+  /* ---------- OPTIONS ---------- */
   const [approvals, setApprovals] = useState<Option[]>([]);
-  const [departments, setDepartments] = useState<Option[]>([]);
   const [sortings, setSortings] = useState<Option[]>([]);
+  const [departments, setDepartments] = useState<Option[]>([
+    {value: 'all', label: '—'},
+  ]);
 
+  /* ---------- VALUES ---------- */
   const [approvalStatus, setApprovalStatus] = useState<Option | null>(null);
   const [department, setDepartment] = useState<Option | null>(null);
   const [sortBy, setSortBy] = useState<Option | null>(null);
@@ -49,16 +58,41 @@ export default function OTRequestFilterModal({
   const [employeeName, setEmployeeName] = useState('');
   const [positionName, setPositionName] = useState('');
 
-  const [createdDate, setCreatedDate] = useState<Date>(new Date());
-  const [otDate, setOtDate] = useState<Date>(new Date());
+  const [createdDate, setCreatedDate] = useState<Date | null>(null);
+  const [otDate, setOtDate] = useState<Date | null>(null);
 
+  /* ===================== LOAD STATIC OPTIONS ===================== */
   useEffect(() => {
     if (!lang) return;
     setApprovals(makeApprovalOptions(lang));
-    setDepartments(makeDepartmentOptions(lang));
     setSortings(makeSortingOptions(lang));
   }, [lang]);
 
+  /* ===================== LOAD DEPARTMENTS (REAL API) ===================== */
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const {status, res} = await apiHandle
+          .callApi(DepartmentEP.GetAll)
+          .asPromise();
+
+        if (!status.isError && res?.data) {
+          const list: Option[] = res.data.map((d: any) => ({
+            value: d._id,
+            label: d.name,
+          }));
+
+          setDepartments([{value: 'all', label: '—'}, ...list]);
+        }
+      } catch (e) {
+        console.log('[LOAD DEPARTMENTS ERROR]', e);
+      }
+    };
+
+    loadDepartments();
+  }, []);
+
+  /* ===================== DEFAULT SELECT ===================== */
   useEffect(() => {
     if (approvals.length && !approvalStatus) setApprovalStatus(approvals[0]);
   }, [approvals, approvalStatus]);
@@ -71,22 +105,24 @@ export default function OTRequestFilterModal({
     if (sortings.length && !sortBy) setSortBy(sortings[0]);
   }, [sortings, sortBy]);
 
+  /* ===================== GUARD ===================== */
   if (loading || !theme || !lang || !approvalStatus || !department || !sortBy) {
     return null;
   }
 
   const S = themedStyles(theme);
 
+  /* ===================== HANDLERS ===================== */
   const handleClearFilters = () => {
     setTicketCode('');
     setEmployeeName('');
     setPositionName('');
-    setApprovalStatus(approvals[0]);
-    setDepartment(departments[0]);
-    setSortBy(sortings[0]);
-    const d = new Date();
-    setCreatedDate(d);
-    setOtDate(d);
+    setApprovalStatus(null);
+    setDepartment(null);
+    setSortBy(null);
+
+    setCreatedDate(null);
+    setOtDate(null);
   };
 
   const handleApplyFilters = () => {
@@ -101,33 +137,27 @@ export default function OTRequestFilterModal({
       sortBy,
     };
 
-    console.log('Applied filters:', filters);
     onApplyFilters?.(filters);
     onClose();
   };
 
+  /* ===================== UI ===================== */
   return (
-    <BottomSheetModal visible={visible} onClose={onClose} maxHeightRatio={0.9}>
+    <BottomSheetModal visible={visible} onClose={onClose} maxHeightRatio={0.92}>
       <View
         style={[
           S.container,
-          {backgroundColor: theme.colors.background,
-            borderTopColor: theme.colors.contrastBackground,
-            borderTopWidth: 1,
-            borderLeftColor: theme.colors.contrastBackground,
-            borderLeftWidth: 1,
-            borderRightColor: theme.colors.contrastBackground,
-            borderRightWidth: 1,
+          {
+            backgroundColor: theme.colors.background,
+            borderColor: theme.colors.contrastBackground,
+            borderWidth: 1,
           },
         ]}>
         <ScrollView
-          contentContainerStyle={{
-            padding: theme.spacing(2),
-            paddingBottom: theme.spacing(3),
-          }}
+          contentContainerStyle={S.content}
           showsVerticalScrollIndicator={false}>
           <View style={S.card}>
-            {/* Row 1: Mã phiếu (half width) */}
+            {/* ROW 1 */}
             <Row>
               <View style={{flex: 1}}>
                 <LabeledTextInput
@@ -141,7 +171,7 @@ export default function OTRequestFilterModal({
               <View style={{flex: 1}} />
             </Row>
 
-            {/* Row 2: Tên nhân viên, Tên chức vụ */}
+            {/* ROW 2 */}
             <Row>
               <LabeledTextInput
                 label={lang.t('employee_name_label')}
@@ -159,7 +189,7 @@ export default function OTRequestFilterModal({
               />
             </Row>
 
-            {/* Row 3: Phòng ban, Trạng thái duyệt */}
+            {/* ROW 3 */}
             <Row>
               <LabeledSelect
                 label={lang.t('department_label')}
@@ -177,7 +207,7 @@ export default function OTRequestFilterModal({
               />
             </Row>
 
-            {/* Row 4: Ngày tạo phiếu, Ngày OT */}
+            {/* ROW 4 */}
             <Row>
               <LabeledDate
                 label={lang.t('created_date_label')}
@@ -193,7 +223,7 @@ export default function OTRequestFilterModal({
               />
             </Row>
 
-            {/* Row 5: Sắp xếp bởi (full width) */}
+            {/* ROW 5 */}
             <Row>
               <LabeledSelect
                 label={lang.t('sort_by_label')}
@@ -204,17 +234,17 @@ export default function OTRequestFilterModal({
               />
             </Row>
 
-            {/* Actions */}
+            {/* ACTIONS */}
             <View style={S.actions}>
               <ButtonFilter
                 text={lang.t('clear_filters')}
-                textColor="#000000"
+                textColor="#000"
                 backgroundColor="#E3F4FF"
                 onPress={handleClearFilters}
               />
               <ButtonFilter
                 text={lang.t('apply_filters')}
-                textColor="#FFFFFF"
+                textColor="#FFF"
                 backgroundColor="#6A96EE"
                 onPress={handleApplyFilters}
               />
@@ -226,6 +256,7 @@ export default function OTRequestFilterModal({
   );
 }
 
+/* ===================== HELPERS ===================== */
 function Row({children}: {children: React.ReactNode}) {
   return (
     <View
@@ -246,6 +277,10 @@ const themedStyles = (theme: any) =>
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       overflow: 'hidden',
+    },
+    content: {
+      padding: theme.spacing(2),
+      paddingBottom: Platform.select({ios: 28, android: 20}),
     },
     card: {
       backgroundColor: theme.colors.background,

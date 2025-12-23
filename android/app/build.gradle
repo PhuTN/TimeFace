@@ -2,6 +2,14 @@ apply plugin: "com.android.application"
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+apply plugin: "com.google.gms.google-services"
+
+project.ext.envConfigFiles = [
+  debug: "../../.env.staging",
+  release: "../../.env.production",
+]
+
+apply from: file("../../node_modules/react-native-config/android/dotenv.gradle")
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -111,10 +119,13 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-
+    implementation "com.google.android.gms:play-services-maps:18.2.0"
+    implementation project(':react-native-config')
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
     }
 }
+
+

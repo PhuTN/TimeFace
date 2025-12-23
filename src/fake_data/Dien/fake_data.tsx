@@ -26,6 +26,7 @@ export type Employee = {
   departmentCode: string;
   position: string;
   createdAt: string;
+  profile_approved?: boolean;
 };
 
 

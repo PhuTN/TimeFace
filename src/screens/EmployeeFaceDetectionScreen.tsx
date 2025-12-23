@@ -1,283 +1,324 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   SafeAreaView,
-  View,
-  StyleSheet,
   ScrollView,
-  useWindowDimensions,
+  StyleSheet,
   Text,
   TouchableOpacity,
-} from "react-native";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useUIFactory } from "../ui/factory/useUIFactory";
-import HeaderBar from "../components/common/HeaderBar.tsx";
-import GradientButton from "../components/common/GradientButton";
-import { RootStackParamList } from "../navigation/AppNavigator";
-import MaskedView from "@react-native-masked-view/masked-view";
-import Svg, { Path as SvgPath } from "react-native-svg";
-import { Camera } from "react-native-vision-camera";
-import { useFaceDetectionHandle, FaceDetectionStep } from "../utils/FaceDetectionHandle";
-// === THÊM IMPORT CỦA SKIA ===
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {useUIFactory} from '../ui/factory/useUIFactory';
+import HeaderBar from '../components/common/HeaderBar';
+import {RootStackParamList} from '../navigation/AppNavigator';
+import MaskedView from '@react-native-masked-view/masked-view';
+import Svg, {Path as SvgPath} from 'react-native-svg';
+import {Camera} from 'react-native-vision-camera';
+import {useFaceDetectionHandle} from '../utils/FaceDetectionHandle';
+
 import {
   Canvas,
-  Path as SkiaPath,
+  LinearGradient,
+  PathOp,
   Skia,
-  LinearGradient, // Skia có component LinearGradient riêng
+  Path as SkiaPath,
   vec,
-  PathOp
-} from "@shopify/react-native-skia";
+} from '@shopify/react-native-skia';
 
-type StepKey = FaceDetectionStep;
-type StepDefinition = { key: StepKey; label: string };
+import {apiHandle} from '../api/apihandle';
+import {User} from '../api/endpoint/User';
+import Toast from 'react-native-toast-message';
+import {uploadSingle} from '../api/uploadApi';
 
-type Props = NativeStackScreenProps<RootStackParamList, "EmployeeFaceDetection">;
+import { getFaceIdFromFile, preloadFaceIdModel } from '../utils/face-id-utils';
 
-export default function EmployeeFaceDetectionScreen({ navigation }: Props) {
+type Props = NativeStackScreenProps<
+  RootStackParamList,
+  'EmployeeFaceDetection'
+>;
+
+export default function EmployeeFaceDetectionScreen({
+  navigation,
+  route,
+}: Props) {
   const { width } = useWindowDimensions();
-  // === ĐỊNH NGHĨA KÍCH THƯỚC OVAL MONG MUỐN ===
   const OVAL_WIDTH = width * 0.8;
   const OVAL_HEIGHT = OVAL_WIDTH * (4.5 / 3);
   const STROKE_WIDTH = 12;
+  const RING_GRADIENT = ['#2EF5D2', '#1E4DFF'];
+  const { type = 'check_in' } = route.params ?? {};
+  const { theme, lang } = useUIFactory();
+  const stepLabel =
+    lang?.t('face_step_put_face_into_frame') ?? 'Đưa khuôn mặt vào khung';
 
-  const RING_GRADIENT = ["#2EF5D2", "#1E4DFF"];
-  const BUTTON_GRADIENT = ["#BCD9FF", "#488EEB"];
-  const BUTTON_RADIUS = 12;
+  useEffect(() => {
+    preloadFaceIdModel().catch(() => { });
+  }, []);
 
-  const { loading, theme, lang } = useUIFactory();
-  const t = lang?.t;
-
-  const steps = useMemo<StepDefinition[]>(
-    () => [
-      { key: "frame", label: t?.("face_step_put_face_into_frame") ?? "Đưa khuôn mặt vào khung" },
-      { key: "smile", label: t?.("face_step_smile") ?? "Hãy mỉm cười" },
-      { key: "blink", label: t?.("face_step_blink") ?? "Hãy nháy mắt" },
-      { key: "waiting", label: t?.("face_step_waiting") ?? "Chờ nhận diện" },
-    ],
-    [t]
-  );
-
-  const stepMap = useMemo(
-    () => steps.reduce<Record<StepKey, StepDefinition>>((acc, s) => { acc[s.key] = s; return acc; }, {} as any),
-    [steps]
-  );
-
+  // camera
   const {
     cameraRef,
     device,
     hasPermission,
-    permissionStatus,
     isCameraActive,
     isCameraReady,
     frameProcessor,
+    handleFront,
+    refreshPermission,
     handlePutFaceIntoFrame: detectFaceInFrame,
     handleSmile: detectSmile,
     handleBlink: detectBlink,
-    refreshPermission,
-  } = useFaceDetectionHandle();
+  } = useFaceDetectionHandle({ preferredDevice: 'front' });
 
-  const permissionBlocked = permissionStatus === "denied" || permissionStatus === "restricted";
-  const cameraStatusMessage = useMemo(() => {
-    if (permissionBlocked) return "Allow camera access in settings to continue.";
-    if (!hasPermission) return "Waiting for camera permission...";
-    if (!device) return "No compatible camera found.";
-    if (!isCameraReady) return "Preparing camera...";
-    return "Camera is waking up...";
-  }, [device, hasPermission, isCameraReady, permissionBlocked]);
-
-  // Bước hiện tại (mặc định: frame)
-  const [currentStep, setCurrentStep] = useState<StepKey>("frame");
+  // flow
   const [flowAttempt, setFlowAttempt] = useState(0);
-  const [flowState, setFlowState] = useState<"idle" | "running" | "error" | "done">("idle");
+  const [flowState, setFlowState] = useState<
+    'idle' | 'running' | 'error' | 'done'
+  >('idle');
   const [flowError, setFlowError] = useState<string | null>(null);
-  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  // ⬇️ NEW: lưu thử thách (smile | blink) cho mỗi attempt
-  const challengeRef = useRef<"smile" | "blink">("smile");
-  const pickChallenge = useCallback(
-    () => (Math.random() < 0.5 ? "smile" : "blink"),
-    []
-  );
+  const retryRef = useRef<number | null>(null);
+
+  type StepKey = 'frame' | 'smile' | 'blink' | 'waiting';
+
+  const steps = useMemo(() => {
+    const t = lang?.t;
+    return {
+      frame: t?.('face_step_put_face_into_frame') ?? 'Đưa khuôn mặt vào khung',
+      smile: t?.('face_step_smile') ?? 'Hãy mỉm cười',
+      blink: t?.('face_step_blink') ?? 'Hãy nháy mắt',
+      waiting: t?.('face_step_waiting') ?? 'Chờ nhận diện',
+    } as Record<StepKey, string>;
+  }, [lang]);
+
+  const [currentStep, setCurrentStep] = useState<StepKey>('frame');
+
+  // random thử thách cho mỗi attempt
+  const challengeRef = useRef<'smile' | 'blink'>('smile');
+  const pickChallenge = useCallback(() => (Math.random() < 0.5 ? 'smile' : 'blink'), []);
 
   const startFlow = useCallback(() => {
     challengeRef.current = pickChallenge(); // chốt thử thách cho lần chạy này
-    setFlowAttempt(prev => prev + 1);
+    setFlowAttempt(p => p + 1);
   }, [pickChallenge]);
 
-  const cancelRetry = useCallback(() => {
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-      retryTimeoutRef.current = null;
-    }
-  }, []);
+  // const startFlow = useCallback(() => {
+  //   setFlowAttempt(p => p + 1);
+  // }, []);
 
-  const scheduleRetry = useCallback(
-    (delay = 1600) => {
-      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-      retryTimeoutRef.current = setTimeout(() => {
-        retryTimeoutRef.current = null;
-        if (hasPermission && isCameraReady && device) {
-          startFlow();
+  // submit checkin
+  const submitAttendance = useCallback(
+    async (faceEmbedding: Float32Array, imageUrl: string) => {
+      try {
+        const payload = {
+          type, // ✅ LẤY TỪ ROUTE: check_in | check_out
+          face_id: Array.from(faceEmbedding || []),
+          image: imageUrl,
+        };
+
+        const { status } = await apiHandle
+          .callApi(User.CheckAttendance, payload)
+          .asPromise();
+
+        if (status.isError) {
+          Toast.show({
+            type: 'error',
+            text1:
+              type === 'check_in' ? 'Check-in thất bại' : 'Check-out thất bại',
+            text2: status.errorMessage ?? 'Thử lại',
+          });
+
+          navigation.replace('EmployeeAttendance');
+          return;
         }
-      }, delay);
-    },
-    [device, hasPermission, isCameraReady, startFlow]
-  );
 
-  useEffect(() => () => cancelRetry(), [cancelRetry]);
+        Toast.show({
+          type: 'success',
+          text1:
+            type === 'check_in'
+              ? 'Check-in thành công'
+              : 'Check-out thành công',
+        });
 
-  const getErrorMessage = useCallback((reason?: string) => {
-    switch (reason) {
-      case "camera_not_ready":
-        return lang?.t('face_camera_not_ready');
-      case "face_not_centered":
-        return lang?.t('face_face_not_centered');
-      case "smile_not_detected":
-        return lang?.t('face_smile_not_detected');
-      case "blink_not_detected":
-        return lang?.t('face_blink_not_detected');
-      case "capture_failed":
-        return lang?.t('face_capture_failed');
-      default:
-        return null;
-    }
-  }, []);
-
-  const handleFlowFailure = useCallback(
-    (reason?: string, step?: StepKey, shouldRetry = true) => {
-      setFlowState("error");
-      const fallbackLabel = step ? stepMap[step]?.label : null;
-      setFlowError(getErrorMessage(reason) ?? fallbackLabel ?? null);
-      cancelRetry();
-      if (shouldRetry) {
-        scheduleRetry();
+        navigation.replace('EmployeeAttendance');
+      } catch {
+        Toast.show({
+          type: 'error',
+          text1: 'Lỗi hệ thống',
+        });
+        navigation.replace('EmployeeAttendance');
       }
     },
-    [getErrorMessage, scheduleRetry, stepMap]
+    [navigation, type],
   );
 
-  // ==== 4 hàm handle để bạn thêm logic camera sau ====
-  const handlePutFaceIntoFrame = useCallback(() => detectFaceInFrame(), [detectFaceInFrame]);
+  const fail = useCallback(
+    (reason?: string) => {
+      setFlowState('error');
+      setFlowError(
+        reason === 'faceid_error'
+          ? 'Không trích xuất được FaceID, vui lòng thử lại'
+          : 'Không nhận diện được khuôn mặt',
+      );
 
-  const handleSmile = useCallback(() => detectSmile(), [detectSmile]);
+      if (retryRef.current) clearTimeout(retryRef.current);
+      retryRef.current = setTimeout(() => {
+        retryRef.current = null;
+        navigation.replace('EmployeeAttendance'); // Fail -> về trước luôn
+      }, 1200) as any;
+    },
+    [navigation],
+  );
 
-  const handleBlink = useCallback(() => detectBlink(), [detectBlink]);
-
-  const handleWaiting = useCallback(() => {
-    // Placeholder: future submission logic can use captured frames.
-  }, []);
-  // ===================================================
-
+  // auto start
   useEffect(() => {
-    if (isCameraReady && hasPermission && device && flowAttempt === 0) {
+    if (flowAttempt === 0 && hasPermission && isCameraReady && device) {
       startFlow();
     }
-  }, [device, flowAttempt, hasPermission, isCameraReady, startFlow]);
+  }, [flowAttempt, hasPermission, isCameraReady, device, startFlow]);
 
+  // flow engine
   useEffect(() => {
-    if (!flowAttempt || !isCameraReady || !hasPermission || !device) return;
+    if (!flowAttempt || !hasPermission || !isCameraReady || !device) return;
 
     let cancelled = false;
 
-    const runFlow = async () => {
-      setFlowState("running");
+    const run = async () => {
+      setFlowState('running');
       setFlowError(null);
 
       // 1) Đưa mặt vào khung
-      setCurrentStep("frame");
-      const frameResult = await handlePutFaceIntoFrame();
+      setCurrentStep('frame');
+      const frameRes = await detectFaceInFrame?.();
       if (cancelled) return;
-      if (!frameResult?.ok) {
-        handleFlowFailure(frameResult?.reason, "frame", frameResult?.reason !== "camera_not_ready");
+      if (!frameRes?.ok) {
+        fail(frameRes?.reason ?? 'face_not_centered');
         return;
       }
 
-      // 2) Chọn NGẪU NHIÊN: "smile" hoặc "blink" và CHỈ chạy đúng bước đó
-      const which = challengeRef.current;              // "smile" | "blink"
+      // 2) Random smile hoặc blink (chỉ chạy 1 trong 2)
+      const which = challengeRef.current; // 'smile' | 'blink'
       setCurrentStep(which);
 
-      const result = which === "smile" ? await handleSmile() : await handleBlink();
+      const liveRes = which === 'smile' ? await detectSmile?.() : await detectBlink?.();
       if (cancelled) return;
-      if (!result?.ok) {
-        handleFlowFailure(result?.reason, which);
+      if (!liveRes?.ok) {
+        fail(liveRes?.reason ?? (which === 'smile' ? 'smile_not_detected' : 'blink_not_detected'));
         return;
       }
 
-      // 3) Waiting / kết thúc
-      setCurrentStep("waiting");
-      handleWaiting();
-      cancelRetry();
-      setFlowState("done");
+      // 3) Capture ảnh sau khi pass thử thách
+      setCurrentStep('waiting');
+      const f = await handleFront();
+      if (!f?.ok || !f?.uri) {
+        if (!cancelled) fail(f?.reason);
+        return;
+      }
+
+      // 4) FaceID + upload + submit (giữ logic cũ của bạn)
+      try {
+        const emb = await getFaceIdFromFile({ filePath: f.uri });
+
+        setSubmitting(true);
+        const uploadRes = await uploadSingle(f.uri, 'checkin');
+        setSubmitting(false);
+
+        if (!uploadRes?.url) {
+          if (!cancelled) fail('upload_error');
+          return;
+        }
+
+        if (!cancelled) {
+          setFlowState('done');
+          await submitAttendance(emb, uploadRes.url);
+        }
+      } catch {
+        if (!cancelled) fail('faceid_error');
+      }
     };
 
-    runFlow();
+    run();
     return () => {
       cancelled = true;
     };
   }, [
     flowAttempt,
-    isCameraReady,
     hasPermission,
+    isCameraReady,
     device,
-    handleBlink,
-    handleFlowFailure,
-    handlePutFaceIntoFrame,
-    handleSmile,
-    handleWaiting,
-    cancelRetry,
+    detectFaceInFrame,
+    detectSmile,
+    detectBlink,
+    handleFront,
+    fail,
+    submitAttendance,
   ]);
 
-  // === TẠO PATH CHO SKIA ===
-  // 1. Path cho nền xám bên trong
-
-  const { innerOvalPath, innerOvalSvgPath, outerOvalPath, dimOutsidePath } = useMemo(() => {
-    const innerRect = Skia.XYWHRect(STROKE_WIDTH / 2, STROKE_WIDTH / 2, OVAL_WIDTH - STROKE_WIDTH, OVAL_HEIGHT - STROKE_WIDTH);
+  // skia paths
+  const { innerOvalSvgPath, outerOvalPath, dimOutsidePath } = useMemo(() => {
     const inner = Skia.Path.Make();
-    inner.addOval(innerRect);
+    inner.addOval(
+      Skia.XYWHRect(
+        STROKE_WIDTH / 2,
+        STROKE_WIDTH / 2,
+        OVAL_WIDTH - STROKE_WIDTH,
+        OVAL_HEIGHT - STROKE_WIDTH,
+      ),
+    );
 
-    const outerRect = Skia.XYWHRect(STROKE_WIDTH / 2, STROKE_WIDTH / 2, OVAL_WIDTH - STROKE_WIDTH, OVAL_HEIGHT - STROKE_WIDTH);
     const outer = Skia.Path.Make();
-    outer.addOval(outerRect);
+    outer.addOval(
+      Skia.XYWHRect(
+        STROKE_WIDTH / 2,
+        STROKE_WIDTH / 2,
+        OVAL_WIDTH - STROKE_WIDTH,
+        OVAL_HEIGHT - STROKE_WIDTH,
+      ),
+    );
 
-    // Lớp phủ tối = (hình chữ nhật bao ngoài) - (elip bên trong)
-    const fullRect = Skia.Path.Make();
-    fullRect.addRect(Skia.XYWHRect(0, 0, OVAL_WIDTH, OVAL_HEIGHT));
+    const full = Skia.Path.Make();
+    full.addRect(Skia.XYWHRect(0, 0, OVAL_WIDTH, OVAL_HEIGHT));
 
-    const outside = fullRect.copy();
+    const outside = full.copy();
     outside.op(inner, PathOp.Difference);
 
     return {
-      innerOvalPath: inner,
       innerOvalSvgPath: inner.toSVGString(),
       outerOvalPath: outer,
       dimOutsidePath: outside,
     };
-  }, [OVAL_HEIGHT, OVAL_WIDTH, STROKE_WIDTH]);
+  }, []);
 
-  // =====================================
-
-  if (loading || !theme || !lang) return null;
+  if (!theme || !lang) return null;
   const styles = makeStyles(theme);
+
+  const runningText =submitting ? (type === 'check_in' ? 'Đang check-in...' : 'Đang check-out...'): steps[currentStep];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView>
         <HeaderBar
-          title={lang.t("face_detection_title")}
-          onBack={() => navigation?.goBack?.()}
+          title={lang.t('face_detection_title')}
+          onBack={() => navigation.goBack()}
           extra={<View style={{ width: 34 }} />}
         />
 
-        {/* Khung oval (THAY BẰNG SKIA CANVAS) */}
         <View style={styles.faceGuide}>
-          <View style={[styles.ovalWrapper, { width: OVAL_WIDTH, height: OVAL_HEIGHT }]}>
+          <View
+            style={[
+              styles.ovalWrapper,
+              { width: OVAL_WIDTH, height: OVAL_HEIGHT },
+            ]}>
             <MaskedView
               style={StyleSheet.absoluteFillObject}
               maskElement={
                 <Svg width={OVAL_WIDTH} height={OVAL_HEIGHT}>
                   <SvgPath d={innerOvalSvgPath} fill="#fff" />
                 </Svg>
-              }
-            >
+              }>
               <View style={styles.cameraSurface}>
                 {device && hasPermission ? (
                   <Camera
@@ -285,67 +326,68 @@ export default function EmployeeFaceDetectionScreen({ navigation }: Props) {
                     style={StyleSheet.absoluteFillObject}
                     device={device}
                     isActive={isCameraActive}
-                    photo={true}
+                    photo
                     frameProcessor={frameProcessor}
                   />
                 ) : (
                   <View style={styles.cameraFallback}>
-                    <Text style={styles.cameraFallbackText}>{cameraStatusMessage}</Text>
-                    {!permissionBlocked && (
-                      <TouchableOpacity style={styles.cameraFallbackButton} onPress={refreshPermission}>
-                        <Text style={styles.cameraFallbackButtonText}>Enable camera</Text>
-                      </TouchableOpacity>
-                    )}
+                    <Text style={styles.cameraFallbackText}>
+                      Camera unavailable
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.cameraFallbackButton}
+                      onPress={refreshPermission}>
+                      <Text style={styles.cameraFallbackButtonText}>
+                        Enable Camera
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
             </MaskedView>
 
-            <Canvas style={[StyleSheet.absoluteFillObject]} pointerEvents="none">
-              <SkiaPath path={dimOutsidePath} style="fill" color={theme.colors.background} />
-              <SkiaPath path={outerOvalPath} style="stroke" strokeWidth={STROKE_WIDTH}>
+            <Canvas style={StyleSheet.absoluteFillObject} pointerEvents="none">
+              <SkiaPath
+                path={dimOutsidePath}
+                style="fill"
+                color={theme.colors.background}
+              />
+              <SkiaPath
+                path={outerOvalPath}
+                style="stroke"
+                strokeWidth={STROKE_WIDTH}>
                 <LinearGradient
-                  start={vec(OVAL_WIDTH * 0.1, 0)}
-                  end={vec(OVAL_WIDTH * 0.9, OVAL_HEIGHT)}
+                  start={vec(20, 0)}
+                  end={vec(OVAL_WIDTH, OVAL_HEIGHT)}
                   colors={RING_GRADIENT}
                 />
               </SkiaPath>
             </Canvas>
           </View>
         </View>
-        {/* (Kết thúc khối Skia) */}
 
-        {/* Nút hiển thị như LABEL (không bấm) */}
-        {flowError ? (
-          <Text style={styles.statusText}>{flowError}</Text>
-        ) : flowState === "running" ? (
-          <Text style={styles.statusText}>{lang.t('face_status_label')}</Text>
-        ) : null}
-        {flowState === "error" && (
-          <TouchableOpacity style={styles.retryLink} onPress={startFlow}>
-            <Text style={styles.retryLinkText}>{lang.t('face_retry_link')}</Text>
-          </TouchableOpacity>
+        {flowState === 'running' && (
+          <View style={styles.statusRow}>
+            <Text
+              style={[
+                styles.statusText,
+                submitting && styles.statusTextSubmitting,
+              ]}>
+              {runningText}
+            </Text>
+            <ActivityIndicator
+              size="small"
+              color="#1E4DFF"
+              style={{ marginLeft: 8 }}
+            />
+          </View>
         )}
-        <View style={{ alignItems: "center", marginBottom: 50 }}>
-          <GradientButton
-            text={stepMap[currentStep].label}
-            onPress={() => {
-              if (flowState === "running") return;
-              if (!hasPermission) {
-                refreshPermission();
-                return;
-              }
-              if (device && isCameraReady) {
-                startFlow();
-              }
-            }}
-            colors={BUTTON_GRADIENT}
-            borderRadius={BUTTON_RADIUS}
-            textColor="#0B1A39"
-            style={{ width: "80%" }}
-          />
-        </View>
 
+        {flowState === 'error' && (
+          <>
+            <Text style={styles.statusText}>{flowError}</Text>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -354,67 +396,42 @@ export default function EmployeeFaceDetectionScreen({ navigation }: Props) {
 const makeStyles = (theme: any) =>
   StyleSheet.create({
     faceGuide: {
-      marginTop: "20%",
-      marginBottom: "10%",
-      alignItems: "center", // Giữ lại để căn giữa Canvas
-      justifyContent: "center",
-      width: "100%",
-
-      // Thêm shadow/elevation vào đây nếu bạn muốn
-      shadowColor: "#1E4DFF",
-      shadowOpacity: 0.15,
-      shadowOffset: { width: 0, height: 4 },
-      shadowRadius: 8,
-      elevation: 2,
+      marginTop: '18%',
+      marginBottom: '6%',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-
-    ovalWrapper: {
-      position: "relative",
-    },
-    cameraSurface: {
-      flex: 1,
-      backgroundColor: "#0B1A39",
-    },
+    ovalWrapper: { position: 'relative' },
+    cameraSurface: { flex: 1, backgroundColor: '#000' },
     cameraFallback: {
       flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: 24,
-      backgroundColor: "#0B1A39",
-      gap: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
     },
-    cameraFallbackText: {
-      color: "#ffffff",
-      textAlign: "center",
-      fontSize: 14,
-      lineHeight: 20,
-    },
+    cameraFallbackText: { color: '#fff', marginBottom: 10 },
     cameraFallbackButton: {
-      paddingHorizontal: 20,
-      paddingVertical: 8,
-      borderRadius: 18,
       borderWidth: 1,
-      borderColor: "#ffffff",
+      borderColor: '#fff',
+      padding: 8,
+      borderRadius: 6,
     },
-    cameraFallbackButtonText: {
-      color: "#ffffff",
-      fontWeight: "600",
+    cameraFallbackButtonText: { color: '#fff' },
+
+    statusRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 12,
+      marginBottom: 8,
     },
     statusText: {
-      marginTop: 16,
-      paddingHorizontal: 24,
-      textAlign: "center",
-      fontSize: 13,
-      color: "#6B7AA1",
+      textAlign: 'center',
+      fontSize: 15,
+      fontWeight: '600',
+      color: '#2A3A5E',
     },
-    retryLink: {
-      marginTop: 8,
-      paddingHorizontal: 16,
-      paddingVertical: 6,
-    },
-    retryLinkText: {
-      color: "#1E4DFF",
-      fontWeight: "700",
-      alignSelf: "center"
+    statusTextSubmitting: {
+      color: '#1E4DFF',
     },
   });

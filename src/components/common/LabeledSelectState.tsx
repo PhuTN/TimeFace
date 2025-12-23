@@ -10,6 +10,7 @@ type Props = {
   value?: string;
   onChange: (opt: Option) => void;
   theme: any;
+  editable?: boolean; // default = true
 };
 
 export default function LabeledSelectState({
@@ -18,11 +19,12 @@ export default function LabeledSelectState({
   value,
   onChange,
   theme,
+  editable = true,
 }: Props) {
+
+  // ====== BUILD STATE OPTIONS ======
   const options = React.useMemo<Option[]>(() => {
-    if (!countryCode) {
-      return [];
-    }
+    if (!countryCode) return []; // ⛔ Không trả option khi chưa chọn country
     return State.getStatesOfCountry(countryCode)
       .map(item => ({
         label: item.name,
@@ -31,42 +33,55 @@ export default function LabeledSelectState({
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [countryCode]);
 
-  const disabled = !countryCode || options.length === 0;
+  // ====== CONDITIONS ======
+  const disabledSystem = !countryCode || options.length === 0;
+  const disabled = disabledSystem || !editable;
+
+  // text fallback
   const fallback: Option = {
-    label: !countryCode ? 'Select country first' : 'No states available',
+    label: !countryCode ? 'Chưa chọn quốc gia' : 'Không có tỉnh/bang',
     value: '',
   };
-  const displayOptions = disabled ? [fallback] : options;
 
-  const selected =
-    displayOptions.find(option => option.value === value) ?? displayOptions[0];
+  const displayOptions = disabledSystem ? [fallback] : options;
 
+  // ====== SELECTED VALUE (NO AUTO SELECT WHEN COUNTRY EMPTY) ======
+  const selected = disabledSystem
+    ? fallback
+    : options.find(o => o.value === value) ?? fallback;
+
+  // ====== AUTO-SET ONLY WHEN COUNTRY EXISTS ======
   React.useEffect(() => {
-    if (disabled || !options.length) {
-      return;
-    }
-    if (value && options.some(option => option.value === value)) {
-      return;
-    }
+    if (!editable) return;
+
+    // ⛔ Stop nếu chưa chọn country
+    if (!countryCode) return;
+
+    // ⛔ Stop nếu không có state list
+    if (!options.length) return;
+
+    // ⛔ Stop nếu value hợp lệ
+    if (value && options.some(o => o.value === value)) return;
+
+    // ✔ Auto set state đầu tiên khi có country và có danh sách state
     onChange(options[0]);
-  }, [disabled, onChange, options, value]);
+  }, [editable, countryCode, options, value, onChange]);
 
   return (
     <LabeledSelect
       label={label}
       selected={selected}
       options={displayOptions}
-      onSelect={onChange}
+      onSelect={editable ? onChange : () => {}}
       theme={theme}
       disabled={disabled}
     />
   );
 }
 
+// KEEP FUNCTION
 export function getStateLabel(countryCode?: string, stateCode?: string) {
-  if (!countryCode || !stateCode) {
-    return '';
-  }
+  if (!countryCode || !stateCode) return '';
   const match = State.getStatesOfCountry(countryCode).find(
     item => item.isoCode === stateCode,
   );

@@ -1,5 +1,5 @@
 // src/api/core/ApiEndpoint.ts
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 // Endpoint kiểu readonly tuple (bất biến) + đảm bảo luôn có dấu '/'
 export type Endpoint = readonly [HttpMethod, `/${string}`];

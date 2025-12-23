@@ -1,32 +1,39 @@
 import React from 'react';
 import {View, Text, Image, TouchableOpacity} from 'react-native';
-import type {Theme} from '../../ui/theme/theme';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 import Chip from '../common/Chip';
 
 type RequestStatus = 'approved' | 'rejected' | 'pending';
+type LeaveType = 'annual' | 'sick' | 'unpaid';
 
 interface ICRequestProps {
   avatarSource: any;
   name: string;
   position: string;
   status: RequestStatus;
-  date: string;
+  leaveType: LeaveType;
+  leaveDates: string; // vd: 15/12/2025 → 18/12/2025
   onPress?: () => void;
 }
 
-const ChangeInfoRequest: React.FC<ICRequestProps> = ({
+const ICRequest: React.FC<ICRequestProps> = ({
   avatarSource,
   name,
   position,
   status,
-  date,
+  leaveType,
+  leaveDates,
   onPress,
 }) => {
   const {loading, theme, lang} = useUIFactory();
-  if (loading || !theme || !lang) {
-    return null;
-  }
+  if (loading || !theme || !lang) return null;
+
+  const leaveTypeLabel =
+    leaveType === 'annual'
+      ? lang.t('annualLeave')
+      : leaveType === 'sick'
+      ? lang.t('sickLeave')
+      : lang.t('unpaidLeave');
 
   return (
     <TouchableOpacity
@@ -39,12 +46,12 @@ const ChangeInfoRequest: React.FC<ICRequestProps> = ({
         backgroundColor: theme.colors.background,
         paddingHorizontal: 12,
       }}>
-      {/* First row */}
+      {/* ===== ROW 1: USER INFO ===== */}
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 8,
+          paddingVertical: 10,
         }}>
         <Image
           source={avatarSource}
@@ -58,8 +65,8 @@ const ChangeInfoRequest: React.FC<ICRequestProps> = ({
         <View style={{flex: 1}}>
           <Text
             style={{
-              fontSize: 18,
-              fontWeight: 500,
+              fontSize: 16,
+              fontWeight: '600',
               color: theme.colors.text,
             }}>
             {name}
@@ -68,12 +75,11 @@ const ChangeInfoRequest: React.FC<ICRequestProps> = ({
             {position}
           </Text>
         </View>
-        <View style={{alignItems: 'flex-end'}}>
-          <Chip status={status} />
-        </View>
+
+        <Chip status={status} />
       </View>
 
-      {/* Divider */}
+      {/* ===== DIVIDER ===== */}
       <View
         style={{
           height: 1,
@@ -82,18 +88,28 @@ const ChangeInfoRequest: React.FC<ICRequestProps> = ({
         }}
       />
 
-      {/* Date row */}
-      <View
-        style={{
-          marginVertical: 10,
-          paddingHorizontal: 4,
-        }}>
-        <Text style={{fontSize: 14, color: theme.colors.filterChipText}}>
-          {lang.t('changeDate')} {date}
+      {/* ===== ROW 2: LEAVE INFO ===== */}
+      <View style={{paddingVertical: 10}}>
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: '500',
+            color: theme.colors.text,
+            marginBottom: 4,
+          }}>
+          {leaveTypeLabel}
+        </Text>
+
+        <Text
+          style={{
+            fontSize: 13,
+            color: theme.colors.filterChipText,
+          }}>
+          {lang.t('leaveDates')}: {leaveDates}
         </Text>
       </View>
     </TouchableOpacity>
   );
 };
 
-export default ChangeInfoRequest;
+export default ICRequest;

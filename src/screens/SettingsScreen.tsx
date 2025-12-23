@@ -1,22 +1,24 @@
-import {useState} from 'react';
+import React, {useState} from 'react';
 import {ScrollView, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import Feather from 'react-native-vector-icons/Feather';
 
+import Footer from '../components/common/Footer';
+import HeaderBar from '../components/common/HeaderBar';
+import ToggleButton_Language from '../components/common/ToggleButton_Language';
+import ToggleButton_Notification from '../components/common/ToggleButton_Notification';
+import ToggleButton_Theme from '../components/common/ToggleButton_Theme';
 import Divider from '../components/settings/Divider';
 import ProfileCard from '../components/settings/ProfileCard';
 import SettingRow from '../components/settings/SettingRow';
 import SettingSection from '../components/settings/SettingSection';
-import ToggleButton_Language from '../components/common/ToggleButton_Language';
-import ToggleButton_Notification from '../components/common/ToggleButton_Notification';
-import ToggleButton_Theme from '../components/common/ToggleButton_Theme';
-import HeaderBar from '../components/common/HeaderBar';   // ⭐ ADD
-import Footer from '../components/common/Footer';
 
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {setUIState} from '../ui/factory/selector';
 import {useUIFactory} from '../ui/factory/useUIFactory';
-import {logout} from '../features/auth/authService';
+
+import {apiHandle} from '../api/apihandle';
+import {User} from '../api/endpoint/User';
 
 export default function SettingsScreen() {
   const {theme, lang} = useUIFactory();
@@ -25,64 +27,87 @@ export default function SettingsScreen() {
 
   const [notifications, setNotifications] = useState(true);
 
-  const L = lang?.code === 'en'
-    ? {
-        settings: 'Settings',
-        account: 'Account',
-        personalInfo: 'Personal info',
-        workInfo: 'Work info',
-        application: 'Application',
-        language: 'Language',
-        notifications: 'Notifications',
-        logout: 'Logout',
-        other: 'Others',
-        privacy: 'Privacy policy',
-        contact: 'Contact us',
-      }
-    : {
-        settings: 'Cài đặt',
-        account: 'Tài khoản',
-        personalInfo: 'Thông tin cá nhân',
-        workInfo: 'Thông tin công việc',
-        application: 'Ứng dụng',
-        language: 'Ngôn ngữ',
-        notifications: 'Thông báo',
-        logout: 'Đăng xuất',
-        other: 'Khác',
-        privacy: 'Chính sách bảo mật',
-        contact: 'Liên hệ chúng tôi',
+  // ⭐ STATE USER
+  const [user, setUser] = useState<any>(null);
+
+  // ⭐ LOAD USER MỖI LẦN MỞ MÀN
+  useFocusEffect(
+    React.useCallback(() => {
+      const load = async () => {
+        try {
+          const result = await apiHandle.callApi(User.GetMe).asPromise();
+          if (result.status.isError) return;
+
+          setUser(result.res.data.user);
+        } catch (err) {
+          console.log('Load user error:', err);
+        }
       };
+      load();
+    }, []),
+  );
+
+  const L =
+    lang?.code === 'en'
+      ? {
+          settings: 'Settings',
+          account: 'Account',
+          personalInfo: 'Personal info',
+          workInfo: 'Account setting',
+          application: 'Application',
+          language: 'Language',
+          notifications: 'Notifications',
+          logout: 'Logout',
+          other: 'Others',
+          privacy: 'Privacy policy',
+          contact: 'Contact us',
+        }
+      : {
+          settings: 'Cài đặt',
+          account: 'Tài khoản',
+          personalInfo: 'Thông tin cá nhân',
+          workInfo: 'Cài đặt tài khoản',
+          application: 'Ứng dụng',
+          language: 'Ngôn ngữ',
+          notifications: 'Thông báo',
+          logout: 'Đăng xuất',
+          other: 'Khác',
+          privacy: 'Chính sách bảo mật',
+          contact: 'Liên hệ chúng tôi',
+        };
 
   const isDark = theme?.name === 'dark';
   const isEnglish = lang?.code === 'en';
 
-  const handleThemeToggle = () => setUIState({theme: isDark ? 'light' : 'dark'});
-  const handleLanguageToggle = () => setUIState({lang: isEnglish ? 'vi' : 'en'});
+  const handleThemeToggle = () =>
+    setUIState({theme: isDark ? 'light' : 'dark'});
+
+  const handleLanguageToggle = () =>
+    setUIState({lang: isEnglish ? 'vi' : 'en'});
+
   const handleNotificationToggle = () => setNotifications(prev => !prev);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme?.colors.background }}>
-
-      {/* ⭐ HEADER BAR — ẨN NÚT BACK */}
+    <SafeAreaView style={{flex: 1, backgroundColor: theme?.colors.background}}>
       <HeaderBar
         title={L.settings}
         topInset={insets.top}
         isShowAvatar={false}
-        isShowBackButton={false}   // ⭐ KHÔNG CHO HIỂN THỊ BACK
+        isShowBackButton={false}
       />
 
       <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          { paddingBottom: 120 } // ⭐ tránh footer che
-        ]}
+        contentContainerStyle={[styles.container, {paddingBottom: 120}]}
         showsVerticalScrollIndicator={false}>
-
+        {/* ⭐ PROFILE REAL TIME */}
         <ProfileCard
-          name="Tonald Drump"
-          subtitle="Junior Full Stack Developer"
-          verified
-          avatarUri="https://i.pravatar.cc/200?img=3"
+          name={user?.full_name || '—'}
+          subtitle={user?.job_title || '—'}
+          verified={user?.profile_approved}
+          avatarUri={
+            user?.avatar ||
+            'https://cdn-icons-png.freepik.com/512/6858/6858504.png'
+          }
         />
 
         {/* ACCOUNT */}
@@ -109,6 +134,7 @@ export default function SettingsScreen() {
               icon={<Feather name="briefcase" size={18} color={BLUE} />}
               label={L.workInfo}
               right={<Feather name="chevron-right" size={18} color="#9ca3af" />}
+              onPress={() => navigation.navigate('AccountSettings')}
             />
           </SettingSection>
         </View>
@@ -127,7 +153,12 @@ export default function SettingsScreen() {
             <SettingRow
               icon={<Feather name="moon" size={18} color={BLUE} />}
               label="Theme"
-              right={<ToggleButton_Theme value={isDark} onToggle={handleThemeToggle} />}
+              right={
+                <ToggleButton_Theme
+                  value={isDark}
+                  onToggle={handleThemeToggle}
+                />
+              }
             />
 
             <Divider />
@@ -135,7 +166,12 @@ export default function SettingsScreen() {
             <SettingRow
               icon={<Feather name="globe" size={18} color={BLUE} />}
               label={L.language}
-              right={<ToggleButton_Language value={isEnglish} onToggle={handleLanguageToggle} />}
+              right={
+                <ToggleButton_Language
+                  value={isEnglish}
+                  onToggle={handleLanguageToggle}
+                />
+              }
             />
 
             <Divider />
@@ -143,10 +179,15 @@ export default function SettingsScreen() {
             <SettingRow
               icon={<Feather name="bell" size={18} color={BLUE} />}
               label={L.notifications}
-              right={<ToggleButton_Notification value={notifications} onToggle={handleNotificationToggle} />}
+              right={
+                <ToggleButton_Notification
+                  value={notifications}
+                  onToggle={handleNotificationToggle}
+                />
+              }
             />
 
-            <Divider />
+            {/* <Divider />
 
             <SettingRow
               icon={<Feather name="log-out" size={18} color="#e45858" />}
@@ -154,7 +195,7 @@ export default function SettingsScreen() {
               labelStyle={{color: '#e45858', fontWeight: '600'}}
               right={<Feather name="chevron-right" size={18} color="#e45858" />}
               onPress={() => logout()}
-            />
+            /> */}
           </SettingSection>
         </View>
 
@@ -184,15 +225,9 @@ export default function SettingsScreen() {
             />
           </SettingSection>
         </View>
-
       </ScrollView>
 
-      {/* ⭐ FOOTER FIXED */}
-      <Footer
-        activeIndex={3}
-        onPress={() => navigation.navigate('Home')}
-      />
-
+      <Footer activeIndex={3} onPress={() => navigation.navigate('Home')} />
     </SafeAreaView>
   );
 }

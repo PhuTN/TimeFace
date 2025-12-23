@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -11,7 +11,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Toast from 'react-native-toast-message';
 import FieldLabel from '../components/auth/FieldLabel';
@@ -20,14 +20,17 @@ import GridDecor from '../components/auth/GridDecor';
 import Input from '../components/auth/Input';
 
 // 🔐 Gọi API login
-import { login as loginApi } from '../features/auth/authService';
-import { authStorage } from '../services/authStorage';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
-
+import {login as loginApi} from '../features/auth/authService';
+import {authStorage} from '../services/authStorage';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../navigation/AppNavigator';
+import {apiHandle} from '../api/apihandle';
+import {User} from '../api/endpoint/User';
+import DeviceInfo from 'react-native-device-info';
+import messaging from '@react-native-firebase/messaging';
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
-export default function LoginScreen({ navigation }: Props) {
+export default function LoginScreen({navigation}: Props) {
   const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
@@ -51,7 +54,32 @@ export default function LoginScreen({ navigation }: Props) {
       setLoading(true);
 
       // 🔐 Gọi API
-      const { user, token } = await loginApi(e, p);
+      const {user, token} = await loginApi(e, p);
+
+      try {
+        // Android 13+ cần permission
+        await messaging().requestPermission();
+
+        const device_id = await DeviceInfo.getUniqueId();
+        const device_name = await DeviceInfo.getDeviceName();
+        const platform = DeviceInfo.getSystemName(); // Android | iOS
+        const app_version = DeviceInfo.getVersion();
+        const fcm_token = await messaging().getToken();
+
+        await apiHandle
+          .callApi(User.AddOrUpdateDevice, {
+            device_id,
+            device_name,
+            platform,
+            app_version,
+            fcm_token,
+          })
+          .asPromise();
+
+        console.log('✅ Device registered:', device_id);
+      } catch (err) {
+        console.log('⚠️ Register device failed (ignored):', err);
+      }
 
       Toast.show({
         type: 'success',
@@ -70,30 +98,30 @@ export default function LoginScreen({ navigation }: Props) {
         if (subscriptionStatus !== 'active') {
           navigation.reset({
             index: 0,
-            routes: [{ name: 'SubscriptionPlans' as never }],
+            routes: [{name: 'SubscriptionPlans' as never}],
           });
         } else {
           navigation.reset({
             index: 0,
-            routes: [{ name: 'Home' as never }],
+            routes: [{name: 'Home' as never}],
           });
         }
       } else if (role === 'user') {
         if (subscriptionStatus !== 'active') {
           navigation.reset({
             index: 0,
-            routes: [{ name: 'SubscriptionBlocked' as never }],
+            routes: [{name: 'SubscriptionBlocked' as never}],
           });
         } else {
           navigation.reset({
             index: 0,
-            routes: [{ name: 'Home' as never }],
+            routes: [{name: 'Home' as never}],
           });
         }
       } else {
         navigation.reset({
           index: 0,
-          routes: [{ name: 'Home' as never }],
+          routes: [{name: 'Home' as never}],
         });
       }
     } catch (err: any) {
@@ -112,32 +140,30 @@ export default function LoginScreen({ navigation }: Props) {
       <StatusBar barStyle="dark-content" />
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.select({ ios: 'padding', android: undefined })}
-      >
+        style={{flex: 1}}
+        behavior={Platform.select({ios: 'padding', android: undefined})}>
         <ScrollView
           contentContainerStyle={[
             styles.scroll,
-            { paddingTop: insets.top + 12, paddingBottom: 28 },
+            {paddingTop: insets.top + 12, paddingBottom: 28},
           ]}
-          keyboardShouldPersistTaps="handled"
-        >
+          keyboardShouldPersistTaps="handled">
           <GridDecor />
 
           {/* Logo + title */}
-          <View style={{ alignItems: 'center', marginTop: 6 }}>
+          <View style={{alignItems: 'center', marginTop: 6}}>
             <Image
               source={require('../assets/Auth/LoginIcon.png')}
-              style={{ width: 44, height: 44, resizeMode: 'contain' }}
+              style={{width: 44, height: 44, resizeMode: 'contain'}}
             />
             <Text style={styles.title}>FCI</Text>
-            <Text style={{ fontSize: 16, color: '#6B7280' }}>
+            <Text style={{fontSize: 16, color: '#6B7280'}}>
               Chào mừng bạn quay trở lại
             </Text>
           </View>
 
           {/* Form Login */}
-          <View style={{ marginTop: 20 }}>
+          <View style={{marginTop: 20}}>
             <FieldLabel>Email</FieldLabel>
             <Input
               value={email}
@@ -178,13 +204,12 @@ export default function LoginScreen({ navigation }: Props) {
             />
 
             {/* Chuyển sang đăng ký */}
-            <View style={{ alignItems: 'center', marginTop: 14 }}>
-              <Text style={{ color: '#6B7280' }}>
+            <View style={{alignItems: 'center', marginTop: 14}}>
+              <Text style={{color: '#6B7280'}}>
                 Chưa có tài khoản?{' '}
                 <Text
                   onPress={() => navigation.navigate('Register')}
-                  style={{ color: '#4C74E6', fontWeight: '700' }}
-                >
+                  style={{color: '#4C74E6', fontWeight: '700'}}>
                   Đăng ký
                 </Text>
               </Text>
@@ -199,8 +224,8 @@ export default function LoginScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#FFFFFF' },
-  scroll: { paddingHorizontal: 16 },
+  safe: {flex: 1, backgroundColor: '#FFFFFF'},
+  scroll: {paddingHorizontal: 16},
   title: {
     fontSize: 32,
     fontWeight: '800',
@@ -215,5 +240,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
-  forgot: { fontSize: 13, color: '#4C74E6', fontWeight: '700' },
+  forgot: {fontSize: 13, color: '#4C74E6', fontWeight: '700'},
 });

@@ -1,5 +1,5 @@
-// src/screens/.../OTRecordAddModal.tsx
 import React, {useState} from 'react';
+import RNFS from 'react-native-fs';
 import {
   View,
   Text,
@@ -8,13 +8,22 @@ import {
   StyleSheet,
   Platform,
   ScrollView,
+  Image,
+  Modal,
+  Linking,
+  ActivityIndicator,
+  PermissionsAndroid,
 } from 'react-native';
 
-import DatePicker from 'react-native-date-picker';   // ⭐ NEW
+import DatePicker from 'react-native-date-picker';
+import * as ImagePicker from 'react-native-image-picker';
+
 import BottomSheetModal from '../../common/BottomSheetModal';
 import LabeledDate from '../../common/LabeledDate';
 import LabeledTextInput from '../../common/LabeledTextInput';
 import {useUIFactory} from '../../../ui/factory/useUIFactory';
+import {uploadSingle} from '../../../api/uploadApi';
+import Toast from 'react-native-toast-message';
 
 type Props = {
   visible: boolean;
@@ -24,31 +33,36 @@ type Props = {
     startTime: Date;
     hours: string;
     reason: string;
+    images: string[]; // ✅ URL từ BE
   }) => void;
 };
 
 const OTRecordAddModal: React.FC<Props> = ({visible, onClose, onAdd}) => {
   const {theme, lang} = useUIFactory();
+
   const [date, setDate] = useState(new Date());
   const [startTime, setStartTime] = useState(new Date());
   const [hours, setHours] = useState('');
   const [reason, setReason] = useState('');
 
-  // mở/đóng time picker
   const [openTimePicker, setOpenTimePicker] = useState(false);
 
-  if (!theme || !lang) return null;
+  // images = URL từ BE
+  const [images, setImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
 
-  const handleAdd = () => {
-    onAdd({date, startTime, hours, reason});
+  // preview
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-    // Reset
-    setDate(new Date());
-    setStartTime(new Date());
-    setHours('');
-    setReason('');
-    onClose();
-  };
+   if (!theme || !lang) {
+    return (
+      <BottomSheetModal visible={visible} onClose={onClose}>
+        <View />
+      </BottomSheetModal>
+    );
+  }
+
 
   const formatTime = (time: Date) => {
     const h = String(time.getHours()).padStart(2, '0');
@@ -56,146 +70,265 @@ const OTRecordAddModal: React.FC<Props> = ({visible, onClose, onAdd}) => {
     return `${h}:${m}`;
   };
 
+  // ⭐ PICK + UPLOAD NGAY
+  const pickImages = () => {
+    ImagePicker.launchImageLibrary(
+      {
+        mediaType: 'photo',
+        selectionLimit: 5,
+      },
+      async res => {
+        if (res.didCancel || !res.assets) return;
+
+        try {
+          setUploading(true);
+
+          for (const asset of res.assets) {
+            if (!asset.uri) continue;
+
+            const result = await uploadSingle(asset.uri, 'ot-evidence');
+            if (result?.url) {
+              setImages(prev => [...prev, result.url]);
+            }
+          }
+        } catch (e) {
+          console.log('[UPLOAD IMAGE ERROR]', e);
+        } finally {
+          setUploading(false);
+        }
+      },
+    );
+  };
+
+  const handleAdd = () => {
+    onAdd({
+      date,
+      startTime,
+      hours,
+      reason,
+      images, // ✅ URL đã upload
+    });
+
+    setDate(new Date());
+    setStartTime(new Date());
+    setHours('');
+    setReason('');
+    setImages([]);
+    onClose();
+  };
+
+  const openPreview = (url: string) => {
+    setPreviewImage(url);
+    setPreviewVisible(true);
+  };
+
+  const handleDownload = async () => {
+    console.log('[DOWNLOAD] start');
+
+    if (!previewImage) {
+      console.log('[DOWNLOAD] previewImage empty');
+      return;
+    }
+
+    try {
+      const fileName = `ot_image_${Date.now()}.jpg`;
+
+      const savePath =
+        Platform.OS === 'android'
+          ? `${RNFS.DownloadDirectoryPath}/${fileName}`
+          : `${RNFS.DocumentDirectoryPath}/${fileName}`;
+
+      console.log('[DOWNLOAD] savePath:', savePath);
+
+      const result = await RNFS.downloadFile({
+        fromUrl: previewImage,
+        toFile: savePath,
+      }).promise;
+
+      console.log('[DOWNLOAD] result:', result);
+
+      if (result.statusCode === 200) {
+        Toast.show({
+          type: 'success',
+          text1: 'Thành công',
+          text2: 'Ảnh đã được lưu vào Download',
+        });
+      } else {
+        throw new Error(`statusCode=${result.statusCode}`);
+      }
+    } catch (err) {
+      console.log('[DOWNLOAD ERROR]', err);
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể tải ảnh',
+      });
+    } finally {
+      console.log('[DOWNLOAD] end');
+    }
+  };
+
   return (
-    <BottomSheetModal
-      visible={visible}
-      onClose={onClose}
-      maxHeightRatio={0.85}
-      backdropOpacity={0.4}>
-      <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.colors.background,
-            borderTopColor: theme.colors.contrastBackground,
-            borderTopWidth: 1,
-            borderLeftColor: theme.colors.contrastBackground,
-            borderLeftWidth: 1,
-            borderRightColor: theme.colors.contrastBackground,
-            borderRightWidth: 1,
-          },
-        ]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, {color: theme.colors.text}]}>
-            {lang.t('createOvertimeRequest')}
-          </Text>
-        </View>
-
-        {/* Content */}
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}>
-          {/* Date Picker */}
-          <LabeledDate
-            label={lang.t('otDate')}
-            date={date}
-            onChange={setDate}
-            theme={theme}
-          />
-
-          {/* Time Picker */}
-          <View style={styles.field}>
-            <Text style={[styles.label, {color: theme.colors.text}]}>
-              {lang.t('startAt')}
+    <>
+      <BottomSheetModal
+        visible={visible}
+        onClose={onClose}
+        maxHeightRatio={0.85}
+        backdropOpacity={0.4}>
+        <View
+          style={[
+            styles.container,
+            {backgroundColor: theme.colors.background},
+          ]}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={[styles.title, {color: theme.colors.text}]}>
+              {lang.t('createOvertimeRequest')}
             </Text>
-
-            <TouchableOpacity
-              style={[
-                styles.inputBox,
-                {
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.background,
-                },
-              ]}
-              onPress={() => setOpenTimePicker(true)}
-              activeOpacity={0.7}>
-              <Text style={[styles.input, {color: theme.colors.text}]}>
-                {formatTime(startTime)}
-              </Text>
-              <Text style={styles.clockIcon}>🕐</Text>
-            </TouchableOpacity>
-
-            {/* Modal Time Picker */}
-            <DatePicker
-              modal
-              open={openTimePicker}
-              date={startTime}
-              mode="time"
-              onConfirm={time => {
-                setOpenTimePicker(false);
-                setStartTime(time);
-              }}
-              onCancel={() => setOpenTimePicker(false)}
-            />
           </View>
 
-          {/* Hours Input */}
-          <LabeledTextInput
-            label={lang.t('otHours')}
-            value={hours}
-            onChangeText={setHours}
-            placeholder="8"
-            theme={theme}
-          />
+          {/* Content */}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}>
+            <LabeledDate
+              label={lang.t('otDate')}
+              date={date}
+              onChange={setDate}
+              theme={theme}
+            />
 
-          {/* Reason */}
-          <View style={styles.field}>
-            <Text style={[styles.label, {color: theme.colors.text}]}>
-              {lang.t('otReason')}
-            </Text>
+            {/* Time */}
+            <View style={styles.field}>
+              <Text style={[styles.label, {color: theme.colors.text}]}>
+                {lang.t('startAt')}
+              </Text>
 
-            <View
-              style={[
-                styles.textAreaBox,
-                {
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.background,
-                },
-              ]}>
-              <TextInput
-                value={reason}
-                onChangeText={setReason}
-                placeholder={lang.t('otReasonPlaceholder')}
-                placeholderTextColor={theme.colors.placeholder}
-                style={[styles.textArea, {color: theme.colors.text}]}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
+              <TouchableOpacity
+                style={[styles.inputBox, {borderColor: theme.colors.border}]}
+                onPress={() => setOpenTimePicker(true)}>
+                <Text style={[styles.input, {color: theme.colors.text}]}>
+                  {formatTime(startTime)}
+                </Text>
+                <Text>🕐</Text>
+              </TouchableOpacity>
+
+              <DatePicker
+                modal
+                open={openTimePicker}
+                date={startTime}
+                mode="time"
+                onConfirm={t => {
+                  setOpenTimePicker(false);
+                  setStartTime(t);
+                }}
+                onCancel={() => setOpenTimePicker(false)}
               />
             </View>
+
+            <LabeledTextInput
+              label={lang.t('otHours')}
+              value={hours}
+              onChangeText={setHours}
+              placeholder="8"
+              theme={theme}
+            />
+
+            {/* Reason */}
+            <View style={styles.field}>
+              <Text style={[styles.label, {color: theme.colors.text}]}>
+                {lang.t('otReason')}
+              </Text>
+              <View
+                style={[
+                  styles.textAreaBox,
+                  {borderColor: theme.colors.border},
+                ]}>
+                <TextInput
+                  value={reason}
+                  onChangeText={setReason}
+                  placeholder={lang.t('otReasonPlaceholder')}
+                  placeholderTextColor={theme.colors.placeholder}
+                  style={[styles.textArea, {color: theme.colors.text}]}
+                  multiline
+                />
+              </View>
+            </View>
+
+            {/* Images */}
+            <View style={styles.field}>
+              <Text style={[styles.label, {color: theme.colors.text}]}>
+                Ảnh minh chứng
+              </Text>
+
+              <View style={styles.imageGrid}>
+                {images.map((url, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => openPreview(url)}>
+                    <Image source={{uri: url}} style={styles.image} />
+                  </TouchableOpacity>
+                ))}
+
+                <TouchableOpacity
+                  style={styles.addImage}
+                  onPress={pickImages}
+                  disabled={uploading}>
+                  {uploading ? (
+                    <ActivityIndicator />
+                  ) : (
+                    <Text style={{fontSize: 24}}>＋</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Footer */}
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton]}
+              onPress={onClose}>
+              <Text style={{color: theme.colors.text}}>{lang.t('exit')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, {backgroundColor: theme.colors.primary}]}
+              onPress={handleAdd}>
+              <Text style={{color: '#fff', fontWeight: '600'}}>
+                {lang.t('add')}
+              </Text>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-
-        {/* Footer Buttons */}
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.cancelButton,
-              {borderColor: theme.colors.border},
-            ]}
-            onPress={onClose}>
-            <Text style={[styles.buttonText, {color: theme.colors.text}]}>
-              {lang.t('exit')}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.addButton,
-              {backgroundColor: theme.colors.primary},
-            ]}
-            onPress={handleAdd}>
-            <Text style={[styles.buttonText, styles.addButtonText]}>
-              {lang.t('add')}
-            </Text>
-          </TouchableOpacity>
         </View>
-      </View>
-    </BottomSheetModal>
+      </BottomSheetModal>
+
+      {/* IMAGE PREVIEW */}
+      <Modal visible={previewVisible} transparent animationType="fade">
+        <View style={styles.previewContainer}>
+          <Image
+            source={{uri: previewImage || ''}}
+            style={styles.previewImage}
+            resizeMode="contain"
+          />
+
+          <View style={styles.previewActions}>
+            <TouchableOpacity
+              style={styles.previewButton}
+              onPress={handleDownload}>
+              <Text style={{color: '#fff'}}>⬇️ Download</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.previewButton}
+              onPress={() => setPreviewVisible(false)}>
+              <Text style={{color: '#fff'}}>✕ Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 };
 
@@ -206,49 +339,55 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.select({ios: 24, android: 16}),
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
+  title: {fontSize: 18, fontWeight: '700', textAlign: 'center'},
   scrollView: {maxHeight: 450},
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-    gap: 16,
-  },
+  scrollContent: {padding: 20, gap: 16},
   field: {width: '100%'},
   label: {fontSize: 13, marginBottom: 6},
   inputBox: {
     borderWidth: 2,
     borderRadius: 14,
     paddingHorizontal: 14,
-    minHeight: 48,
+    height: 48,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   input: {fontSize: 16},
-  clockIcon: {fontSize: 16},
   textAreaBox: {
     borderWidth: 2,
     borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    padding: 12,
     minHeight: 100,
   },
-  textArea: {fontSize: 16, minHeight: 76},
+  textArea: {fontSize: 16},
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  image: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+  },
+  addImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   buttonRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingTop: 16,
     gap: 12,
+    paddingHorizontal: 20,
   },
   button: {
     flex: 1,
@@ -258,9 +397,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButton: {borderWidth: 2},
-  addButton: {},
-  buttonText: {fontSize: 16, fontWeight: '600'},
-  addButtonText: {color: '#FFFFFF'},
+  previewContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: '80%',
+  },
+  previewActions: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 20,
+  },
+  previewButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 20,
+  },
 });
 
 export default OTRecordAddModal;

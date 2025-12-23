@@ -1,30 +1,30 @@
-import React, {memo, useState, useEffect} from 'react';
+import React, {memo, useEffect, useState} from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Platform,
   FlatList,
-  ListRenderItem,
-  Pressable,
   Image,
+  ListRenderItem,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-import BottomSheetModal from './BottomSheetModal2';
-import LabeledTextInput from './LabeledTextInput';
-import LabeledSelect from './LabeledSelect';
+import FilterIcon from '../../assets/icons/filter_icon.svg';
 import {useUIFactory} from '../../ui/factory/useUIFactory';
 import AddEmployeeIntoDepartmentFilter, {
   EmployeeFilterInDeptValues,
 } from './AddEmployeeIntoDepartmentFilter';
-import FilterIcon from '../../assets/icons/filter_icon.svg';
+import BottomSheetModal from './BottomSheetModal2';
 import FilterChip from './FilterChip.tsx';
+import LabeledSelect from './LabeledSelect';
+import LabeledTextInput from './LabeledTextInput';
 
+import Toast from 'react-native-toast-message';
 import {apiHandle} from '../../api/apihandle';
 import {User} from '../../api/endpoint/User';
-import Toast from 'react-native-toast-message';
 
 export type AddDepartmentModal = {
   name: string;
