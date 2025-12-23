@@ -40,6 +40,34 @@ jobs:
       #     restore-keys: |
       #       gradle-${{ runner.os }}-
 
+      - name: Inject ONNX face model (not committed)
+        shell: bash
+        run: |
+          set -e
+
+          # Đổi đường dẫn này thành nơi bạn lưu model trên máy self-hosted
+          MODEL_SRC="\\wsl.localhost\Ubuntu\home\wsladmin\timeface-models\glintr100.onnx"
+
+          if [ ! -f "$MODEL_SRC" ]; then
+            echo "Missing model at: $MODEL_SRC"
+            exit 1
+          fi
+
+          # Tạo thư mục đích
+          mkdir -p ios/TimeFace/models
+          mkdir -p android/app/src/main/assets
+          mkdir -p android/app/src/main/assets/models
+
+          # Copy vào các path bạn đang dùng
+          cp "$MODEL_SRC" ios/TimeFace/models/glintr100.onnx
+          cp "$MODEL_SRC" android/app/src/main/assets/glintr100.onnx
+          cp "$MODEL_SRC" android/app/src/main/assets/models/glintr100.onnx
+
+          echo "Model injected:"
+          ls -lh ios/TimeFace/models/glintr100.onnx
+          ls -lh android/app/src/main/assets/glintr100.onnx
+          ls -lh android/app/src/main/assets/models/glintr100.onnx
+
       - name: Build release APK
         working-directory: android
         run: |
