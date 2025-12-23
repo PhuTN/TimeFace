@@ -117,7 +117,7 @@ jobs:
         run: |
           set -e
           APK=$(ls -1 ./dist/*.apk | head -n 1)
-          NEW="./dist/timeface-apk-${GITHUB_REF_NAME}.apk"
+          NEW="./dist/timeface-${GITHUB_REF_NAME}.apk"
           mv "$APK" "$NEW"
           echo "Renamed: $NEW"
           ls -lh ./dist
