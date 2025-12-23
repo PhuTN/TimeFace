@@ -1,15 +1,15 @@
 {
   "project_info": {
     "project_number": "502069662801",
-    "project_id": "gokuune",
-    "storage_bucket": "gokuune.firebasestorage.app"
+    "project_id": "timeface",
+    "storage_bucket": "timeface.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:502069662801:android:56186b299e3bd935f75470",
         "android_client_info": {
-          "package_name": "com.gokuune"
+          "package_name": "com.timeface"
         }
       },
       "oauth_client": [],
