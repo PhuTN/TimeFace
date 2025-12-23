@@ -22,7 +22,7 @@ jobs:
 
       # ✅ Typecheck đúng file
       - name: Typecheck only (testcicd.js)
-        run: npx tsc --noEmit --allowJs --checkJs src/testcicd.js
+        run: npx tsc src/testcicd.js
 
       # ✅ Test liên quan đúng file
       # - name: Test only (testcicd.js)
