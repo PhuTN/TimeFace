@@ -24,7 +24,7 @@ import MessageBubble from '../components/chatroom/MessageBubble';
 
 import {socketService} from '../../services/socketService';
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/user';
+import {User} from '../api/endpoint/User';
 import {uploadSingle} from '../api/uploadApi';
 import {authStorage} from '../services/authStorage';
 

@@ -77,3 +77,6 @@ yarn-error.log
 # ONNX model files
 **/glintr100.onnx
 **/*.onnx
+
+.env.staging
+.env.production
