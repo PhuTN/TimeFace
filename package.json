@@ -1,11 +1,12 @@
 {
   "name": "GokuuNe",
+  "displayName": "TimeFace",
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "android": "react-native run-android",
+    "android": "react-native run-android --port 8082",
     "ios": "react-native run-ios",
-    "start": "react-native start",
+    "start": "react-native start --port 8082",
     "build:android:debug": "cd android && ./gradlew assembleDebug",
     "build:android:release": "cd android && ./gradlew assembleRelease",
     "typecheck": "tsc --noEmit",

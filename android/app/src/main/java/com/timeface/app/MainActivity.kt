@@ -1,4 +1,4 @@
-package com.gokuune
+package com.timeface
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

@@ -264,21 +264,47 @@ export default function PersonalInformationFaceDetectionScreen({
 
   async function normalizeBeforeUpload(uri: string) {
     const normalized = addFilePrefix(uri);
-
     console.log('[Normalize] start:', normalized);
 
     const { width, height } = await getSize(uri);
-    const rotation = await getExifRotation(uri);
+    let rotation = await getExifRotation(uri);
 
+    // 1. XOAY 270 ĐỘ (Sửa lỗi ảnh ngược đầu trên Android)
+    if (Platform.OS === 'android' && rotation === 0 && width < height) {
+      console.log('[Normalize] Auto-fix rotation 0 -> 270 for Portrait image');
+      rotation = 270;
+    }
+
+    // 2. GIỚI HẠN KÍCH THƯỚC VỪA PHẢI (Tránh lỗi JSON Parse / 413 Payload Too Large)
+    // Mức 1920px (Full HD) là dư sức để AI nhận diện khuôn mặt chính xác.
+    // Nếu để nguyên 3000-4000px, file sẽ nặng >5MB gây lỗi upload.
+    const MAX_SIDE = 1920; 
+    
+    // Tính toán kích thước mới (giữ nguyên tỉ lệ ảnh)
     const swap = rotation === 90 || rotation === 270;
-    const targetW = swap ? height : width;
-    const targetH = swap ? width : height;
+    
+    // Nếu ảnh gốc lớn hơn giới hạn thì mới resize, không thì giữ nguyên
+    let targetW = width;
+    let targetH = height;
+    
+    if (width > MAX_SIDE || height > MAX_SIDE) {
+      const ratio = Math.min(MAX_SIDE / width, MAX_SIDE / height);
+      targetW = Math.round(width * ratio);
+      targetH = Math.round(height * ratio);
+    }
 
-    console.log('[Normalize] size:', width, height, 'rot:', rotation, '->', targetW, targetH);
+    console.log('[Normalize] resize to safe high-quality:', targetW, targetH, 'rot:', rotation);
 
     const out = await withTimeout(
-      ImageResizer.createResizedImage(normalized, targetW, targetH, 'JPEG', 95, rotation),
-      15000,
+      ImageResizer.createResizedImage(
+        normalized,
+        targetW, 
+        targetH, 
+        'JPEG',
+        92,       // Quality 92: Rất nét nhưng dung lượng file hợp lý
+        rotation  // Xoay 270 để ảnh đứng thẳng với android
+      ),
+      20000,
       `ImageResizer(${normalized})`,
     );
 

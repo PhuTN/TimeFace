@@ -40,12 +40,12 @@ jobs:
       #     restore-keys: |
       #       gradle-${{ runner.os }}-
 
-      - name: Write .env (staging)
+      - name: Write .env.staging
         shell: bash
         run: |
           set -e
-          printf "API_URL=%s\n" "${{ secrets.API_URL }}" > .env
-          echo "[ENV] Using API_URL from GitHub Environment: staging"
+          printf "API_URL=%s\n" "${{ secrets.API_URL_STAGING }}" > .env.staging
+          echo "[ENV] Using API_URL_STAGING from GitHub Environment: staging"
 
       - name: Inject ONNX face model (not committed)
         shell: bash
@@ -53,7 +53,7 @@ jobs:
           set -e
 
           # Đổi đường dẫn này thành nơi bạn lưu model trên máy self-hosted
-          MODEL_SRC="\\wsl.localhost\Ubuntu\home\wsladmin\timeface-models\glintr100.onnx"
+          MODEL_SRC="/home/wsladmin/timeface-models/glintr100.onnx"
 
           if [ ! -f "$MODEL_SRC" ]; then
             echo "Missing model at: $MODEL_SRC"
@@ -77,6 +77,8 @@ jobs:
 
       - name: Build release APK
         working-directory: android
+        env:
+          ENVFILE: ../.env.staging
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon --stacktrace --build-cache --parallel assembleRelease

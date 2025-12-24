@@ -60,7 +60,7 @@ jobs:
         shell: powershell
     env:
       # Điền applicationId để khỏi phải parse từ APK
-      APP_ID: com.gokuune     # <-- ĐỔI CHO ĐÚNG
+      APP_ID: com.timeface     # <-- ĐỔI CHO ĐÚNG
       AVD_NAME: CI_CD_emu            # <-- ĐỔI CHO ĐÚNG
     steps:
       - uses: actions/checkout@v4

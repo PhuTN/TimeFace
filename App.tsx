@@ -1,4 +1,7 @@
 // App.tsx
+import Config from 'react-native-config';
+console.log('API_URL =', Config.API_URL);
+
 import React, {useEffect, useState} from 'react';
 import {ActivityIndicator, View, Linking, LogBox} from 'react-native';
 
