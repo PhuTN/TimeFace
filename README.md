@@ -1,97 +1,68 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# TimeFace – Hướng dẫn setup môi trường
 
-# Getting Started
+Dự án dùng React Native CLI (React Native 0.78, React 19) và `npm` (đi kèm `package-lock.json`). Làm theo các bước dưới để chuẩn bị môi trường và chạy ứng dụng.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 1. Yêu cầu hệ thống
+- Node.js ≥ 18 (khuyến nghị cài bằng nvm để dễ đổi phiên bản).
+- npm 10+ (tránh trộn Yarn để giữ đồng bộ `package-lock.json`).
+- JDK 17 và Android Studio (Ladybug/Koala) với SDK 35: Build Tools 35.0.0, Platform API 35, Platform-Tools, NDK 27.1.12297006, một emulator API 35.
+- macOS (nếu build iOS): Xcode 15+, CocoaPods ≥ 1.13, Ruby ≥ 2.6.10 (theo `Gemfile`), Bundler.
+- Công cụ hỗ trợ: Git, Watchman (macOS) để Metro ổn định.
 
-## Step 1: Start Metro
-
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
-
+## 2. Chuẩn bị mã nguồn
 ```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+git clone <url_repo>
+cd TimeFace
+npm install
 ```
 
-## Step 2: Build and run your app
+## 3. Thiết lập Android
+- Mở Android Studio → SDK Manager và cài:
+  - Android 14 (API 35) SDK Platform.
+  - Android SDK Build-Tools 35.0.0.
+  - Android SDK Platform-Tools.
+  - NDK 27.1.12297006 (khớp với cấu hình Gradle).
+- Cấu hình biến môi trường SDK:
+  - macOS/Linux:  
+    `export ANDROID_HOME=$HOME/Library/Android/sdk` (macOS) hoặc `$HOME/Android/Sdk` (Linux)  
+    `export PATH=$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH`
+  - Windows: `ANDROID_HOME=%LOCALAPPDATA%\\Android\\Sdk` và thêm `%ANDROID_HOME%\\platform-tools` vào PATH.
+- Khởi động emulator API 35 hoặc cắm thiết bị (bật USB debugging) trước khi chạy lệnh.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
+## 4. Thiết lập iOS (chỉ macOS)
 ```sh
-# Using npm
+cd ios
+bundle install
+bundle exec pod install
+cd ..
+```
+- Nếu thiếu CocoaPods/Bundler: `sudo gem install bundler cocoapods` (đảm bảo Ruby ≥ 2.6.10).
+- Có thể mở `ios/GokuuNe.xcworkspace` trong Xcode để chọn team ký và chạy thủ công.
+
+## 5. Chạy ứng dụng
+Terminal 1 (Metro):
+```sh
+npm start
+```
+Terminal 2:
+```sh
+# Android
 npm run android
 
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# iOS (sau khi pod install, simulator đang chạy)
 npm run ios
+```
+- Build APK: `npm run build:android:debug` hoặc `npm run build:android:release` (cần keystore riêng cho bản phát hành).
 
-# OR using Yarn
-yarn ios
+## 6. Kiểm tra chất lượng
+```sh
+npm run lint
+npm run typecheck
+npm test
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+## 7. Ghi chú & xử lý sự cố nhanh
+- Metro lỗi cache: `npm start -- --reset-cache`.
+- Android build lỗi: `cd android && ./gradlew clean` rồi chạy lại.
+- iOS cache: `watchman watch-del-all && rm -rf ~/Library/Developer/Xcode/DerivedData`.
+- Ứng dụng dùng camera (react-native-vision-camera): nhớ cấp quyền camera/micro cho thiết bị hoặc emulator.
