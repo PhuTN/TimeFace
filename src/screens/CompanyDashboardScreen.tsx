@@ -11,6 +11,7 @@ import HeaderBar from '../components/common/HeaderBar';
 import {apiHandle} from '../api/apihandle';
 import {CompanyEP} from '../api/endpoint/Company';
 import {LineChart} from 'react-native-chart-kit';
+import Footer from '../components/common/Footer';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -28,18 +29,13 @@ const CompanyDashboardScreen = () => {
 
       const [summaryRes, revenueRes, planRes] = await Promise.all([
         apiHandle.callApi(CompanyEP.GetDashboard).asPromise(),
-        apiHandle
-          .callApi(CompanyEP.GetRevenueByMonth, {year})
-          .asPromise(),
+        apiHandle.callApi(CompanyEP.GetRevenueByMonth, {year}).asPromise(),
         apiHandle.callApi(CompanyEP.GetPlanStats).asPromise(),
       ]);
 
-      if (!summaryRes.status.isError)
-        setSummary(summaryRes.res || {});
-      if (!revenueRes.status.isError)
-        setRevenueByMonth(revenueRes.res || []);
-      if (!planRes.status.isError)
-        setPlanStats(planRes.res || []);
+      if (!summaryRes.status.isError) setSummary(summaryRes.res || {});
+      if (!revenueRes.status.isError) setRevenueByMonth(revenueRes.res || []);
+      if (!planRes.status.isError) setPlanStats(planRes.res || []);
     } finally {
       setLoading(false);
     }
@@ -65,9 +61,7 @@ const CompanyDashboardScreen = () => {
 
   const activeRate =
     summary.total_companies > 0
-      ? Math.round(
-          (summary.active_companies / summary.total_companies) * 100,
-        )
+      ? Math.round((summary.active_companies / summary.total_companies) * 100)
       : 0;
 
   const arpu =
@@ -80,9 +74,7 @@ const CompanyDashboardScreen = () => {
     datasets: [
       {
         data:
-          revenueByMonth.length > 0
-            ? revenueByMonth.map(i => i.revenue)
-            : [0],
+          revenueByMonth.length > 0 ? revenueByMonth.map(i => i.revenue) : [0],
         strokeWidth: 3,
       },
     ],
@@ -90,7 +82,7 @@ const CompanyDashboardScreen = () => {
 
   return (
     <View style={styles.container}>
-      <HeaderBar title="📊 SYS ADMIN DASHBOARD" />
+      <HeaderBar title="Quản trị hệ thống "  isShowAvatar={false} isShowBackButton={false}/>
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* ===== STAT ===== */}
@@ -164,9 +156,7 @@ const CompanyDashboardScreen = () => {
                   </Text>
                   <View style={{alignItems: 'flex-end'}}>
                     <Text style={styles.money}>${i.revenue}</Text>
-                    <Text style={styles.subText}>
-                      {i.orders} đơn
-                    </Text>
+                    <Text style={styles.subText}>{i.orders} đơn</Text>
                   </View>
                 </View>
               ))}
@@ -182,37 +172,26 @@ const CompanyDashboardScreen = () => {
             planStats.map((i, idx) => {
               const percent =
                 totalRevenue > 0
-                  ? Math.round(
-                      (i.total_revenue / totalRevenue) * 100,
-                    )
+                  ? Math.round((i.total_revenue / totalRevenue) * 100)
                   : 0;
 
               return (
                 <View key={idx} style={styles.planCard}>
                   <View style={styles.planHeader}>
-                    <Text style={styles.planName}>
-                      {i.plan_name}
-                    </Text>
-                    <Text style={styles.planPercent}>
-                      {percent}%
-                    </Text>
+                    <Text style={styles.planName}>{i.plan_name}</Text>
+                    <Text style={styles.planPercent}>{percent}%</Text>
                   </View>
 
                   <View style={styles.planMeta}>
                     <Text style={styles.planText}>
                       🏢 {i.total_companies} công ty
                     </Text>
-                    <Text style={styles.planMoney}>
-                      ${i.total_revenue}
-                    </Text>
+                    <Text style={styles.planMoney}>${i.total_revenue}</Text>
                   </View>
 
                   <View style={styles.progressBg}>
                     <View
-                      style={[
-                        styles.progressFill,
-                        {width: `${percent}%`},
-                      ]}
+                      style={[styles.progressFill, {width: `${percent}%`}]}
                     />
                   </View>
                 </View>
@@ -221,6 +200,9 @@ const CompanyDashboardScreen = () => {
           )}
         </Section>
       </ScrollView>
+
+      {/* ✅ FOOTER */}
+      <Footer activeIndex={0} onPress={() => {}} />
     </View>
   );
 };
@@ -237,9 +219,7 @@ const StatCard = ({title, value, accent, icon, sub}: any) => (
     </View>
 
     <Text style={styles.statTitle}>{title}</Text>
-    <Text style={[styles.statValue, {color: accent}]}>
-      {value}
-    </Text>
+    <Text style={[styles.statValue, {color: accent}]}>{value}</Text>
 
     {!!sub && <Text style={styles.statSub}>{sub}</Text>}
   </View>
@@ -252,9 +232,7 @@ const Section = ({title, children}: any) => (
   </View>
 );
 
-const Empty = () => (
-  <Text style={styles.empty}>Không có dữ liệu</Text>
-);
+const Empty = () => <Text style={styles.empty}>Không có dữ liệu</Text>;
 
 /* ================= STYLE ================= */
 

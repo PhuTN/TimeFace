@@ -14,7 +14,7 @@ import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import {socketService} from '../../services/socketService';
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/user';
+import {User} from '../api/endpoint/User';
 import SearchBar from '../components/chat/SearchBar';
 import HeaderBar from '../components/common/HeaderBar';
 import {authStorage} from '../services/authStorage';

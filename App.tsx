@@ -2,18 +2,13 @@
 import React, {useEffect, useState} from 'react';
 import {ActivityIndicator, View, Linking, LogBox} from 'react-native';
 
-
-
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-
 
 import {apiHandle} from './src/api/apihandle';
 import {User} from './src/api/endpoint/User';
 import {rehydrateAuth} from './src/bootstrap/rehydrateAuth';
 import AppNavigator from './src/navigation/AppNavigator';
-
-
 
 import {authStorage} from './src/services/authStorage';
 
@@ -22,11 +17,9 @@ import {AppReloadProvider, useAppReload} from './src/context/AppReloadContext';
 import AppConfig from './src/appconfig/AppConfig';
 import {socketService} from './services/socketService';
 
+import {navigationRef} from './src/navigation/NavigationService';
 
-
-import { navigationRef } from './src/navigation/NavigationService';
-
-  LogBox.ignoreAllLogs(true);
+LogBox.ignoreAllLogs(true);
 // ======================= ROOT APP =======================
 function RootApp({
   initialRoute,
@@ -99,9 +92,11 @@ function RootApp({
           await socketService.connect();
 
           // ✅ Navigate to Home after successful payment
-          if (navigationRef.isReady()) {
-            navigationRef.navigate('Home');
-          }
+          setTimeout(() => {
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('HomeAdmin');
+            }
+          }, 500);
         }
 
         if (url.startsWith('timeface://stripe-cancel')) {
@@ -110,7 +105,7 @@ function RootApp({
             text1: 'Thanh toán bị hủy',
             text2: 'Bạn có thể thử lại sau.',
           });
-          
+
           // ✅ User stays on SubscriptionPlans screen (no navigation needed)
         }
       } catch {}
@@ -169,14 +164,14 @@ function AppContent() {
 
         if (role === 'admin') {
           setInitialRoute(
-            subscriptionStatus !== 'active' ? 'SubscriptionPlans' : 'Home',
+            subscriptionStatus !== 'active' && subscriptionStatus !== 'canceled' ? 'SubscriptionPlans' : 'HomeAdmin',
           );
         } else if (role === 'user') {
           setInitialRoute(
-            subscriptionStatus !== 'active' ? 'SubscriptionBlocked' : 'Home',
+            subscriptionStatus !== 'active' && subscriptionStatus !== 'canceled' ? 'SubscriptionBlocked' : 'Home',
           );
         } else {
-          setInitialRoute('Home');
+          setInitialRoute('CompanyDashboard');
         }
       } else {
         setInitialRoute('Login');

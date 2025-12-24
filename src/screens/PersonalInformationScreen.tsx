@@ -28,7 +28,7 @@ import {RootStackParamList} from '../navigation/AppNavigator';
 import {useUIFactory} from '../ui/factory/useUIFactory';
 
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/user';
+import {User} from '../api/endpoint/User';
 
 import {launchImageLibrary} from 'react-native-image-picker';
 import {uploadSingle} from '../api/uploadApi';
@@ -77,7 +77,8 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
   useEffect(() => {
     loadUser();
   }, []);
-
+  const isAdminRole =
+    userData?.role === 'admin' || userData?.role === 'sys_admin';
   const loadUser = async () => {
     try {
       const result = await apiHandle.callApi(User.GetMe).asPromise();
@@ -406,46 +407,54 @@ const PersonalInformationScreen = ({navigation, route}: Props) => {
         <View style={S.sectionSpacing} />
 
         {/* ⭐ FACE IMAGES */}
-        <Text style={S.sectionTitle}>Ảnh khuôn mặt</Text>
-        <Text style={S.sectionSubtitle}>Chính diện / Trái / Phải</Text>
+        {!isAdminRole && (
+          <>
+            <Text style={S.sectionTitle}>Ảnh khuôn mặt</Text>
+            <Text style={S.sectionSubtitle}>Chính diện / Trái / Phải</Text>
 
-        <View style={S.faceRow}>
-          {/* LEFT */}
-          <View style={S.faceItem}>
-            <Image
-              source={{uri: faceLeftParam || faceLeftApi || AVATAR_DEFAULT}}
-              style={S.facePreview}
-            />
-            <Text style={S.faceLabel}>Trái</Text>
-          </View>
+            <View style={S.faceRow}>
+              {/* LEFT */}
+              <View style={S.faceItem}>
+                <Image
+                  source={{uri: faceLeftParam || faceLeftApi || AVATAR_DEFAULT}}
+                  style={S.facePreview}
+                />
+                <Text style={S.faceLabel}>Trái</Text>
+              </View>
 
-          {/* FRONT */}
-          <View style={S.faceItem}>
-            <Image
-              source={{uri: faceFrontParam || faceFrontApi || AVATAR_DEFAULT}}
-              style={S.facePreview}
-            />
-            <Text style={S.faceLabel}>Chính diện</Text>
-          </View>
+              {/* FRONT */}
+              <View style={S.faceItem}>
+                <Image
+                  source={{
+                    uri: faceFrontParam || faceFrontApi || AVATAR_DEFAULT,
+                  }}
+                  style={S.facePreview}
+                />
+                <Text style={S.faceLabel}>Chính diện</Text>
+              </View>
 
-          {/* RIGHT */}
-          <View style={S.faceItem}>
-            <Image
-              source={{uri: faceRightParam || faceRightApi || AVATAR_DEFAULT}}
-              style={S.facePreview}
-            />
-            <Text style={S.faceLabel}>Phải</Text>
-          </View>
-        </View>
+              {/* RIGHT */}
+              <View style={S.faceItem}>
+                <Image
+                  source={{
+                    uri: faceRightParam || faceRightApi || AVATAR_DEFAULT,
+                  }}
+                  style={S.facePreview}
+                />
+                <Text style={S.faceLabel}>Phải</Text>
+              </View>
+            </View>
 
-        <View style={{alignItems: 'center', marginTop: 12}}>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.replace('PersonalInformationFaceDetection')
-            }>
-            <ReupImageIcon width={34} height={34} />
-          </TouchableOpacity>
-        </View>
+            <View style={{alignItems: 'center', marginTop: 12}}>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.replace('PersonalInformationFaceDetection')
+                }>
+                <ReupImageIcon width={34} height={34} />
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <View style={{padding: 20}}>

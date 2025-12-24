@@ -115,7 +115,7 @@ export default function NotificationScreen() {
   // ========================
   return (
     <View style={styles.root}>
-      <HeaderBar title="Thông báo" isShowBackButton />
+      <HeaderBar title="Thông báo" isShowBackButton ={false}/>
 
       {loading ? (
         <View style={styles.center}>

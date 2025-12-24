@@ -146,7 +146,7 @@ const EmployeeAttendanceScreen = ({navigation}: Props) => {
   // ============================
 
   const attendanceCfg = companyInfo?.attendance_config?.working_hours;
-  const isFakeTime = false; // 👈 bật/tắt fake
+  const isFakeTime = true; // 👈 bật/tắt fake
   const fakeNow = new Date('2025-12-16T08:30:00'); // 👈 chỉnh giờ bạn muốn test
   const todayDate = isFakeTime ? fakeNow : new Date();
   const todayStr = todayDate.toISOString().slice(0, 10);

@@ -111,10 +111,10 @@ const HomeScreen = ({navigation}: Props) => {
         }
       } catch (e: any) {
         if (!mounted) return;
-        setErrMsg(e?.message ?? String(e));
+        setErrMsg(e?.message ?? 'Có lỗi xảy ra');
       } finally {
         if (!mounted) return;
-        setFetching(false);
+        setFetching(false); // 🔥 DÒNG QUAN TRỌNG NHẤT
       }
     };
 

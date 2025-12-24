@@ -1,96 +1,98 @@
-import React, {useState} from 'react';
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import React, {useState, useCallback, useEffect} from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Switch,
+  Alert,
+  Linking,
+  AppState,
+  PermissionsAndroid,
+  Platform,
+} from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import Feather from 'react-native-vector-icons/Feather';
 
 import Footer from '../components/common/Footer';
 import HeaderBar from '../components/common/HeaderBar';
-import ToggleButton_Language from '../components/common/ToggleButton_Language';
-import ToggleButton_Notification from '../components/common/ToggleButton_Notification';
-import ToggleButton_Theme from '../components/common/ToggleButton_Theme';
 import Divider from '../components/settings/Divider';
 import ProfileCard from '../components/settings/ProfileCard';
 import SettingRow from '../components/settings/SettingRow';
 import SettingSection from '../components/settings/SettingSection';
 
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
-import {setUIState} from '../ui/factory/selector';
-import {useUIFactory} from '../ui/factory/useUIFactory';
-
 import {apiHandle} from '../api/apihandle';
-import {User} from '../api/endpoint/user';
+import {User} from '../api/endpoint/User';
 
 export default function SettingsScreen() {
-  const {theme, lang} = useUIFactory();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
 
-  const [notifications, setNotifications] = useState(true);
-
-  // ⭐ STATE USER
+  const [notifications, setNotifications] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  // ⭐ LOAD USER MỖI LẦN MỞ MÀN
+  // Load user
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       const load = async () => {
         try {
-          const result = await apiHandle.callApi(User.GetMe).asPromise();
-          if (result.status.isError) return;
-
-          setUser(result.res.data.user);
-        } catch (err) {
-          console.log('Load user error:', err);
+          const res = await apiHandle.callApi(User.GetMe).asPromise();
+          if (!res?.status?.isError) {
+            setUser(res.res.data.user);
+          }
+        } catch (e) {
+          console.log('Load user error:', e);
         }
       };
       load();
     }, []),
   );
 
-  const L =
-    lang?.code === 'en'
-      ? {
-          settings: 'Settings',
-          account: 'Account',
-          personalInfo: 'Personal info',
-          workInfo: 'Account setting',
-          application: 'Application',
-          language: 'Language',
-          notifications: 'Notifications',
-          logout: 'Logout',
-          other: 'Others',
-          privacy: 'Privacy policy',
-          contact: 'Contact us',
-        }
-      : {
-          settings: 'Cài đặt',
-          account: 'Tài khoản',
-          personalInfo: 'Thông tin cá nhân',
-          workInfo: 'Cài đặt tài khoản',
-          application: 'Ứng dụng',
-          language: 'Ngôn ngữ',
-          notifications: 'Thông báo',
-          logout: 'Đăng xuất',
-          other: 'Khác',
-          privacy: 'Chính sách bảo mật',
-          contact: 'Liên hệ chúng tôi',
-        };
+  // Check notification permission (Android)
+  const checkNotificationPermission = async () => {
+    if (Platform.OS !== 'android') return;
 
-  const isDark = theme?.name === 'dark';
-  const isEnglish = lang?.code === 'en';
+    const granted = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+    );
+    setNotifications(granted);
+  };
 
-  const handleThemeToggle = () =>
-    setUIState({theme: isDark ? 'light' : 'dark'});
+  // Khi mở màn
+  useEffect(() => {
+    checkNotificationPermission();
+  }, []);
 
-  const handleLanguageToggle = () =>
-    setUIState({lang: isEnglish ? 'vi' : 'en'});
+  // Khi quay lại app từ background
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        checkNotificationPermission();
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
-  const handleNotificationToggle = () => setNotifications(prev => !prev);
+  // Toggle thông báo → mở setting hệ thống
+  const handleNotificationToggle = () => {
+    Alert.alert(
+      'Cài đặt thông báo',
+      'Thông báo được quản lý bởi hệ thống. Bạn có thể bật hoặc tắt trong cài đặt ứng dụng.',
+      [
+        {text: 'Huỷ', style: 'cancel'},
+        {
+          text: 'Mở cài đặt',
+          onPress: () => Linking.openSettings(),
+        },
+      ],
+    );
+  };
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: theme?.colors.background}}>
+    <SafeAreaView style={{flex: 1, backgroundColor: '#F9FAFB'}}>
       <HeaderBar
-        title={L.settings}
+        title="Cài đặt"
         topInset={insets.top}
         isShowAvatar={false}
         isShowBackButton={false}
@@ -99,7 +101,7 @@ export default function SettingsScreen() {
       <ScrollView
         contentContainerStyle={[styles.container, {paddingBottom: 120}]}
         showsVerticalScrollIndicator={false}>
-        {/* ⭐ PROFILE REAL TIME */}
+        {/* PROFILE */}
         <ProfileCard
           name={user?.full_name || '—'}
           subtitle={user?.job_title || '—'}
@@ -110,21 +112,15 @@ export default function SettingsScreen() {
           }
         />
 
-        {/* ACCOUNT */}
+        {/* TÀI KHOẢN */}
         <View style={styles.group}>
-          <Text
-            style={[
-              styles.groupTitle,
-              {color: isDark ? '#A1A1AA' : '#6b7280'},
-            ]}>
-            {L.account}
-          </Text>
+          <Text style={styles.groupTitle}>Tài khoản</Text>
 
           <SettingSection>
             <SettingRow
               icon={<Feather name="user" size={18} color={BLUE} />}
-              label={L.personalInfo}
-              right={<Feather name="chevron-right" size={18} color="#9ca3af" />}
+              label="Thông tin cá nhân"
+              right={<Feather name="chevron-right" size={18} color="#9CA3AF" />}
               onPress={() => navigation.navigate('PersonalInformation')}
             />
 
@@ -132,96 +128,50 @@ export default function SettingsScreen() {
 
             <SettingRow
               icon={<Feather name="briefcase" size={18} color={BLUE} />}
-              label={L.workInfo}
-              right={<Feather name="chevron-right" size={18} color="#9ca3af" />}
+              label="Cài đặt tài khoản"
+              right={<Feather name="chevron-right" size={18} color="#9CA3AF" />}
               onPress={() => navigation.navigate('AccountSettings')}
             />
           </SettingSection>
         </View>
 
-        {/* APPLICATION */}
+        {/* ỨNG DỤNG */}
         <View style={styles.group}>
-          <Text
-            style={[
-              styles.groupTitle,
-              {color: isDark ? '#A1A1AA' : '#6b7280'},
-            ]}>
-            {L.application}
-          </Text>
+          <Text style={styles.groupTitle}>Ứng dụng</Text>
 
           <SettingSection>
             <SettingRow
-              icon={<Feather name="moon" size={18} color={BLUE} />}
-              label="Theme"
-              right={
-                <ToggleButton_Theme
-                  value={isDark}
-                  onToggle={handleThemeToggle}
-                />
-              }
-            />
-
-            <Divider />
-
-            <SettingRow
-              icon={<Feather name="globe" size={18} color={BLUE} />}
-              label={L.language}
-              right={
-                <ToggleButton_Language
-                  value={isEnglish}
-                  onToggle={handleLanguageToggle}
-                />
-              }
-            />
-
-            <Divider />
-
-            <SettingRow
               icon={<Feather name="bell" size={18} color={BLUE} />}
-              label={L.notifications}
+              label="Thông báo"
               right={
-                <ToggleButton_Notification
+                <Switch
                   value={notifications}
-                  onToggle={handleNotificationToggle}
+                  onValueChange={handleNotificationToggle}
+                  trackColor={{false: '#D1D5DB', true: '#93C5FD'}}
+                  thumbColor={notifications ? '#2563EB' : '#F3F4F6'}
                 />
               }
             />
-
-            {/* <Divider />
-
-            <SettingRow
-              icon={<Feather name="log-out" size={18} color="#e45858" />}
-              label={L.logout}
-              labelStyle={{color: '#e45858', fontWeight: '600'}}
-              right={<Feather name="chevron-right" size={18} color="#e45858" />}
-              onPress={() => logout()}
-            /> */}
           </SettingSection>
         </View>
 
-        {/* OTHERS */}
+        {/* KHÁC */}
         <View style={styles.group}>
-          <Text
-            style={[
-              styles.groupTitle,
-              {color: isDark ? '#A1A1AA' : '#6b7280'},
-            ]}>
-            {L.other}
-          </Text>
+          <Text style={styles.groupTitle}>Khác</Text>
 
           <SettingSection>
             <SettingRow
               icon={<Feather name="shield" size={18} color={BLUE} />}
-              label={L.privacy}
-              right={<Feather name="chevron-right" size={18} color="#9ca3af" />}
+              label="Chính sách bảo mật"
+              right={<Feather name="chevron-right" size={18} color="#9CA3AF" />}
             />
 
             <Divider />
 
             <SettingRow
               icon={<Feather name="mail" size={18} color={BLUE} />}
-              label={L.contact}
-              right={<Feather name="chevron-right" size={18} color="#9ca3af" />}
+              label="Liên hệ chúng tôi"
+              right={<Feather name="chevron-right" size={18} color="#9CA3AF" />}
             />
           </SettingSection>
         </View>
@@ -245,5 +195,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 8,
     fontWeight: '600',
+    color: '#6B7280',
   },
 });

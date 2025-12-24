@@ -17,6 +17,7 @@ import Toast from 'react-native-toast-message';
 
 import {apiHandle} from '../api/apihandle';
 import {SubscriptionPlans} from '../api/endpoint/SubscriptionPlans';
+import Footer from '../components/common/Footer';
 
 // ================= HELPERS =================
 const formatUSD = (v: number) => `$${v}`;
@@ -159,6 +160,10 @@ const SubscriptionPlanListScreen = ({navigation}: any) => {
           onPress={() => navigation.navigate('SubscriptionPlanForm')}
         />
       </View>
+       <Footer
+      activeIndex={2} // CompanyAdmin
+      onPress={() => {}}
+    />
     </View>
   );
 };

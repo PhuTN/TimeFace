@@ -95,7 +95,7 @@ export default function LoginScreen({navigation}: Props) {
 
       // ===== Điều hướng theo role =====
       if (role === 'admin') {
-        if (subscriptionStatus !== 'active') {
+        if (subscriptionStatus !== 'active' && subscriptionStatus !== 'canceled') {
           navigation.reset({
             index: 0,
             routes: [{name: 'SubscriptionPlans' as never}],
@@ -103,11 +103,11 @@ export default function LoginScreen({navigation}: Props) {
         } else {
           navigation.reset({
             index: 0,
-            routes: [{name: 'Home' as never}],
+            routes: [{name: 'HomeAdmin' as never}],
           });
         }
       } else if (role === 'user') {
-        if (subscriptionStatus !== 'active') {
+        if (subscriptionStatus !== 'active' && subscriptionStatus !== 'canceled') {
           navigation.reset({
             index: 0,
             routes: [{name: 'SubscriptionBlocked' as never}],
@@ -121,7 +121,7 @@ export default function LoginScreen({navigation}: Props) {
       } else {
         navigation.reset({
           index: 0,
-          routes: [{name: 'Home' as never}],
+          routes: [{name: 'CompanyDashboard' as never}],
         });
       }
     } catch (err: any) {

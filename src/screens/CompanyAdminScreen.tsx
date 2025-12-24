@@ -11,14 +11,10 @@ import {
 import {apiHandle} from '../api/apihandle';
 import {CompanyEP} from '../api/endpoint/Company';
 import HeaderBar from '../components/common/HeaderBar';
+import Footer from '../components/common/Footer';
 
 /* ================= TYPES ================= */
-type FilterType =
-  | 'all'
-  | 'active'
-  | 'locked'
-  | 'sub_active'
-  | 'sub_unactive';
+type FilterType = 'all' | 'active' | 'locked' | 'sub_active' | 'sub_unactive';
 
 const CompanyAdminScreen = ({navigation}: any) => {
   const [list, setList] = useState<any[]>([]);
@@ -50,7 +46,7 @@ const CompanyAdminScreen = ({navigation}: any) => {
           case 'sub_active':
             return c.subscription_status === 'active';
           case 'sub_unactive':
-            return c.subscription_status !== 'active';
+            return c.subscription_status !== 'active' && c.subscription_status !== 'canceled' ;
           default:
             return true;
         }
@@ -62,8 +58,7 @@ const CompanyAdminScreen = ({navigation}: any) => {
       if (!k) return true;
 
       return (
-        c.name?.toLowerCase().includes(k) ||
-        c.code?.toLowerCase().includes(k)
+        c.name?.toLowerCase().includes(k) || c.code?.toLowerCase().includes(k)
       );
     });
   }, [list, filter, keyword]);
@@ -209,6 +204,10 @@ const CompanyAdminScreen = ({navigation}: any) => {
         ListEmptyComponent={
           <Text style={styles.emptyText}>Không tìm thấy công ty</Text>
         }
+      />
+      <Footer
+        activeIndex={1} // CompanyAdmin
+        onPress={() => {}}
       />
     </View>
   );

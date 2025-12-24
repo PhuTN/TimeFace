@@ -78,6 +78,7 @@ import CompanyDetailAdminScreen from '../screens/CompanyDetailAdminScreen';
 import CompanyPlanHistoryScreen from '../screens/CompanyPlanHistoryScreen';
 import CompanyUserStatsScreen from '../screens/CompanyUserStatsScreen';
 import CompanyDashboardScreen from '../screens/CompanyDashboardScreen';
+import HomeAdminScreen from '../screens/HomeAdminScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -152,7 +153,7 @@ export type RootStackParamList = {
   // ⭐ COMPANY RULES
   CompanyRules: undefined;
   Company: undefined;
-
+  HomeAdmin: undefined;
   SubscriptionPlanList: undefined;
   SubscriptionPlanForm: {plan?: any} | undefined;
 };
@@ -182,12 +183,17 @@ const AppNavigator = ({
         <Stack.Screen
           name="CompanyAdmin"
           component={CompanyAdminScreen}
-          options={{animation: 'slide_from_right'}}
+          options={{animation: 'none'}}
         />
         <Stack.Screen
           name="CompanyDashboard"
           component={CompanyDashboardScreen}
-          options={{animation: 'slide_from_right'}}
+          options={{animation: 'none'}}
+        />
+        <Stack.Screen
+          name="HomeAdmin"
+          component={HomeAdminScreen}
+          options={{animation: 'none'}}
         />
         <Stack.Screen
           name="CompanyDetailAdmin"
@@ -226,7 +232,7 @@ const AppNavigator = ({
         <Stack.Screen
           name="SubscriptionPlanList"
           component={SubscriptionPlanListScreen}
-          options={{animation: 'slide_from_right'}}
+          options={{animation: 'none'}}
         />
 
         <Stack.Screen
